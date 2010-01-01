@@ -8,9 +8,26 @@
         "then" : ["然后", "接着"]
     },
     "callback":{
-        "开灯":"open_light_callback",
-        "关灯":"open_light_callback",
-        "开门":"open_light_callback",
-        "关门":"open_light_callback"
+        "trigger":{
+            "启动":"trigger_callback",
+        },
+        "action":{
+            "开":"open_callback",
+            "关":"open_callback",
+        },
+        "target":{
+            "灯":"target_callback",
+            "门":"target_callback",
+        },
+        "stop":{
+            "停止":"stop_callback",
+        },
+        "finish":{
+            "结束":"finish_callback",
+        },
+        "then":{
+            "接着":"then_callback",
+            "然后":"then_callback",
+        },
     }
 }

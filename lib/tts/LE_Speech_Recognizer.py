@@ -4,7 +4,9 @@
 import flac.encoder as encoder
 from sys import byteorder
 from array import array
-from struct import pack
+from struct import pack, unpack
+import math
+import numpy as np
 
 import pyaudio
 import wave
@@ -36,12 +38,8 @@ class LE_Speech_Recognizer(object):
 
         def stop(self):
             print "Waiting write_queue to write all data"
-            self.write_queue.join()
-            #sleep(10)
-
             self.keep_streaming=False
-            self.write_data(" ")
-            self.process_thread.join()
+            self.write_queue.join()
             print "Queue stop"
 
         def write_data(self, data):
@@ -49,7 +47,7 @@ class LE_Speech_Recognizer(object):
 
         def gen_data(self):
             if self.keep_streaming:
-                data = self.write_queue.get(block=True) # block!
+                data = self.write_queue.get(block=True, timeout=2) # block!
                 return data
 
         def send_and_parse(self, data):
@@ -71,7 +69,7 @@ class LE_Speech_Recognizer(object):
             while self.keep_streaming:
                 try:
                     data = self.gen_data()
-                    if self.keep_streaming:
+                    if self.keep_streaming and data:
                         result, conf = self.send_and_parse(data)
                         if result is not None:
                             self.callback(result, conf)
@@ -85,15 +83,40 @@ class LE_Speech_Recognizer(object):
         self.keep_running = False
         self._condition = threading.Condition()
 
-        self.CHUNK_SIZE = 512
         self.FORMAT = pyaudio.paInt16
         self.CHANNELS = 1
         self.RATE = 16000
+        self.CHUNK_SIZE = 512
         self.THRESHOLD = 1000
         self._flac_queue = Queue()
         self._callback = callback
 
+    # SHORT_NORMALIZE = (1.0/32768.0)
+    # def get_rms(self, block ):
+    #     # RMS amplitude is defined as the square root of the 
+    #     # mean over time of the square of the amplitude.
+    #     # so we need to convert this string of bytes into 
+    #     # a string of 16-bit samples...
+    #
+    #     # we will get one short out for each 
+    #     # two chars in the string.
+    #     count = len(block)/2
+    #     format = "%dh"%(count)
+    #     shorts = unpack(format, block )
+    #
+    #     # iterate over the block.
+    #     sum_squares = 0.0
+    #     for sample in shorts:
+    #         # sample is a signed short in +/- 32768. 
+    #         # normalize it to 1.0
+    #         n = sample * self.SHORT_NORMALIZE
+    #         sum_squares += n*n
+    #     return math.sqrt( sum_squares / count )
+
     def _is_silent(self, snd_data):
+        # rms = self.get_rms(snd_data)
+        # print rms
+        # return rms < self.THRESHOLD
         return len(snd_data) < self.THRESHOLD
 
     def _detecting(self):
@@ -184,7 +207,8 @@ class LE_Speech_Recognizer(object):
         print "* recording"
 
         while self.keep_running:
-            self.enc.process(stream.read(self.CHUNK_SIZE), self.CHUNK_SIZE)
+            sound_data = stream.read(self.CHUNK_SIZE)
+            self.enc.process(sound_data, self.CHUNK_SIZE)
 
         print "* done recording"
 

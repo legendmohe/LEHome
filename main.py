@@ -60,7 +60,7 @@ class LE_Home:
 
     def activate(self):
 
-        print ""
+        print "=============================Activate==================================="
 
         self.__com.start()
         self.__rec.start_recognizing()
