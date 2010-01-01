@@ -29,6 +29,7 @@ from lib.speech.Speech import Text2Speech
 from lib.helper.SwitchHelper import SwitchHelper
 from lib.helper.SensorHelper import SensorHelper
 from lib.helper.MessageHelper import MessageHelper
+from lib.helper.TagHelper import TagHelper
 from util.Res import Res
 from lib.sound import Sound
 from util.log import *
@@ -155,6 +156,12 @@ class Home:
         sensor_server_ip = self._init_res["connection"]["sensor_server"]
         INFO("init sensor server: " + sensor_server_ip)
         self._sensor = SensorHelper()
+
+        tag_server_ips = self._init_res["connection"]["tag_server"]
+        INFO("init tag server.")
+        for tag in tag_server_ips:
+            INFO("  place:%s, ip:%s" % (tag, tag_server_ips[tag]))
+        self._tag = TagHelper(tag_server_ips, self._init_res["tag"])
 
     def _cmd_begin_callback(self, command):
         INFO("command begin: %s" % (command))

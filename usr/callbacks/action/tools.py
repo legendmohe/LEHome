@@ -4,14 +4,52 @@
 
 from __future__ import division
 from decimal import Decimal  
+import threading
 import urllib2
 import urllib
 import json
 import re
 from lib.command.Command import UserInput
+from lib.sound import Sound
 from util import Util
+from util.Res import Res
 from util.log import *
 from lib.model import Callback
+
+
+class timer_callback(Callback.Callback):
+
+    def callback(self, cmd, action, target, msg):
+        if msg is None:
+            self._home.publish_msg(cmd, u"时间格式错误")
+            return False, None
+
+        if msg.endswith(u'点') or \
+           msg.endswith(u'分'):
+            t = Util.gap_for_timestring(msg)
+        elif msg.endswith(u"秒"):
+            t = int(Util.cn2dig(msg[:-1]))
+        elif msg.endswith(u"分钟"):
+            t = int(Util.cn2dig(msg[:-2]))*60
+        elif msg.endswith(u"小时"):
+            t = int(Util.cn2dig(msg[:-2]))*60*60
+        else:
+            self._home.publish_msg(cmd, u"时间格式错误")
+            return False
+        if t is None:
+            self._home.publish_msg(cmd, u"时间格式错误")
+            return False, None
+        DEBUG("thread wait for %d sec" % (t, ))
+        self._home.publish_msg(cmd, action + target + msg)
+
+        threading.current_thread().waitUtil(t)
+        if threading.current_thread().stopped():
+            return False
+        self._home.setResume(True)
+        count = 7
+        Sound.play( Res.get_res_path("sound/com_bell") , True, count)
+        self._home.setResume(False)
+        return True
 
 
 class translate_callback(Callback.Callback):

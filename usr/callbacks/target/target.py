@@ -283,6 +283,40 @@ class bell_callback(Callback.Callback):
         return True
 
 
+class alarm_callback(Callback.Callback):
+    def callback(self,
+            action=None,
+            target=None,
+            msg=None, 
+            pre_value=None):
+        if pre_value == "new" or pre_value == "set":
+            if msg is None:
+                self._home.publish_msg(cmd, u"时间格式错误")
+                return False, None
+
+            if msg.endswith(u'点') or \
+               msg.endswith(u'分'):
+                t = Util.gap_for_timestring(msg)
+            else:
+                self._home.publish_msg(cmd, u"时间格式错误")
+                return False
+            if t is None:
+                self._home.publish_msg(cmd, u"时间格式错误")
+                return False, None
+
+            DEBUG("thread wait for %d sec" % (t, ))
+            self._home.publish_msg(cmd, action + target + msg)
+
+            threading.current_thread().waitUtil(t)
+            if threading.current_thread().stopped():
+                return False
+            self._home.setResume(True)
+            count = 7
+            Sound.play( Res.get_res_path("sound/com_bell") , True, count)
+            self._home.setResume(False)
+            return True
+
+
 class todo_callback(Callback.Callback):
 
     todo_path = "data/todo.pcl"
@@ -734,7 +768,7 @@ class normal_sensor_callback(Callback.Callback):
                 else:
                     INFO(u'无法获取状态：' + msg)
                     return True, False
-            elif msg == u'无人':
+            elif msg == u'无人' or msg == u'没人':
                 state = self._home._sensor.get_pir(addr)
                 if state == 0:
                     return True, True
@@ -752,6 +786,62 @@ class normal_sensor_callback(Callback.Callback):
             else:
                 state = self._home._sensor.get_sensor_state(addr)
                 info = self._home._sensor.readable_state(state)
+                if state is None:
+                    INFO(u'无法获取状态：' + msg)
+                    self._home.publish_msg(cmd, u"内部错误")
+                    return False
+                else:
+                    self._home.publish_msg(cmd, info)
+                    return True, state
+            if state is None:
+                INFO(u'无法获取状态：' + msg)
+                self._home.publish_msg(cmd, u"内部错误")
+                return False
+            if pre_value == "show":
+                self._home.publish_msg(cmd, info)
+            return True, state
+        else:
+            return False
+
+
+class normal_tag_callback(Callback.Callback):
+    def callback(self, cmd, action, target, msg, pre_value):
+        addr = self._home._tag.addr_for_name(target)
+        if addr is None:
+            self._home.publish_msg(cmd, u"无此目标：" + target)
+            return False
+        if not msg.beginswith(u'在'):
+            self._home.publish_msg(cmd, u"格式错误：" + cmd)
+            return False
+        place = self._home._tag.place_ip_for_name(msg[1:])
+        if place is None or len(place) == 0:
+            self._home.publish_msg(cmd, u"无此处所：" + msg)
+            return False
+        if pre_value == "show" or pre_value == "get":
+            if msg == u'有人':
+                state = self._home._tag.get_pir(addr)
+                if state == 1:
+                    return True, True
+                elif state == 0:
+                    return True, False
+                else:
+                    INFO(u'无法获取状态：' + msg)
+                    return True, False
+            elif msg == u'无人' or msg == u'没人':
+                state = self._home._tag.get_pir(addr)
+                if state == 0:
+                    return True, True
+                elif state == 1:
+                    return True, False
+                else:
+                    INFO(u'无法获取状态：' + msg)
+                    return True, True
+            elif msg == u'是否有人':
+                state = self._home._tag.get_pir(addr)
+                info = u'当前%s%s人' % (target, u'有' if state == 1 else u'无')
+            else:
+                state = self._home._tag.get_tag_state(addr)
+                info = self._home._tag.readable_state(state)
                 if state is None:
                     INFO(u'无法获取状态：' + msg)
                     self._home.publish_msg(cmd, u"内部错误")
