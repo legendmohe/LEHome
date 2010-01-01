@@ -139,6 +139,7 @@ class qqfm_callback(Callback.Callback):
     pause_url = base_url + '/pause'
 
     def init_channcels(self):
+        self._fm_state = 0
         try:
             INFO("init qqfm:" + qqfm_callback.channel_url)
             channels = urllib2.urlopen(qqfm_callback.channel_url, timeout=5).read()
@@ -175,10 +176,14 @@ class qqfm_callback(Callback.Callback):
                     rep = urllib2.urlopen(play_url, timeout=5).read()
                     INFO("qqfm playing state: " + rep)
                     self._home.publish_msg(cmd, u"正在播放:" + rep.decode("utf-8"))
+                    self._fm_state = 1
             elif pre_value == "break":
-                rep = urllib2.urlopen(qqfm_callback.pause_url, timeout=3).read()
-                INFO("qqfm playing state: " + rep.decode("utf-8"))
-                self._home.publish_msg(cmd, u"停止播放")
+                rep = urllib2.urlopen(qqfm_callback.pause_url, timeout=3).read().decode("utf-8")
+                INFO("qqfm playing state: " + rep)
+                if rep == "pause":
+                    self._fm_state = 0
+                if self._fm_state == 1:
+                    self._home.publish_msg(cmd, u"停止播放")
         except Exception, ex:
             ERROR("qqfm error.")
             ERROR(ex)
@@ -603,7 +608,9 @@ class script_callback(Callback.Callback):
                 if self.run_script(script_name) is False:
                     self._home.publish_msg(cmd, u"无效脚本")
                 else:
-                    self._home.publish_msg(cmd, u"执行脚本:" + script_name)
+                    self._home.publish_msg(cmd,
+                                            u"执行脚本:" + script_name,
+                                            cmd_type="toast")
         return True
 
 
@@ -797,14 +804,47 @@ class normal_switch_callback(Callback.Callback):
 
 
 class normal_ril_callback(Callback.Callback):
+
+    ON = "\x40"
+    OFF = "\x41"
+
+    def __init__(self):
+        super(normal_ril_callback, self).__init__()
+        self._ac = {"status":"off"}
+
     def callback(self, cmd, action, target, msg, pre_value):
         if pre_value != None and len(pre_value) != 0:
-            if pre_value == "on" or pre_value == "off":
-                res = self._home._ril.send_cmd("\x2a")
-            if res == '\x05':
-                self._home.publish_msg(cmd, u"发送红外指令失败")
-            else:
-                self._home.publish_msg(cmd, u"发送红外指令成功")
+            res = None
+            if pre_value == "on":
+                if self._ac["status"] == "off":
+                    res = self._home._ril.send_cmd(normal_ril_callback.ON)
+                    if res == None:
+                        self._home.publish_msg(cmd, u"空调打开失败")
+                    else:
+                        self._home.publish_msg(cmd, u"空调打开成功")
+                        self._ac["status"] = "on"
+                else:
+                    self._home.publish_msg(cmd, u"空调已经打开")
+            elif pre_value == "off":
+                if self._ac["status"] == "on":
+                    res = self._home._ril.send_cmd(normal_ril_callback.OFF)
+                    if res == None:
+                        self._home.publish_msg(cmd, u"空调关闭失败")
+                    else:
+                        self._home.publish_msg(cmd, u"空调关闭成功")
+                        self._ac["status"] = "off"
+                else:
+                    self._home.publish_msg(cmd, u"空调已经关闭")
+            elif pre_value == "show":
+                if self._ac["status"] == "on":
+                    self._home.publish_msg(cmd, u"空调已打开")
+                else:
+                    self._home.publish_msg(cmd, u"空调已关闭")
+            elif pre_value == "get":
+                if self._ac["status"] == "on":
+                    return True, "on"
+                else:
+                    return True, "off"
         return True, True
 
 
