@@ -123,6 +123,8 @@ class LE_Speech2Text(object):
         return len(snd_data) < 1.2*sum(sample_len)/len(sample_len)
 
     def _detecting(self):
+        sample_data = deque(maxlen = 2*self.BEGIN_THRESHOLD)
+        sample_data_should_load = True
         while self.keep_running:
             record_begin = False
             buffer_begin = False
@@ -132,20 +134,21 @@ class LE_Speech2Text(object):
             num_sound = 0
             sound_data = ""
             wnd_data = deque(maxlen = 2*self.BEGIN_THRESHOLD)
-            sample_data = deque(maxlen = self.BEGIN_THRESHOLD)
 
             print "detecting:"
             while self.keep_running:
                 snd_data = self._flac_queue.get(block=True) #block
 
                 if record_begin:
-                    silent = self._is_silent(snd_data, wnd_data)
+                    silent = self._is_silent(snd_data, sample_data)
                     sound_data += snd_data
                 else:
                     wnd_data.append(snd_data)
-                    silent = self._is_silent(snd_data, wnd_data)
+                    if sample_data_should_load:
+                        sample_data.append(snd_data)
+                    silent = self._is_silent(snd_data, sample_data)
 
-                print len(snd_data), silent
+                # print len(snd_data), silent
                 if silent:
                     num_silent += 1
                     if num_sound < self.BEGIN_THRESHOLD:
@@ -153,6 +156,10 @@ class LE_Speech2Text(object):
                         snd_sound_finished = False
                     if num_silent > self.TIMEOUT_THRESHOLD:
                         snd_slient_finished = True
+                    if num_silent > 2*self.TIMEOUT_THRESHOLD: # enough time-gap for threshold
+                        sample_data_should_load = True
+                    else:
+                        sample_data_should_load = False
                 elif not silent:
                     num_sound += 1
                     if num_sound >= self.BEGIN_THRESHOLD and num_silent == 0:
