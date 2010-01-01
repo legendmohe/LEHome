@@ -102,6 +102,7 @@ class tag_endpoint(object):
                 if data == "":
                     WARN("no broadcast data.")
                     break
+                print data
                 datas = data.split()
                 addr = datas[0]
                 if addr in self._queues:
@@ -163,15 +164,17 @@ class tag_endpoint(object):
             parse_t.start()
 
         context = zmq.Context()
-        self.socket = context.socket(zmq.REP)
-        self.socket.setsockopt(zmq.LINGER, 0)
-        self.socket.bind(self.server_ip)
+        poller = zmq.Poller()
+        self.socket = None
         time.sleep(0.5)
 
         while True:
-            try:
-                poller = zmq.Poller()
+            if self.socket is None:
+                self.socket = context.socket(zmq.REP)
+                self.socket.setsockopt(zmq.LINGER, 0)
+                self.socket.bind(self.server_ip)
                 poller.register(self.socket, zmq.POLLIN | zmq.POLLOUT)
+            try:
                 if poller.poll(5*1000):
                     req = self.socket.recv_string()
                     # rep = "%s#%s" % (self.name, str(self.distance))
@@ -194,6 +197,9 @@ class tag_endpoint(object):
                 raise
             except Exception, ex:
                 ERROR(ex)
+                self.socket.close()
+                poller.unregister(self.socket)
+                self.socket = None
                 time.sleep(3)
 
     def stop(self):
