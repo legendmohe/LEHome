@@ -1,8 +1,8 @@
 {
     "command":{
         "trigger" : ["hello"],
-        "action" : ["开", "关"],
-        "target" : ["灯", "门"],
+        "action" : ["开", "关", "播放", "停止播放", "天气预报"],
+        "target" : ["灯", "门", "豆瓣电台"],
         "stop" : ["算了"],
         "finish" : ["好吗", "谢谢"],
         "then" : ["然后", "接着"]
@@ -13,11 +13,15 @@
         },
         "action":{
             "开":"action.action_callback",
-            "关":"action.action_callback"
+            "关":"action.action_callback",
+            "播放":"action.play_callback",
+            "停止播放":"action.stop_play_callback",
+            "天气预报":"action.weather_report_callback"
         },
         "target":{
             "灯":"target.target_callback",
-            "门":"target.target_callback"
+            "门":"target.target_callback",
+            "豆瓣电台":"target.douban_callback"
         },
         "stop":{
             "算了":"stop.stop_callback"

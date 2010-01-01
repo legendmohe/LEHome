@@ -25,9 +25,9 @@ class LE_Home:
     def __init__(self):
         self.__confidence_threshold = 0.6
         self.__context = {}
-        self.__init_command()
-        self.__init_recognizer()
         self.__init_speaker()
+        self.__init_recognizer()
+        self.__init_command()
 
     def __init_command(self):
         print 'initlizing command...'
@@ -58,7 +58,8 @@ class LE_Home:
                         cb_module = importlib.import_module(cb_module_name)
                         # pprint(dir(cb_module))
                         cb_object = getattr(cb_module, class_name)()
-                        cb_object.__context = self.__context
+                        cb_object._context = self.__context
+                        cb_object._speaker = self.__spk
                         
                         print "load callback: " + cb_module_name + " for command token:" + cb_token
                         self.__com.register_callback(

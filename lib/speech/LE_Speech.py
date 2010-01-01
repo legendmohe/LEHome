@@ -112,6 +112,16 @@ class LE_Speech2Text(object):
     #         n = sample * self.SHORT_NORMALIZE
     #         sum_squares += n*n
     #     return math.sqrt( sum_squares / count )
+    def _normalize(self, snd_data):
+        "Average the volume out"
+        # print max(abs(i) for i in snd_data)
+        MAXIMUM = 500
+        times = float(MAXIMUM)/max(abs(i) for i in snd_data)
+
+        r = array('h')
+        for i in snd_data:
+            r.append(int(i*times))
+        return r
 
     def _is_silent(self, snd_data, sample_data):
         # rms = self.get_rms(snd_data)
@@ -211,6 +221,11 @@ class LE_Speech2Text(object):
 
         while self.keep_running:
             sound_data = stream.read(self.CHUNK_SIZE)
+            # snd_data = array('h', sound_data)
+            # if byteorder == 'big':
+            #     snd_data.byteswap()
+            # snd_data = self._normalize(snd_data)
+            # sound_data = snd_data.tostring()
             self.enc.process(sound_data, self.CHUNK_SIZE)
 
         print "* done recording"
@@ -297,7 +312,6 @@ class LE_Text2Speech:
         log.info("speaker stop.")
 
     def speak(self, phrase):
-        print "going to speak:" + phrase
         if not self.__keep_speaking:
             log.warning("__keep_speaking is False.")
             return
