@@ -350,7 +350,7 @@ class LE_Command_Parser:
                                 , self.__unit_map['action']
                                 , self.__unit_map['target']
                                 , self.__unit_map['message']
-                                , None
+                                , self.__unit_map['then']
                                 )
                     self.__then_succeed = False
                     self.__unit_map = {

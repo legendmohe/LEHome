@@ -36,17 +36,22 @@ class LE_Home:
                     DEBUG = False)
             
             cb_json = init_json["callback"]
-            for cb_name in cb_json.keys():
-                try:
-                    cb_module_name = cb_json[cb_name].encode("utf-8")
-                    cb_module = __import__(cb_module_name)
-                    cb_object = getattr(cb_module, cb_module_name)()
-                    print "load callback: " + cb_module_name + " for command:" + cb_name
-                    self.__com.register_callback(
-                                cb_name
-                                , cb_object.callback)
-                except Exception as e:
-                    print e
+            for com_name in cb_json.keys():
+                for cb_name in cb_json["com_name"]
+                    try:
+                        cb_module_name = cb_json[cb_name].encode("utf-8")
+                        cb_module = __import__(cb_module_name)
+                        cb_object = getattr(cb_module, cb_module_name)()
+                        
+                        def cb_callback(trigger, action, target, message, finish, pass_value = None):
+                            pass
+
+                        print "load callback: " + cb_module_name + " for command:" + cb_name
+                        self.__com.register_callback(
+                                    cb_name
+                                    , cb_callback)
+                    except Exception as e:
+                        print e
 
     def __init_recognizer(self):
         print 'initlizing recognizer..'

@@ -11,18 +11,21 @@ def _import_package_files():
     globals_, locals_ = globals(), locals()
     package_path = os.path.dirname(__file__)
     package_name = os.path.basename(package_path)
+    command_list = ["trigger", "action", "target", "finish", "stop", "then"]
 
-    for filename in os.listdir(package_path):
-        modulename, ext = os.path.splitext(filename)
-        if modulename[0] != '_' and ext in ('.py', '.pyw'):
-            # create a package relative subpackage name
-            subpackage = '{}.{}'.format(package_name, modulename)
-            module = __import__(subpackage, globals_, locals_, [modulename])
-            modict = module.__dict__
-            names = (modict['__all__'] if '__all__' in modict else
-                     [name for name in modict if name[0] != '_'])  # public names
-            exports.extend(names)
-            globals_.update((name, modict[name]) for name in names)
+    for command in command_list:
+        for filename in os.listdir(package_path + command):
+            print filename
+            modulename, ext = os.path.splitext(filename)
+            if modulename[0] != '_' and ext in ('.py', '.pyw'):
+                # create a package relative subpackage name
+                subpackage = '{}.{}'.format(package_name, modulename)
+                module = __import__(subpackage, globals_, locals_, [modulename])
+                modict = module.__dict__
+                names = (modict['__all__'] if '__all__' in modict else
+                         [name for name in modict if name[0] != '_'])  # public names
+                exports.extend(names)
+                globals_.update((name, modict[name]) for name in names)
 
     return exports
 

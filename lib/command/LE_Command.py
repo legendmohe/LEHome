@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 from LE_Command_Parser import LE_Command_Parser
+from collections import OrderedDict
 from Queue import Queue
 from time import sleep
 import threading
@@ -29,11 +30,19 @@ class LE_Command:
             pass_value = None
             while not stop:
                 try:
-                    t = work_queue.get(block=True, timeout=2)
-                    callback, trigger, action, target, message, finish = t
-                    pass_value = callback(trigger, action, target, message, finish, pass_value)
+                    t = work_queue.get(block=True, timeout=1)
+                    coms, msg = t
+                    if pass_value:
+                        coms["pass_value"] = pass_value
+                    pass_value = self.__invoke_callbacks(coms, msg)
 
-                    if finish:
+                    if pass_value == "Error":
+                        print "Error in 'then'."
+                        with work_queue.mutex:
+                            work_queue.queue.clear()
+                        del self.__work_queues[queue_id]
+                        stop = True
+                    elif finish:
                         print "queue: %d finish" %(queue_id)
                         del self.__work_queues[queue_id]
                         stop = True
@@ -61,32 +70,92 @@ class LE_Command:
         if finish:
             worker.start()
 
-        if (action + target) in self.__registered_callbacks.keys():
-            callback = self.__registered_callbacks[action + target]
-            if callback:
-                work_queue.put((callback, trigger, action, target, message, finish))
+        coms = OrderedDict([("trigger", trigger), ("action", action), ("target", target), ("then", finish)])
+        work_queue.put((coms, message))
 
 
     def __finish_callback(self, trigger, action, target, message, finish):
-        if (action + target) in self.__registered_callbacks.keys():
-            callback = self.__registered_callbacks[action + target]
-            if callback:
-                # callback(trigger, action, target, message, finish)
-                t = threading.Thread(target=callback, args = (trigger, action, target, message, finish))
-                t.daemon = True
-                t.start()
+        coms = OrderedDict([("trigger", trigger), ("action", action), ("target", target), ("finish", finish)])
+        t = threading.Thread(target=self.__invoke_callbacks, args = (coms, message))
+        t.daemon = True
+        t.start()
 
-    def __stop_callback(self, trigger, action, target, message, finish):
-        callback = self.__registered_callbacks[action + target]
-        if callback:
-            callback(trigger, action, target, message, finish)
+    def __stop_callback(self, trigger, action, target, message, stop):
+        coms = [("trigger", trigger), ("action", action), ("target", target), ("stop", stop)]
+        self.__invoke_callbacks(OrderedDict(coms), message)
 
-    def register_callback(self, command, callback):
-        if command and callback:
-            if command in self.__registered_callbacks:
-                print command + ' has registered.'
-            self.__registered_callbacks[command] = callback
+    def __invoke_callbacks(self, coms, msg):
+        return_value = None
+        is_continue = True
+        for com_type in coms.keys():
+            if not is_continue:
+                break
+            if not com_type in self.__registered_callbacks:
+                continue
+            callbacks = self.__registered_callbacks[com_type]
+            if callbacks:
+                if coms[com_type] in callbacks:
+                    if coms[com_type] == None:
+                        continue
+                    callback = callbacks[coms[com_type]]
+                    if com_type == "trigger":
+                        is_continue, return_value = callback(
+                                trigger = coms["trigger"],
+                                action = coms["action"]
+                                )
+                    if com_type == "action":
+                        is_continue, return_value = callback(
+                                action = coms["action"], 
+                                target = coms["target"], 
+                                msg = msg,
+                                pre_value = return_value
+                                )
+                    if com_type == "target":
+                        is_continue, return_value = callback(
+                                target = coms["target"], 
+                                msg = msg, 
+                                pre_value = return_value
+                                )
+                    if com_type == "stop":
+                        is_continue, return_value = callback(
+                                action = coms["action"], 
+                                target = coms["target"], 
+                                stop = coms["stop"],
+                                msg = msg, 
+                                pre_value = return_value
+                                )
+                    if com_type == "finish":
+                        is_continue, return_value = callback(
+                                action = coms["action"], 
+                                target = coms["target"], 
+                                finish = coms["finish"],
+                                msg = msg, 
+                                pre_value = return_value
+                                )
+                    if com_type == "then":
+                        is_continue, return_value = callback(
+                                action = coms["action"], 
+                                target = coms["target"], 
+                                then = coms["then"],
+                                msg = msg, 
+                                pre_value = return_value,
+                                pass_value = coms["pass_value"]
+                                )
+
+                    if not is_continue:
+                        return return_value
+        return return_value
+
+    def register_callback(self, com_type, com_item, callback):
+        if com_type and com_item and callback:
+            if com_type not in self.__registered_callbacks:
+                self.__registered_callbacks[com_type] = {}
+            type_coms = self.__registered_callbacks[com_type]
+            if com_item in type_coms:
+                print "warning: " + com_item + ' has registered.'
+            type_coms[com_item] = callback
         else:
+            print "register_callback: empty args."
             return
 
     def parse(self, word_stream):
@@ -104,8 +173,10 @@ class LE_Command:
 
 
 if __name__ == '__main__':
-    def test_callback(trigger, action, target, message, finish, pass_value = None):
-        print "* trigger: %s action: %s, target: %s, message: %s >> %s" %(trigger, action, target, message, finish)
+    def test_callback(trigger = None, action = None, target = None,
+            msg = None, stop = None, finish = None, then = None, 
+            pre_value = None, pass_value = None):
+        print "* trigger: %s action: %s, target: %s, message: %s finish: %s stop: %s then: %s pre_value: %s pass_value %s" %(trigger, action, target, msg, finish, stop, then, pre_value, pass_value)
 
     parser_target = "你好启动开灯1结束你好今4444abcs,=天天气启动开灯不开停止启动启动结束启动关灯asssdasd然后关门asdasd结束"
     commander = LE_Command(
@@ -118,9 +189,12 @@ if __name__ == '__main__':
             DEBUG = False)
     commander.start()
     
-    commander.register_callback("开灯", test_callback)
-    commander.register_callback("关灯", test_callback)
-    commander.register_callback("关门", test_callback)
+    commander.register_callback("action", "开", test_callback)
+    commander.register_callback("action", "关", test_callback)
+    commander.register_callback("target", "灯", test_callback)
+    commander.register_callback("target", "门", test_callback)
+    commander.register_callback("stop", "停止", test_callback)
+    commander.register_callback("finish", "结束", test_callback)
     commander.parse(parser_target)
     sleep(5)
     commander.stop()
