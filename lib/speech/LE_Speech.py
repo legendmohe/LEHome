@@ -5,6 +5,7 @@ from sys import byteorder
 from array import array
 from struct import pack, unpack
 from Queue import Queue
+from collections import deque
 from time import sleep
 import flac.encoder as encoder
 import sys, os, subprocess
@@ -20,11 +21,12 @@ class LE_Speech2Text(object):
 
     class _queue(object):
 
-        def __init__(self, callback):
+        def __init__(self, callback, lang = "zh-CN"):
             self.write_queue = Queue()
             self.keep_streaming = True
             self.RATE = 16000
             self.callback = callback
+            self.lang = lang
 
         def start(self):
             self.process_thread = threading.Thread(target=self.process_thread)
@@ -46,7 +48,7 @@ class LE_Speech2Text(object):
                 return data
 
         def send_and_parse(self, data):
-            xurl = 'http://www.google.com/speech-api/v1/recognize?xjerr=1&client=chromium&lang=zh-CN' 
+            xurl = 'http://www.google.com/speech-api/v1/recognize?xjerr=1&client=chromium&lang=' + self.lang
             headers = {'Content-Type' : 'audio/x-flac; rate=16000'}
             req = urllib2.Request(xurl, data, headers)
             response = urllib2.urlopen(req)
@@ -82,9 +84,9 @@ class LE_Speech2Text(object):
         self.FORMAT = pyaudio.paInt16
         self.CHANNELS = 1
         self.RATE = 16000
-        self.CHUNK_SIZE = 512
-        self.THRESHOLD = 1000
-        self.BEGIN_THRESHOLD = 5
+        self.CHUNK_SIZE = 256 #!!!!!
+        self.THRESHOLD = 1300
+        self.BEGIN_THRESHOLD = 4
         self.TIMEOUT_THRESHOLD = 10
         self._flac_queue = Queue()
         self._callback = callback
@@ -111,11 +113,15 @@ class LE_Speech2Text(object):
     #         sum_squares += n*n
     #     return math.sqrt( sum_squares / count )
 
-    def _is_silent(self, snd_data):
+    def _is_silent(self, snd_data, sample_data):
         # rms = self.get_rms(snd_data)
         # print rms
         # return rms < self.THRESHOLD
-        return len(snd_data) < self.THRESHOLD
+        # return len(snd_data) < self.THRESHOLD
+        sample_data = list(sample_data)[0:self.BEGIN_THRESHOLD]
+        sample_len = [len(x) for x in sample_data]
+        # print len(snd_data), 1.2*sum(sample_len)/len(sample_len)
+        return len(snd_data) < 1.2*sum(sample_len)/len(sample_len)
 
     def _detecting(self):
         while self.keep_running:
@@ -126,42 +132,34 @@ class LE_Speech2Text(object):
             num_silent = 0
             num_sound = 0
             sound_data = ""
-            buf_data = ""
+            wnd_data = deque(maxlen = 2*self.BEGIN_THRESHOLD)
+            sample_data = deque(maxlen = self.BEGIN_THRESHOLD)
 
             print "detecting:"
             while self.keep_running:
                 snd_data = self._flac_queue.get(block=True) #block
 
-                if buffer_begin and not record_begin:
-                    buf_data += snd_data
                 if record_begin:
                     sound_data += snd_data
+                else:
+                    wnd_data.append(snd_data)
 
-                silent = self._is_silent(snd_data)
-                # print len(snd_data)
+                silent = self._is_silent(snd_data, wnd_data)
+                # print len(snd_data), silent
                 if silent:
                     num_silent += 1
                     if num_sound < self.BEGIN_THRESHOLD:
                         num_sound = 0
                         snd_sound_finished = False
                     if num_silent > self.TIMEOUT_THRESHOLD:
-                        buf_data = ""  # reflash buf
-                        buffer_begin = False
                         snd_slient_finished = True
                 elif not silent:
-                    if not buffer_begin:
-                        buffer_begin = True
-                        buf_data = " "*2*self.CHUNK_SIZE
-                        buf_data += snd_data # first chunk of data
-
                     num_sound += 1
                     if num_sound >= self.BEGIN_THRESHOLD and num_silent == 0:
                         snd_sound_finished = True
-
                         if not record_begin:
                             record_begin = True
-                            sound_data += buf_data
-
+                            sound_data += "".join(wnd_data)
                     num_silent = 0
                     snd_slient_finished = False
 

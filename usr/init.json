@@ -1,6 +1,6 @@
 {
     "command":{
-        "trigger" : ["贝多芬"],
+        "trigger" : ["hello"],
         "action" : ["开", "关"],
         "target" : ["灯", "门"],
         "stop" : ["算了"],
@@ -9,7 +9,7 @@
     },
     "callback":{
         "trigger":{
-            "贝多芬":"trigger.trigger_callback"
+            "hello":"trigger.trigger_callback"
         },
         "action":{
             "开":"action.action_callback",
