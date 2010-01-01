@@ -120,7 +120,6 @@ class LE_Speech2Text(object):
         # return len(snd_data) < self.THRESHOLD
         sample_data = list(sample_data)[0:self.BEGIN_THRESHOLD]
         sample_len = [len(x) for x in sample_data]
-        # print len(snd_data), 1.2*sum(sample_len)/len(sample_len)
         return len(snd_data) < 1.2*sum(sample_len)/len(sample_len)
 
     def _detecting(self):
@@ -140,12 +139,13 @@ class LE_Speech2Text(object):
                 snd_data = self._flac_queue.get(block=True) #block
 
                 if record_begin:
+                    silent = self._is_silent(snd_data, wnd_data)
                     sound_data += snd_data
                 else:
                     wnd_data.append(snd_data)
+                    silent = self._is_silent(snd_data, wnd_data)
 
-                silent = self._is_silent(snd_data, wnd_data)
-                # print len(snd_data), silent
+                print len(snd_data), silent
                 if silent:
                     num_silent += 1
                     if num_sound < self.BEGIN_THRESHOLD:

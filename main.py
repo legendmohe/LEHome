@@ -88,7 +88,7 @@ class LE_Home:
         self.__com.start()
         self.__rec.start_recognizing()
         self.__spk.start()
-        self.__spk.speak(u"你好，我叫贝多芬。")
+        self.__spk.speak(u"你好.")
 
     def deactivate(self):
         self.__com.stop()
