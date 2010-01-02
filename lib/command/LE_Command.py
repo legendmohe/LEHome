@@ -106,7 +106,8 @@ class LE_Command:
                     if com_type == "trigger":
                         is_continue, return_value = callback(
                                 trigger = coms["trigger"],
-                                action = coms["action"]
+                                action = coms["action"],
+                                pre_value = return_value
                                 )
                     if com_type == "action":
                         is_continue, return_value = callback(

@@ -75,7 +75,8 @@ class LE_Speech_Recognizer(object):
                             self.callback(result, conf)
                         self.write_queue.task_done()
                 except Exception, e:
-                    print e
+                    # print e
+                    pass
 
             print "end"
 

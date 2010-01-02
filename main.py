@@ -4,17 +4,28 @@
 from lib.command.LE_Command import *
 from lib.speech.LE_Speech_Recognizer import *
 from time import sleep
+from pprint import pprint
 import json
+import importlib
+import logging as log
+import sys
+import traceback
 
-import sys;
-sys.path.append("./usr/callbacks/")
+class TracePrints(object):
+      def __init__(self):    
+          self.stdout = sys.stdout
+      def write(self, s):
+          self.stdout.write("Writing %r\n" % s)
+          traceback.print_stack(file=self.stdout)
+
+# sys.stdout = TracePrints()
 
 class LE_Home:
     def __init__(self):
         self.__confidence_threshold = 0.6
         self.__context = {}
         self.__init_command()
-        # self.__init_recognizer()
+        self.__init_recognizer()
 
     def __init_command(self):
         print 'initlizing command...'
@@ -37,20 +48,26 @@ class LE_Home:
             
             cb_json = init_json["callback"]
             for com_name in cb_json.keys():
-                cbs = cb_json["com_name"]
+                cbs = cb_json[com_name]
                 for cb_token in cbs.keys():
                     try:
-                        cb_module_name = cbs[cb_token].encode("utf-8")
-                        cb_module = __import__(cb_module_name)
-                        cb_object = getattr(cb_module, cb_module_name)()
+                        token = cbs[cb_token].encode("utf-8")
+                        dpos = token.rindex('.')
+                        module_name = token[:dpos]
+                        class_name = token[dpos + 1:]
+                        cb_module_name = "usr.callbacks.%s.%s" %(com_name, module_name)
+                        cb_module = importlib.import_module(cb_module_name)
+                        # pprint(dir(cb_module))
+                        cb_object = getattr(cb_module, class_name)()
                         cb_object.__context = self.__context
                         
                         print "load callback: " + cb_module_name + " for command token:" + cb_token
                         self.__com.register_callback(
-                                    cb_token
-                                    , cb_object.callback)
-                    except Exception as e:
-                        print e
+                                    com_name,
+                                    cb_token,
+                                    cb_object.callback)
+                    except Exception, e:
+                        log.exception("init commands faild.")
 
     def __init_recognizer(self):
         print 'initlizing recognizer..'

@@ -34,4 +34,16 @@
 
 # __all__ = ["open_light_callback"]
 
-import action, finish, stop, target, then, trigger
+import action
+import target
+import finish
+import stop
+import then
+import trigger
+# from action import *
+# from target import *
+# from finish import *
+# from stop import *
+# from then import *
+# from trigger import *
+# import action, finish, stop, target, then, trigger
