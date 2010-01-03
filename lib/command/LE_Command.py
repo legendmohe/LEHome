@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from LE_Command_Parser import LE_Command_Parser
 from collections import OrderedDict
 from Queue import Queue
 from time import sleep
 import threading
 
+from LE_Command_Parser import LE_Command_Parser
 from lib.sound import LE_Sound
 from usr.LE_Res import LE_Res
+from lib.speech.LE_Speech import LE_Text2Speech
 
 class LE_Command:
     
@@ -25,6 +26,8 @@ class LE_Command:
 
         self.__keep_running = False
         self.__work_queues = {}
+
+        self.__speaker = LE_Text2Speech()
             
 
     def __then_callback(self, queue_id, trigger, action, target, message, state):
@@ -41,6 +44,7 @@ class LE_Command:
                     if pass_value.lower() == "cancel":
                         print "cancel queue: %d finish" %(queue_id)
                         LE_Sound.playmp3(LE_Res.get_res_path("sound/com_stop"))
+                        self.__speaker.speak(u"正在取消")
                         with work_queue.mutex:
                             work_queue.queue.clear()
                         del self.__work_queues[queue_id]
@@ -48,6 +52,7 @@ class LE_Command:
                     elif state in self.__registered_callbacks["finish"].keys():
                         print "queue: %d finish" %(queue_id)
                         LE_Sound.playmp3(LE_Res.get_res_path("sound/com_finish"))
+                        self.__speaker.speak(u"正在执行")
                         del self.__work_queues[queue_id]
                         stop = True
 
@@ -56,6 +61,7 @@ class LE_Command:
                     pass
 
         if trigger == "Error":
+            self.__speaker.speak(u"我听不清楚")
             worker, work_queue = self.__work_queues[queue_id]
             with work_queueq.mutex:
                 work_queueq.queue.clear()
@@ -86,6 +92,7 @@ class LE_Command:
 
     def __finish_callback(self, trigger, action, target, message, finish):
         LE_Sound.playmp3(LE_Res.get_res_path("sound/com_finish"))
+        self.__speaker.speak(u"正在执行:" + ''.join(filter(None, (action, target))))
 
         coms = OrderedDict([("trigger", trigger), ("action", action), ("target", target), ("finish", finish)])
         t = threading.Thread(target=self.__invoke_callbacks, args = (coms, message))
@@ -94,6 +101,7 @@ class LE_Command:
 
     def __stop_callback(self, trigger, action, target, message, stop):
         LE_Sound.playmp3(LE_Res.get_res_path("sound/com_stop"))
+        self.__speaker.speak(u"正在取消:" + ''.join(filter(None, (action, target))))
 
         coms = [("trigger", trigger), ("action", action), ("target", target), ("stop", stop)]
         self.__invoke_callbacks(OrderedDict(coms), message)
@@ -182,10 +190,11 @@ class LE_Command:
 
     def start(self):
         self.__keep_running = True
+        self.__speaker.start()
 
     def stop(self):
         self.__keep_running = False
-
+        self.__speaker.stop()
 
 if __name__ == '__main__':
     def action_callback(action = None, target = None,

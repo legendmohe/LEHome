@@ -4,7 +4,7 @@
         "action" : ["开", "关"],
         "target" : ["灯", "门"],
         "stop" : ["算了"],
-        "finish" : ["好吗"],
+        "finish" : ["好吗", "谢谢"],
         "then" : ["然后", "接着"]
     },
     "callback":{
@@ -23,7 +23,8 @@
             "算了":"stop.stop_callback"
         },
         "finish":{
-            "好吗":"finish.finish_callback"
+            "好吗":"finish.finish_callback",
+            "谢谢":"finish.finish_callback"
         },
         "then":{
             "接着":"then.then_callback",

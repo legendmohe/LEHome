@@ -242,13 +242,13 @@ class LE_Text2Speech:
 
     def __init__(self):
         self.__speak_queue = Queue()
-        self.__keep_speaking = True
+        self.__keep_speaking = False
 
     def __getGoogleSpeechURL(self, phrase):
         googleTranslateURL = "http://translate.google.com/translate_tts"
         parameters = {
                 "tl" : "zh-CN",
-                "q": phrase,
+                "q": phrase.encode("utf-8"),
                 "ie": "utf-8",
                 "oe" : "utf-8"
                 }
@@ -292,22 +292,29 @@ class LE_Text2Speech:
         log.info("speaker stop.")
 
     def speak(self, phrase):
+        print "going to speak:" + phrase
         if not self.__keep_speaking:
             log.warning("__keep_speaking is False.")
             return
             
         if isinstance(phrase, (list, tuple)):
             for item in phrase:
-                self.__speak_queue.put(item)
+                if isinstance(item, unicode):
+                    self.__speak_queue.put(item)
+                else:
+                    print "phrase must be unicode"
         else:
-            self.__speak_queue.put(phrase)
+            if isinstance(phrase, unicode):
+                self.__speak_queue.put(phrase)
+            else:
+                print "phrase must be unicode"
 
 if __name__ == '__main__':
     def callback(result, confidence):
         print "result: " + result + " | " + str(confidence)
     tts = LE_Text2Speech()
     tts.start()
-    tts.speak(["你好", "今天天气真好"])
+    tts.speak([u"你好", u"今天天气真好"])
 
     recongizer = LE_Speech2Text(callback)
     recongizer.start_recognizing()

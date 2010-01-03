@@ -88,7 +88,7 @@ class LE_Home:
         self.__com.start()
         self.__rec.start_recognizing()
         self.__spk.start()
-        self.__spk.speak("你好，我叫贝多芬。")
+        self.__spk.speak(u"你好，我叫贝多芬。")
 
     def deactivate(self):
         self.__com.stop()
@@ -99,5 +99,5 @@ class LE_Home:
 if __name__ == '__main__':
     home = LE_Home()
     home.activate()
-    sleep(100)
+    sleep(1000)
     

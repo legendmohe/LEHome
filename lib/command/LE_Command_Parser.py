@@ -162,6 +162,7 @@ class LE_Command_Parser:
         )
 
     def __init__(self, trigger, action, target, stop, finish, then, DEBUG = False):
+        print type(action[0])
         self.FLAG = [
             ('trigger' , trigger),
             ('stop' , stop),
