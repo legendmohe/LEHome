@@ -5,11 +5,12 @@ from lib.command.LE_Command import *
 from lib.speech.LE_Speech import *
 from time import sleep
 from pprint import pprint
-import json
 import importlib
 import logging as log
 import sys
 import traceback
+
+from usr.LE_Res import LE_Res
 
 class TracePrints(object):
       def __init__(self):    
@@ -31,13 +32,10 @@ class LE_Home:
     def __init_command(self):
         print 'initlizing command...'
 
-        with open("usr/init.json") as init_file:
-            init_json = json.load(init_file)
-            if not init_json:
-                print "error: invaild init.json."
-                return
+        settings = LE_Res.init("init.json")
+        if settings:
 
-            com_json = init_json['command']
+            com_json = settings['command']
             self.__com = LE_Command(
                     trigger = com_json["trigger"],
                     action = com_json["action"],
@@ -47,7 +45,7 @@ class LE_Home:
                     then =  com_json["then"],
                     DEBUG = False)
             
-            cb_json = init_json["callback"]
+            cb_json = settings["callback"]
             for com_name in cb_json.keys():
                 cbs = cb_json[com_name]
                 for cb_token in cbs.keys():

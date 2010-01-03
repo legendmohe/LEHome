@@ -1,15 +1,15 @@
 {
     "command":{
-        "trigger" : ["启动"],
+        "trigger" : ["贝多芬"],
         "action" : ["开", "关"],
         "target" : ["灯", "门"],
-        "stop" : ["停止"],
-        "finish" : ["结束"],
+        "stop" : ["算了"],
+        "finish" : ["好吗"],
         "then" : ["然后", "接着"]
     },
     "callback":{
         "trigger":{
-            "启动":"trigger.trigger_callback"
+            "贝多芬":"trigger.trigger_callback"
         },
         "action":{
             "开":"action.action_callback",
@@ -20,14 +20,18 @@
             "门":"target.target_callback"
         },
         "stop":{
-            "停止":"stop.stop_callback"
+            "算了":"stop.stop_callback"
         },
         "finish":{
-            "结束":"finish.finish_callback"
+            "好吗":"finish.finish_callback"
         },
         "then":{
             "接着":"then.then_callback",
             "然后":"then.then_callback"
         }
+    },
+    "sound":{
+        "com_finish":"com_finish.mp3",
+        "com_stop":"com_stop.mp3"
     }
 }

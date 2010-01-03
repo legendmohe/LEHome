@@ -7,6 +7,9 @@ from Queue import Queue
 from time import sleep
 import threading
 
+from lib.sound import LE_Sound
+from usr.LE_Res import LE_Res
+
 class LE_Command:
     
     def __init__(self, trigger, action, target, stop, finish, then, DEBUG = False):
@@ -37,12 +40,14 @@ class LE_Command:
 
                     if pass_value.lower() == "cancel":
                         print "cancel queue: %d finish" %(queue_id)
+                        LE_Sound.playmp3(LE_Res.get_res_path("sound/com_stop"))
                         with work_queue.mutex:
                             work_queue.queue.clear()
                         del self.__work_queues[queue_id]
                         stop = True
                     elif state in self.__registered_callbacks["finish"].keys():
                         print "queue: %d finish" %(queue_id)
+                        LE_Sound.playmp3(LE_Res.get_res_path("sound/com_finish"))
                         del self.__work_queues[queue_id]
                         stop = True
 
@@ -80,12 +85,16 @@ class LE_Command:
 
 
     def __finish_callback(self, trigger, action, target, message, finish):
+        LE_Sound.playmp3(LE_Res.get_res_path("sound/com_finish"))
+
         coms = OrderedDict([("trigger", trigger), ("action", action), ("target", target), ("finish", finish)])
         t = threading.Thread(target=self.__invoke_callbacks, args = (coms, message))
         t.daemon = True
         t.start()
 
     def __stop_callback(self, trigger, action, target, message, stop):
+        LE_Sound.playmp3(LE_Res.get_res_path("sound/com_stop"))
+
         coms = [("trigger", trigger), ("action", action), ("target", target), ("stop", stop)]
         self.__invoke_callbacks(OrderedDict(coms), message)
 

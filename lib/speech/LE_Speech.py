@@ -1,20 +1,17 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-import flac.encoder as encoder
 from sys import byteorder
 from array import array
 from struct import pack, unpack
 from Queue import Queue
 from time import sleep
+import flac.encoder as encoder
+import sys, os, subprocess
 import math
 import numpy as np
-import pyaudio
-import wave
-import sys,os
-import urllib2
-import urllib
-import subprocess
+import pyaudio, wave
+import urllib2, urllib
 import json 
 import threading
 import logging as log
@@ -87,6 +84,8 @@ class LE_Speech2Text(object):
         self.RATE = 16000
         self.CHUNK_SIZE = 512
         self.THRESHOLD = 1000
+        self.BEGIN_THRESHOLD = 5
+        self.TIMEOUT_THRESHOLD = 10
         self._flac_queue = Queue()
         self._callback = callback
 
@@ -142,21 +141,21 @@ class LE_Speech2Text(object):
                 # print len(snd_data)
                 if silent:
                     num_silent += 1
-                    if num_sound <= 5:
+                    if num_sound < self.BEGIN_THRESHOLD:
                         num_sound = 0
                         snd_sound_finished = False
-                    if num_silent > 10:
+                    if num_silent > self.TIMEOUT_THRESHOLD:
                         buf_data = ""  # reflash buf
                         buffer_begin = False
                         snd_slient_finished = True
                 elif not silent:
                     if not buffer_begin:
                         buffer_begin = True
-                        buf_data = "\0"*2*self.CHUNK_SIZE
+                        buf_data = " "*2*self.CHUNK_SIZE
                         buf_data += snd_data # first chunk of data
 
                     num_sound += 1
-                    if num_sound > 5 and num_silent == 0:
+                    if num_sound >= self.BEGIN_THRESHOLD and num_silent == 0:
                         snd_sound_finished = True
 
                         if not record_begin:
@@ -259,7 +258,6 @@ class LE_Text2Speech:
 
     def __speak_worker(self):
         while self.__keep_speaking:
-            print self.__keep_speaking
             try:
                 phrase = self.__speak_queue.get(block=True, timeout=2)
                 self.__speakSpeechFromText(phrase)
