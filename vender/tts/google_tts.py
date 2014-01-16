@@ -19,7 +19,7 @@ class google_stt_stream(object):
         self.upstream_url = "https://www.google.com/speech-api/full-duplex/v1/up?key=%(key)s&pair=%(pair)s&lang=en-US&maxAlternatives=20&client=chromium&continuous&interim"
         self.upstream_headers = {'content-type': 'audio/x-flac; rate=16000'}
         self.downstream_url = "https://www.google.com/speech-api/full-duplex/v1/down?pair=%(pair)s"
-        self.api_key = "<your_api_key>"
+        self.api_key = "AIzaSyBHDrl33hwRp4rMQY0ziRbj8K9LPA6vUCY"
  
     def generate_request_key(self):
         return hex(random.getrandbits(64))[2:-1]
@@ -79,52 +79,54 @@ class google_stt_stream(object):
                 return
  
         print "end"
- 
-stt = google_stt_stream()
- 
-def write(enc, buf, samples, current_frame):
-    stt.write_data(buf)
-    #print current_frame, samples
-    return True
- 
+
+if __name__ == '__main__':
+        
+    stt = google_stt_stream()
+     
+    def write(enc, buf, samples, current_frame):
+        stt.write_data(buf)
+        #print current_frame, samples
+        return True
+     
 #config
-chunk = 512
-FORMAT = pyaudio.paInt16
-CHANNELS = 1
-RATE = 16000
-THRESHOLD = 180 #The threshold intensity that defines silence signal (lower than).
- 
+    chunk = 512
+    FORMAT = pyaudio.paInt16
+    CHANNELS = 1
+    RATE = 16000
+    THRESHOLD = 180 #The threshold intensity that defines silence signal (lower than).
+     
 #open stream
-p = pyaudio.PyAudio()
- 
-stream = p.open(format = FORMAT,
-                channels = CHANNELS,
-                rate = RATE,
-                input = True,
-                frames_per_buffer = chunk)
- 
- 
+    p = pyaudio.PyAudio()
+     
+    stream = p.open(format = FORMAT,
+                    channels = CHANNELS,
+                    rate = RATE,
+                    input = True,
+                    frames_per_buffer = chunk)
+     
+     
 # setup the encoder ...
-enc = encoder.StreamEncoder()
-enc.set_channels(1)
+    enc = encoder.StreamEncoder()
+    enc.set_channels(1)
 #enc.set_bits_per_sample(wav.getsampwidth()*8)
-enc.set_sample_rate(16000)
+    enc.set_sample_rate(16000)
 #enc.set_compression_level(0)
- 
+     
 # initialize
-if enc.init_stream(write) != encoder.FLAC__STREAM_ENCODER_OK:
-    print "Error"
-    sys.exit()
- 
+    if enc.init_stream(write) != encoder.FLAC__STREAM_ENCODER_OK:
+        print "Error"
+        sys.exit()
+     
 # start encoding !
-stt.start()
-nsamples = 512
-while 1:
-    data = stream.read(nsamples)
-    if not data:
-        enc.finish()
-        break
-    enc.process(data, nsamples)
-    #sleep(.001)
- 
-stt.stop()
+    stt.start()
+    nsamples = 512
+    while 1:
+        data = stream.read(nsamples)
+        if not data:
+            enc.finish()
+            break
+        enc.process(data, nsamples)
+        #sleep(.001)
+     
+    stt.stop()
