@@ -19,7 +19,7 @@ import threading
 from Queue import Queue, Empty
 from time import sleep
 
-class LE_speech_recognizer(object):
+class LE_Speech_Recognizer(object):
 
     class _queue(object):
 
@@ -222,7 +222,7 @@ if __name__ == '__main__':
     def callback(result):
         print "result: " + result
 
-    recongizer = LE_speech_recognizer(callback)
+    recongizer = LE_Speech_Recognizer(callback)
     recongizer.start_recognizing()
     sleep(100)
     recongizer.stop_recognizing()
