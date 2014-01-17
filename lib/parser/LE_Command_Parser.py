@@ -2,8 +2,9 @@
 # encoding: utf-8
 
 from fysom import Fysom
+from heapq import heappush, heapify
 
-class LEFysom:
+class LE_Command_Parser:
 
     FLAG = {
             "trigger" : [],
@@ -103,6 +104,9 @@ class LEFysom:
         self.__FSM.onfound_finish_flag = self.onfound_finish_flag
         self.__FSM.onfound_stop_flag = self.onfound_stop_flag
 
+        self.__token_buf = []
+        self.__match_stack = []
+    
     def __reset(self):
         self.__unit_map = {
                 'action':None,
@@ -110,59 +114,108 @@ class LEFysom:
                 'message':None
                 }
 
+    def __parse_token(self, item):
+        self.__token_buf.append(item)
+        _temp_str = "".join(self.__token_buf)
+        _no_match = True
+        _index = 1
+        for token_tuple in self.FLAG:
+            _match = False
+            _token_type = (_index, token_tuple[0])
+            for match_str in token_tuple[1]:
+                if match_str.startswith(_temp_str):
+                    _match = True
+                    _no_match = False
+                    if _token_type not in self.__match_stack:
+                        heappush(self.__match_stack, _token_type) # use heap
+                    if len(match_str) == len(_temp_str):
+                        if self.__match_stack[0] == _token_type:
+                            del self.__match_stack[:]
+                            del self.__token_buf[:]
+                            return _temp_str, _token_type[1]
+                    break
+                elif _temp_str.startswith(match_str):
+                    _match = True
+                    _no_match = False
+                    if _token_type not in self.__match_stack:
+                        heappush(self.__match_stack, _token_type)
+                    if self.__match_stack[0] == _token_type:
+                        del self.__match_stack[:]
+                        del self.__token_buf[0:len(match_str)]
+                        return _temp_str, _token_type[1]
+                    break
+
+            if not _match and _token_type in self.__match_stack:
+                self.__match_stack.remove(_token_type)
+                heapify(self.__match_stack)
+
+            _index += 1
+
+        if _no_match:
+            return self.__token_buf.pop(0), "Else"
+
+        return None, None
+                
+
+    # callback func
     def finish_callback(self, action = None, target = None, message = None):
         pass
 
-    def LE_fosm_parse(self, term):
+    def put_into_parse_stream(self, stream_term):
 
         if self.DEBUG :
-            print "parse: %s" %(term)
+            print "parse: %s" %(stream_term)
 
-        if any(term in s for s in self.FLAG["trigger"]):
-            self.__FSM.found_trigger(self, term)
-        elif any(term in s for s in self.FLAG["action"]):
-            self.__FSM.found_action(self, term)
-        elif any(term in s for s in self.FLAG["target"]):
-            self.__FSM.found_target(self, term)
-        elif any(term in s for s in self.FLAG["stop"]):
-            self.__FSM.found_stop_flag(self, term)
-            self.__message_buf = ''
-            self.__reset()
-        elif any(term in s for s in self.FLAG["finish"]):
-            self.__FSM.found_finish_flag(self, term)
+        for item in list(stream_term):
+            _token, _token_type = self.__parse_token(item)
+            if _token == None:
+                #print "continue"
+                continue
+            if _token_type == "trigger":
+                self.__FSM.found_trigger(self, _token)
+            elif _token_type == "action":
+                self.__FSM.found_action(self, _token)
+            elif _token_type == "target":
+                self.__FSM.found_target(self, _token)
+            elif _token_type == "stop":
+                self.__FSM.found_stop_flag(self, _token)
+                self.__message_buf = ''
+                self.__reset()
+            elif _token_type == "finish":
+                self.__FSM.found_finish_flag(self, _token)
 
-            if self.__finish_succeed :
-                self.__unit_map['message'] = self.__message_buf
-                self.finish_callback(
-                        self.__unit_map['action']
-                        , self.__unit_map['target']
-                        , self.__unit_map['message']
-                        )
-                self.__finish_succeed = False
+                if self.__finish_succeed :
+                    self.__unit_map['message'] = self.__message_buf
+                    self.finish_callback(
+                            self.__unit_map['action']
+                            , self.__unit_map['target']
+                            , self.__unit_map['message']
+                            )
+                    self.__finish_succeed = False
 
-            self.__message_buf = ''
-            self.__reset()
-        else:
-            self.__FSM.found_else(self, term)
+                self.__message_buf = ''
+                self.__reset()
+            elif _token_type == "Else":
+                self.__FSM.found_else(self, _token)
 
-        if self.__FSM.current == 'message_state':
-            self.__message_buf += term
+            if self.__FSM.current == 'message_state':
+                self.__message_buf += _token
 
 
 if __name__ == '__main__':
     def test_callback(action, target, message):
         print ">> action: %s, target: %s, message: %s" %(action, target, message)
 
-    fsm = LEFysom({
-        'trigger':['a'],
-        'action' :['b'],
-        'target' :['c'],
-        'stop' :['d'],
-        'finish' :['e'],
-        })
+    fsm = LE_Command_Parser([
+        ('trigger' ,['aaba']),
+        ('stop' , ['aab']),
+        ('finish' , ['ee']),
+        ('action' , ['ba']),
+        ('target' , ['cba']),
+        ])
     fsm.DEBUG = True
     fsm.finish_callback = test_callback
-    parser_target = "a,b,c,b,123123123,e,a,a,a,a,b,123123123,e,e,e,a,b,c,e,a,a"
-    for term in parser_target.split(","):
-        fsm.LE_fosm_parse(term)
+    parser_target = "aabeaababacba4234234234324ee"
+    for term in list(parser_target):
+        fsm.put_into_parse_stream(term)
 
