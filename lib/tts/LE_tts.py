@@ -208,7 +208,7 @@ if __name__ == '__main__':
 
     recongizer = LE_speech_recognizer(callback)
     recongizer.start_recognizing()
-    sleep(30)
+    sleep(60)
     recongizer.stop_recognizing()
     print "stop."
     while True:
