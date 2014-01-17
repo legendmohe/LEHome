@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-#import flac.encoder as encoder
+import flac.encoder as encoder
 from sys import byteorder
 from array import array
 from struct import pack
@@ -48,24 +48,11 @@ class LE_speech_recognizer(object):
      
         def write_data(self, data):
             self.write_queue.put(data)
-     
+
         def gen_data(self):
             if self.keep_streaming:
-                (data, sample_width) = self.write_queue.get(block=True) # block!
-
-                wf = wave.open(self.WAVE_OUTPUT_FILENAME, 'wb')
-                wf.setnchannels(1)
-                wf.setsampwidth(sample_width)
-                wf.setframerate(self.RATE)
-                wf.writeframes(data)
-                wf.close()
-                
-                cmd = 'flac ' + self.WAVE_OUTPUT_FILENAME + ' -f -o ' + self.FLAC_OUTPUT_FILENAME
-                subprocess.call(cmd, stdout=open(os.devnull, "w"), stderr=subprocess.STDOUT)
-                os.remove(self.WAVE_OUTPUT_FILENAME)
-
-                flac_data = open(self.FLAC_OUTPUT_FILENAME ,'rb').read()
-                return flac_data
+                data = self.write_queue.get(block=True) # block!
+                return data
    
         def send_and_parse(self, data):
             xurl = 'http://www.google.com/speech-api/v1/recognize?xjerr=1&client=chromium&lang=zh-CN' 
@@ -109,6 +96,12 @@ class LE_speech_recognizer(object):
         self._queue = self._queue()
         self._queue.callback = callback
         self._queue.start()
+
+        # setup the encoder ...
+        self.enc = encoder.StreamEncoder()
+        self.enc.set_channels(1)
+        self.enc.set_sample_rate(self.RATE)
+        
 
     def _is_silent(self, snd_data):
         return max(snd_data) < self.THRESHOLD
@@ -184,15 +177,25 @@ class LE_speech_recognizer(object):
 
         return sample_width, sound_data
 
+    def write(enc, buf, samples, current_frame):
+            self._queue.write_data(buf)
+            #print current_frame, samples
+            return True
+
     def _recognizing(self):
         while self.keep_running:
             sample_width, data = self._record()
             data = pack('<' + ('h'*len(data)), *data)
             if self.keep_running:
-                self._queue.write_data((data, sample_width))
+                self.enc.process(data, sample_width)
 
     def start_recognizing(self):
         self.keep_running = True
+
+        # initialize
+        if self.enc.init_stream(write) != encoder.FLAC__STREAM_ENCODER_OK:
+            print "flac encode error"
+
         self._recording_thread = threading.Thread(target=self._recognizing)
         self._recording_thread.daemon = True
         self._recording_thread.start()
@@ -200,6 +203,7 @@ class LE_speech_recognizer(object):
 
     def stop_recognizing(self):
         self.keep_running = False # first
+        self.enc.finish()
         self._queue.stop()
 
 if __name__ == '__main__':
