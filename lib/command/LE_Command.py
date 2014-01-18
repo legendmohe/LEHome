@@ -3,7 +3,7 @@
 
 from LE_Command_Parser import LE_Command_Parser
 
-class LE_Commander:
+class LE_Command:
     
     def __init__(self, DEBUG = False):
         self.__registered_callbacks = {}
@@ -45,7 +45,6 @@ if __name__ == '__main__':
         print "* %r >> action: %s, target: %s, message: %s" %(is_finished, action, target, message)
 
     parser_target = "你好启动开灯结束你好今天天气启动开灯不开停止启动启动结束启动开灯123结束"
-    commander = LE_Commander(DEBUG = False)
+    commander = LE_Command(DEBUG = False)
     commander.register_callback("开灯", test_callback)
-
     commander.parse(parser_target)
