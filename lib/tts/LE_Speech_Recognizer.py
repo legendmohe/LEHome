@@ -16,20 +16,21 @@ import json
  
 import threading
 
-from Queue import Queue, Empty
+from Queue import Queue
 from time import sleep
 
 class LE_Speech_Recognizer(object):
 
     class _queue(object):
 
-        def __init__(self):
+        def __init__(self, callback):
             self.write_queue = Queue()
             self.keep_streaming = True
 
             self.WAVE_OUTPUT_FILENAME = "output.wav"
             self.FLAC_OUTPUT_FILENAME = "output.flac"
             self.RATE = 16000
+            self.callback = callback
 
         def start(self):
             self.process_thread = threading.Thread(target=self.process_thread)
@@ -67,16 +68,16 @@ class LE_Speech_Recognizer(object):
             list_data = json.loads(strlist)["hypotheses"]
 
             if len(list_data) != 0:
-                return list_data[0]["utterance"]
+                return (list_data[0]["utterance"], list_data[0]["confidence"])
 
         def process_thread(self):
             while self.keep_streaming:
                 try:
                     data = self.gen_data()
                     if self.keep_streaming:
-                        result = self.send_and_parse(data)
+                        result, conf = self.send_and_parse(data)
                         if result is not None:
-                            self.callback(result)
+                            self.callback(result, conf)
                         self.write_queue.task_done()
                 except Exception, e:
                     print e
@@ -93,7 +94,7 @@ class LE_Speech_Recognizer(object):
         self.RATE = 16000
         self.THRESHOLD = 1000
         self._flac_queue = Queue()
-
+        self._callback = callback
 
     def _is_silent(self, snd_data):
         return len(snd_data) < self.THRESHOLD
@@ -173,8 +174,7 @@ class LE_Speech_Recognizer(object):
         if self.enc.init_stream(self._flac_write) != encoder.FLAC__STREAM_ENCODER_OK:
             print "flac encode error"
 
-        self._queue = self._queue()
-        self._queue.callback = callback
+        self._queue = self._queue(self._callback)
         self._queue.start()
 
         p = pyaudio.PyAudio()
@@ -219,8 +219,8 @@ class LE_Speech_Recognizer(object):
         # self._detecting_thread.join()
 
 if __name__ == '__main__':
-    def callback(result):
-        print "result: " + result
+    def callback(result, confidence):
+        print "result: " + result + " | " + confidence
 
     recongizer = LE_Speech_Recognizer(callback)
     recongizer.start_recognizing()
