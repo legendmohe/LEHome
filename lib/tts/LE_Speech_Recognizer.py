@@ -32,6 +32,9 @@ class LE_Speech_Recognizer(object):
             self.RATE = 16000
             self.callback = callback
 
+
+
+
         def start(self):
             self.process_thread = threading.Thread(target=self.process_thread)
             self.process_thread.daemon = True
@@ -220,7 +223,7 @@ class LE_Speech_Recognizer(object):
 
 if __name__ == '__main__':
     def callback(result, confidence):
-        print "result: " + result + " | " + confidence
+        print "result: " + result + " | " + str(confidence)
 
     recongizer = LE_Speech_Recognizer(callback)
     recongizer.start_recognizing()

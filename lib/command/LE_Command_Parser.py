@@ -18,16 +18,21 @@ class LE_Command_Parser:
 
     __message_buf = ''
     __unit_map = {
+            'finish':"",
+            'stop':"",
+            'trigger':"",
             'action':"",
             'target':"",
             'message':""
             }
 
     __finish_succeed = False
+    __stop_succeed = False
 
     def onfound_trigger(self, e):
         if self.DEBUG:
             print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+        self.__unit_map['trigger'] = e.args[1]
 
     def onfound_target(self, e):
         if self.DEBUG:
@@ -47,12 +52,15 @@ class LE_Command_Parser:
         if self.DEBUG:
             print 'finish ! = event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
 
+        self.__unit_map['finish'] = e.args[1]
         self.__finish_succeed = True
 
     def onfound_stop_flag(self, e):
         if self.DEBUG:
             print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
 
+        self.__unit_map['stop'] = e.args[1]
+        self.__stop_succeed = True
 
     __FSM = Fysom({
         'initial': 'initial_state',
@@ -112,6 +120,9 @@ class LE_Command_Parser:
     
     def __reset(self):
         self.__unit_map = {
+                'finish':"",
+                'stop':"",
+                'trigger':"",
                 'action':"",
                 'target':"",
                 'message':""
@@ -192,12 +203,17 @@ class LE_Command_Parser:
                 self.__FSM.found_target(self, _token)
             elif _token_type == "stop":
                 self.__FSM.found_stop_flag(self, _token)
-                if self.stop_callback:
-                    self.stop_callback(
-                                self.__unit_map['action']
-                                , self.__unit_map['target']
-                                , self.__unit_map['message']
-                                )
+                
+                if self.__stop_succeed:
+                    if self.stop_callback:
+                        self.stop_callback(
+                                    self.__unit_map['trigger']
+                                    , self.__unit_map['action']
+                                    , self.__unit_map['target']
+                                    , self.__unit_map['message']
+                                    , self.__unit_map['stop']
+                                    )
+                    self.__stop_succeed = False
                 self.__message_buf = ''
                 self.__reset()
             elif _token_type == "finish":
@@ -207,9 +223,11 @@ class LE_Command_Parser:
                     self.__unit_map['message'] = self.__message_buf
                     if self.finish_callback and self.__unit_map['action'] :
                         self.finish_callback(
-                                self.__unit_map['action']
+                                self.__unit_map['trigger']
+                                , self.__unit_map['action']
                                 , self.__unit_map['target']
                                 , self.__unit_map['message']
+                                , self.__unit_map['finish']
                                 )
                     self.__finish_succeed = False
 
@@ -225,10 +243,10 @@ class LE_Command_Parser:
         self.__reset()
 
 if __name__ == '__main__':
-    def test_callback(action, target, message):
+    def test_callback(trigger, action, target, message, finish):
         print "* finished >> action: %s, target: %s, message: %s" %(action, target, message)
 
-    def stop_callback(action, target, message):
+    def stop_callback(trigger, action, target, message, finish):
         print "* stop >> action: %s, target: %s, message: %s" %(action, target, message)
     fsm = LE_Command_Parser([
         ('trigger' ,['启动']),
