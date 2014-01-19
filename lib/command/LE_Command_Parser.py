@@ -3,6 +3,7 @@
 
 from fysom import Fysom
 from heapq import heappush, heapify
+import time
 
 class LE_Command_Parser:
 
@@ -12,6 +13,7 @@ class LE_Command_Parser:
             "target" : [],
             "stop" : [],
             "finish" : [],
+            "then" :[],
             }
 
     DEBUG = False
@@ -20,6 +22,7 @@ class LE_Command_Parser:
     __unit_map = {
             'finish':"",
             'stop':"",
+            'then' :"",
             'trigger':"",
             'action':"",
             'target':"",
@@ -28,6 +31,8 @@ class LE_Command_Parser:
 
     __finish_succeed = False
     __stop_succeed = False
+    __then_succeed = False
+    __then_queue_id = -1
 
     def onfound_trigger(self, e):
         if self.DEBUG:
@@ -62,6 +67,15 @@ class LE_Command_Parser:
         self.__unit_map['stop'] = e.args[1]
         self.__stop_succeed = True
 
+    def onfound_then_flag(self, e):
+        if self.DEBUG:
+            print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+
+        self.__unit_map['then'] = e.args[1]
+        self.__then_succeed = True
+        if self.__then_queue_id == -1:
+            self.__then_queue_id = int(time.time())
+
     __FSM = Fysom({
         'initial': 'initial_state',
         #'final': 'initial_state',
@@ -72,12 +86,14 @@ class LE_Command_Parser:
                     {'name': 'found_else', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_stop_flag', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_finish_flag', 'src': 'initial_state',  'dst': 'initial_state'},
+                    {'name': 'found_then_flag', 'src': 'initial_state',  'dst': 'initial_state'},
 
                     {'name': 'found_trigger', 'src': 'trigger_state',  'dst': 'trigger_state'},
                     {'name': 'found_action', 'src': 'trigger_state',  'dst': 'action_state'},
                     {'name': 'found_target', 'src': 'trigger_state',  'dst': 'initial_state'},
                     {'name': 'found_else', 'src': 'trigger_state',  'dst': 'initial_state'},
                     {'name': 'found_finish_flag', 'src': 'trigger_state',  'dst': 'initial_state'},
+                    {'name': 'found_then_flag', 'src': 'trigger_state',  'dst': 'initial_state'},
 
                     {'name': 'found_trigger', 'src': 'action_state',  'dst': 'message_state'},
                     {'name': 'found_action', 'src': 'action_state',  'dst': 'initial_state'},
@@ -95,8 +111,15 @@ class LE_Command_Parser:
                     {'name': 'found_else', 'src': 'message_state',  'dst': 'message_state'},
 
                     {'name': 'reset', 'src': '*',  'dst': 'initial_state'},
-                    {'name': 'found_stop_flag', 'src': ['trigger_state', 'action_state', 'target_state', 'message_state'], 'dst': 'initial_state'},
-                    {'name': 'found_finish_flag', 'src': ['action_state', 'target_state', 'message_state'], 'dst': 'initial_state'},
+                    {'name': 'found_stop_flag',
+                        'src': ['trigger_state', 'action_state', 'target_state', 'message_state'], 
+                        'dst': 'initial_state'},
+                    {'name': 'found_finish_flag', 
+                        'src': ['action_state', 'target_state', 'message_state'], 
+                        'dst': 'initial_state'},
+                    {'name': 'found_then_flag', 
+                        'src': ['action_state', 'target_state', 'message_state'], 
+                        'dst': 'trigger_state'},
                     ],
         }
         )
@@ -111,17 +134,20 @@ class LE_Command_Parser:
         self.__FSM.onfound_target = self.onfound_target
         self.__FSM.onfound_finish_flag = self.onfound_finish_flag
         self.__FSM.onfound_stop_flag = self.onfound_stop_flag
+        self.__FSM.onfound_then_flag = self.onfound_then_flag
 
         self.__token_buf = []
         self.__match_stack = []
 
         self.finish_callback = None
         self.stop_callback = None
+        self.then_callback = None
     
     def __reset(self):
         self.__unit_map = {
                 'finish':"",
                 'stop':"",
+                'then':"",
                 'trigger':"",
                 'action':"",
                 'target':"",
@@ -214,14 +240,35 @@ class LE_Command_Parser:
                                     , self.__unit_map['stop']
                                     )
                     self.__stop_succeed = False
+                    self.__unit_map = {
+                            'finish':"",
+                            'stop':"",
+                            'then':"",
+                            'trigger':"",
+                            'action':"",
+                            'target':"",
+                            'message':""
+                            }
+
                 self.__message_buf = ''
-                self.__reset()
+                # self.__reset()
             elif _token_type == "finish":
                 self.__FSM.found_finish_flag(self, _token)
 
                 if self.__finish_succeed :
                     self.__unit_map['message'] = self.__message_buf
-                    if self.finish_callback and self.__unit_map['action'] :
+                    if self.__then_queue_id != -1:
+                        if self.then_callback :
+                            self.then_callback(
+                                    self.__then_queue_id
+                                    , self.__unit_map['trigger']
+                                    , self.__unit_map['action']
+                                    , self.__unit_map['target']
+                                    , self.__unit_map['message']
+                                    , self.__unit_map['finish']
+                                    )
+                        self.__then_queue_id = -1
+                    elif self.finish_callback and self.__unit_map['action'] :
                         self.finish_callback(
                                 self.__unit_map['trigger']
                                 , self.__unit_map['action']
@@ -230,9 +277,43 @@ class LE_Command_Parser:
                                 , self.__unit_map['finish']
                                 )
                     self.__finish_succeed = False
+                    self.__unit_map = {
+                            'finish':"",
+                            'stop':"",
+                            'then':"",
+                            'trigger':"",
+                            'action':"",
+                            'target':"",
+                            'message':""
+                            }
 
                 self.__message_buf = ''
-                self.__reset()
+                # self.__reset()
+            elif _token_type == "then":
+                self.__FSM.found_then_flag(self, _token)
+
+                if self.__then_succeed:
+                    self.__unit_map['message'] = self.__message_buf
+                    if self.then_callback :
+                        self.then_callback(
+                                self.__then_queue_id
+                                , self.__unit_map['trigger']
+                                , self.__unit_map['action']
+                                , self.__unit_map['target']
+                                , self.__unit_map['message']
+                                , None
+                                )
+                    self.__then_succeed = False
+                    self.__unit_map = {
+                            'finish':"",
+                            'stop':"",
+                            'then':"",
+                            'trigger':"",
+                            'action':"",
+                            'target':"",
+                            'message':""
+                            }
+                self.__message_buf = ''
             elif _token_type == "Else":
                 self.__FSM.found_else(self, _token)
 
