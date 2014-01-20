@@ -26,14 +26,8 @@ class LE_Speech_Recognizer(object):
         def __init__(self, callback):
             self.write_queue = Queue()
             self.keep_streaming = True
-
-            self.WAVE_OUTPUT_FILENAME = "output.wav"
-            self.FLAC_OUTPUT_FILENAME = "output.flac"
             self.RATE = 16000
             self.callback = callback
-
-
-
 
         def start(self):
             self.process_thread = threading.Thread(target=self.process_thread)

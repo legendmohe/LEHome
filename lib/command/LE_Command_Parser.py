@@ -77,15 +77,6 @@ class LE_Command_Parser:
         if e.dst == "error_state":
             self.__error_occoured = True
 
-    def onfound_reset(self, e):
-        if self.DEBUG:
-            print 'finish ! = event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
-
-        self.__error_occoured = False
-
-        if e.dst == "error_state":
-            self.__error_occoured = True
-
     def onfound_stop_flag(self, e):
         if self.DEBUG:
             print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
@@ -104,6 +95,15 @@ class LE_Command_Parser:
         self.__then_succeed = True
         if self.__then_queue_id == -1:
             self.__then_queue_id = int(time.time())
+
+        if e.dst == "error_state":
+            self.__error_occoured = True
+    
+    def onreset(self, e):
+        if self.DEBUG:
+            print 'reset ! = event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+
+        self.__error_occoured = False
 
         if e.dst == "error_state":
             self.__error_occoured = True
@@ -171,6 +171,8 @@ class LE_Command_Parser:
             ('then' , then),
             ]
 
+        self.DEBUG = DEBUG
+
         self.__FSM.onfound_trigger = self.onfound_trigger
         self.__FSM.onfound_else = self.onfound_else
         self.__FSM.onfound_action = self.onfound_action
@@ -178,7 +180,7 @@ class LE_Command_Parser:
         self.__FSM.onfound_finish_flag = self.onfound_finish_flag
         self.__FSM.onfound_stop_flag = self.onfound_stop_flag
         self.__FSM.onfound_then_flag = self.onfound_then_flag
-        self.__FSM.onfound_reset = self.onfound_reset 
+        self.__FSM.onreset = self.onreset 
 
         self.__token_buf = []
         self.__match_stack = []
@@ -382,6 +384,7 @@ class LE_Command_Parser:
                                     )
                     self.__then_queue_id = -1
                 self.__FSM.reset()
+            print self.__FSM.current
 
     def __reset_unit(self):
         self.__unit_map = {
@@ -403,17 +406,17 @@ if __name__ == '__main__':
 
     def stop_callback(trigger, action, target, message, finish):
         print "* stop >> action: %s, target: %s, message: %s" %(action, target, message)
-    fsm = LE_Command_Parser([
-        ('trigger' ,['启动']),
-        ('stop' , ['停止']),
-        ('finish' , ['结束']),
-        ('action' , ['开']),
-        ('target' , ['灯']),
-        ])
-    fsm.DEBUG = False
+    fsm = LE_Command_Parser(
+            trigger = ["启动"],
+            action = ["开", "关"],
+            target = ["灯", "门"],
+            stop = ["停止"],
+            finish = ["结束"],
+            then = ["然后", "接着"],
+            DEBUG = True)
     fsm.finish_callback = test_callback
     fsm.stop_callback = stop_callback
     #TODO - "不要停&停止"
-    parser_target = "你好启动开灯结束你好今天天气启动开灯不开停止启动启动结束启动开灯123结束"
-    fsm.put_into_parse_stream(term)
+    parser_target = "启动台灯结束"
+    fsm.put_into_parse_stream(parser_target)
 
