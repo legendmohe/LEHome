@@ -1,0 +1,16 @@
+{
+    "command":{
+        "trigger" : ["启动"],
+        "action" : ["开", "关"],
+        "target" : ["灯", "门"],
+        "stop" : ["停止"],
+        "finish" : ["结束"],
+        "then" : ["然后", "接着"]
+    },
+    "callback":{
+        "开灯":"open_light_callback",
+        "关灯":"open_light_callback",
+        "开门":"open_light_callback",
+        "关门":"open_light_callback"
+    }
+}
