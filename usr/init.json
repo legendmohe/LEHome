@@ -9,25 +9,25 @@
     },
     "callback":{
         "trigger":{
-            "启动":"trigger_callback",
+            "启动":"trigger.trigger_callback",
         },
         "action":{
-            "开":"open_callback",
-            "关":"open_callback",
+            "开":"open.open_callback",
+            "关":"open.open_callback",
         },
         "target":{
-            "灯":"target_callback",
-            "门":"target_callback",
+            "灯":"target.target_callback",
+            "门":"target.target_callback",
         },
         "stop":{
-            "停止":"stop_callback",
+            "停止":"stop.stop_callback",
         },
         "finish":{
-            "结束":"finish_callback",
+            "结束":"finish.finish_callback",
         },
         "then":{
-            "接着":"then_callback",
-            "然后":"then_callback",
+            "接着":"then.then_callback",
+            "然后":"then.then_callback",
         },
     }
 }

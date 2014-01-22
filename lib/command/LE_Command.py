@@ -24,25 +24,24 @@ class LE_Command:
         self.__work_queues = {}
             
 
-    def __then_callback(self, queue_id, trigger, action, target, message, finish):
+    def __then_callback(self, queue_id, trigger, action, target, message, state):
         def __worker_thread(work_queue):
             stop = False
             pass_value = None
             while not stop:
                 try:
-                    t = work_queue.get(block=True, timeout=1)
-                    coms, msg = t
+                    coms, msg, state = work_queue.get(block=True, timeout=1)
                     if pass_value:
                         coms["pass_value"] = pass_value
                     pass_value = self.__invoke_callbacks(coms, msg)
 
-                    if pass_value == "Error":
-                        print "Error in 'then'."
+                    if pass_value.lower() == "cancel":
+                        print "cancel queue: %d finish" %(queue_id)
                         with work_queue.mutex:
                             work_queue.queue.clear()
                         del self.__work_queues[queue_id]
                         stop = True
-                    elif finish:
+                    elif state in self.__registered_callbacks["finish"].keys():
                         print "queue: %d finish" %(queue_id)
                         del self.__work_queues[queue_id]
                         stop = True
@@ -67,11 +66,17 @@ class LE_Command:
             self.__work_queues[queue_id] = (worker, work_queue)
 
         worker, work_queue = self.__work_queues[queue_id]
-        if finish:
+        if state in self.__registered_callbacks["finish"].keys():
             worker.start()
+        elif state in self.__registered_callbacks["stop"].keys():
+            worker, work_queue = self.__work_queues[queue_id]
+            with work_queueq.mutex:
+                work_queueq.queue.clear()
+            del self.__work_queues[queue_id]
+            return 
 
-        coms = OrderedDict([("trigger", trigger), ("action", action), ("target", target), ("then", finish)])
-        work_queue.put((coms, message))
+        coms = OrderedDict([("trigger", trigger), ("action", action), ("target", target), ("then", state)])
+        work_queue.put((coms, message, state))
 
 
     def __finish_callback(self, trigger, action, target, message, finish):
@@ -136,7 +141,7 @@ class LE_Command:
                         is_continue, return_value = callback(
                                 action = coms["action"], 
                                 target = coms["target"], 
-                                then = coms["then"],
+                                state = coms["then"],
                                 msg = msg, 
                                 pre_value = return_value,
                                 pass_value = coms["pass_value"]
@@ -173,28 +178,50 @@ class LE_Command:
 
 
 if __name__ == '__main__':
-    def test_callback(trigger = None, action = None, target = None,
-            msg = None, stop = None, finish = None, then = None, 
+    def action_callback(action = None, target = None,
+            msg = None, 
+            pre_value = None):
+        print "* action callback: %s, target: %s, message: %s pre_value: %s" %(action, target, msg, pre_value)
+        return True, "pass"
+    def target_callback(target = None,
+            msg = None, 
+            pre_value = None):
+        print "* target callback: %s, message: %s pre_value: %s" %(target, msg, pre_value)
+        return True, "pass"
+    def stop_callback(action = None, target = None,
+            msg = None, stop = None, 
+            pre_value = None):
+        print "* stop callback: action: %s, target: %s, message: %s stop: %s pre_value: %s" %(action, target, msg, stop, pre_value)
+        return True, "pass"
+    def finish_callback(action = None, target = None,
+            msg = None, finish = None, 
+            pre_value = None):
+        print "* finish callback: action: %s, target: %s, message: %s finish: %s pre_value: %s" %(action, target, msg, finish, pre_value)
+        return True, "pass"
+    def then_callback(action = None, target = None,
+            msg = None, state = None, 
             pre_value = None, pass_value = None):
-        print "* trigger: %s action: %s, target: %s, message: %s finish: %s stop: %s then: %s pre_value: %s pass_value %s" %(trigger, action, target, msg, finish, stop, then, pre_value, pass_value)
+        print "* then callback: action: %s, target: %s, message: %s state: %s pre_value: %s pass_value %s" %(action, target, msg, state, pre_value, pass_value)
+        return True, "pass"
 
-    parser_target = "你好启动开灯1结束你好今4444abcs,=天天气启动开灯不开停止启动启动结束启动关灯asssdasd然后关门asdasd结束"
+    parser_target = "你好启动开灯1结束"
     commander = LE_Command(
             trigger = ["启动"],
             action = ["开", "关"],
             target = ["灯", "门"],
             stop = ["停止"],
             finish = ["结束"],
-            then = ["然后", "接着"],
+            then = ["然后"],
             DEBUG = False)
     commander.start()
     
-    commander.register_callback("action", "开", test_callback)
-    commander.register_callback("action", "关", test_callback)
-    commander.register_callback("target", "灯", test_callback)
-    commander.register_callback("target", "门", test_callback)
-    commander.register_callback("stop", "停止", test_callback)
-    commander.register_callback("finish", "结束", test_callback)
+    commander.register_callback("action", "开", action_callback)
+    commander.register_callback("action", "关", action_callback)
+    commander.register_callback("target", "灯", target_callback)
+    commander.register_callback("target", "门", target_callback)
+    commander.register_callback("stop", "停止", stop_callback)
+    commander.register_callback("finish", "结束", finish_callback)
+    commander.register_callback("then", "然后", finish_callback)
     commander.parse(parser_target)
     sleep(5)
     commander.stop()

@@ -280,7 +280,18 @@ class LE_Command_Parser:
                 
                 if self.__stop_succeed:
                     self.__unit_map['message'] = self.__message_buf
-                    if self.stop_callback:
+                    if self.__then_queue_id != -1:
+                        if self.then_callback :
+                            self.then_callback(
+                                    self.__then_queue_id
+                                    , self.__unit_map['trigger']
+                                    , self.__unit_map['action']
+                                    , self.__unit_map['target']
+                                    , self.__unit_map['message']
+                                    , self.__unit_map['stop']
+                                    )
+                        self.__then_queue_id = -1
+                    elif self.stop_callback:
                         self.stop_callback(
                                     self.__unit_map['trigger']
                                     , self.__unit_map['action']
@@ -384,7 +395,7 @@ class LE_Command_Parser:
                                     )
                     self.__then_queue_id = -1
                 self.__FSM.reset()
-            print self.__FSM.current
+            # print self.__FSM.current
 
     def __reset_unit(self):
         self.__unit_map = {

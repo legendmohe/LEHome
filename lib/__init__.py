@@ -1,2 +1,1 @@
-import command
-import tts
+import command, speech, sound

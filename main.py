@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 from lib.command.LE_Command import *
-from lib.tts.LE_Speech_Recognizer import *
+from lib.speech.LE_Speech_Recognizer import *
 from time import sleep
 import json
 
@@ -14,7 +14,7 @@ class LE_Home:
         self.__confidence_threshold = 0.6
         self.__context = {}
         self.__init_command()
-        self.__init_recognizer()
+        # self.__init_recognizer()
 
     def __init_command(self):
         print 'initlizing command...'
@@ -37,19 +37,18 @@ class LE_Home:
             
             cb_json = init_json["callback"]
             for com_name in cb_json.keys():
-                for cb_name in cb_json["com_name"]
+                cbs = cb_json["com_name"]
+                for cb_token in cbs.keys():
                     try:
-                        cb_module_name = cb_json[cb_name].encode("utf-8")
+                        cb_module_name = cbs[cb_token].encode("utf-8")
                         cb_module = __import__(cb_module_name)
                         cb_object = getattr(cb_module, cb_module_name)()
+                        cb_object.__context = self.__context
                         
-                        def cb_callback(trigger, action, target, message, finish, pass_value = None):
-                            pass
-
-                        print "load callback: " + cb_module_name + " for command:" + cb_name
+                        print "load callback: " + cb_module_name + " for command token:" + cb_token
                         self.__com.register_callback(
-                                    cb_name
-                                    , cb_callback)
+                                    cb_token
+                                    , cb_object.callback)
                     except Exception as e:
                         print e
 
