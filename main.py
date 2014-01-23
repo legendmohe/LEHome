@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 from lib.command.LE_Command import *
-from lib.speech.LE_Speech_Recognizer import *
+from lib.speech.LE_Speech import *
 from time import sleep
 from pprint import pprint
 import json
@@ -26,6 +26,7 @@ class LE_Home:
         self.__context = {}
         self.__init_command()
         self.__init_recognizer()
+        self.__init_speaker()
 
     def __init_command(self):
         print 'initlizing command...'
@@ -70,9 +71,14 @@ class LE_Home:
                         log.exception("init commands faild.")
 
     def __init_recognizer(self):
-        print 'initlizing recognizer..'
+        print 'initlizing recognizer...'
         
-        self.__rec = LE_Speech_Recognizer(self.__speech_callback)
+        self.__rec = LE_Speech2Text(self.__speech_callback)
+
+    def __init_speaker(self):
+        print "initlizing speaker..."
+
+        self.__spk = LE_Text2Speech()
 
     def __speech_callback(self, result, confidence):
         print "result: " + result + " | " + str(confidence)
@@ -80,15 +86,16 @@ class LE_Home:
             self.__com.parse(result)
 
     def activate(self):
-
         print "=============================Activate==================================="
-
         self.__com.start()
         self.__rec.start_recognizing()
+        self.__spk.start()
+        self.__spk.speak("你好，我叫贝多芬。")
 
     def deactivate(self):
         self.__com.stop()
         self.__rec.stop_recognizing()
+        self.__spk.stop()
 
 
 if __name__ == '__main__':

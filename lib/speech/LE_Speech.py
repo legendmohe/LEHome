@@ -5,23 +5,21 @@ import flac.encoder as encoder
 from sys import byteorder
 from array import array
 from struct import pack, unpack
+from Queue import Queue
+from time import sleep
 import math
 import numpy as np
-
 import pyaudio
 import wave
 import sys,os
-
 import urllib2
+import urllib
 import subprocess
 import json 
- 
 import threading
+import logging as log
 
-from Queue import Queue
-from time import sleep
-
-class LE_Speech_Recognizer(object):
+class LE_Speech2Text(object):
 
     class _queue(object):
 
@@ -240,14 +238,84 @@ class LE_Speech_Recognizer(object):
         # self._recording_thread.join()
         # self._detecting_thread.join()
 
+
+class LE_Text2Speech:
+
+    def __init__(self):
+        self.__speak_queue = Queue()
+        self.__keep_speaking = True
+
+    def __getGoogleSpeechURL(self, phrase):
+        googleTranslateURL = "http://translate.google.com/translate_tts"
+        parameters = {
+                "tl" : "zh-CN",
+                "q": phrase,
+                "ie": "utf-8",
+                "oe" : "utf-8"
+                }
+        data = urllib.urlencode(parameters)
+        googleTranslateURL = "%s?%s" % (googleTranslateURL,data)
+        return googleTranslateURL
+
+    def __speak_worker(self):
+        while self.__keep_speaking:
+            print self.__keep_speaking
+            try:
+                phrase = self.__speak_queue.get(block=True, timeout=2)
+                self.__speakSpeechFromText(phrase)
+                self.__speak_queue.task_done()
+            except:
+                pass
+        # try:
+        #     self.__speaking_pipe.stdout.close()
+        #     self.__speaking_pipe.stdin.close()
+        # except:
+        #     pass
+        # self.__speaking_pipe = None
+
+    def __speakSpeechFromText(self, phrase):
+        googleSpeechURL = self.__getGoogleSpeechURL(phrase)
+        subprocess.call(["mpg123", "-q", googleSpeechURL])
+        # self.__speaking_pipe = Popen(["mpg123", "-q", googleSpeechURL], stdout=PIPE, stderr=STDOUT, close_fds=True)
+
+    def start(self):
+        log.info("speaker start.")
+        self.__keep_speaking = True
+        self.__speak_thread = threading.Thread(target=self.__speak_worker)
+        self.__speak_thread.daemon = True
+        self.__speak_thread.start()
+
+    def stop(self):
+        self.__keep_speaking = False
+        with self.__speak_queue.mutex:
+            self.__speak_queue.queue.clear()
+        # self.__speak_queue.join()
+        self.__speak_thread.join()
+        log.info("speaker stop.")
+
+    def speak(self, phrase):
+        if not self.__keep_speaking:
+            log.warning("__keep_speaking is False.")
+            return
+            
+        if isinstance(phrase, (list, tuple)):
+            for item in phrase:
+                self.__speak_queue.put(item)
+        else:
+            self.__speak_queue.put(phrase)
+
 if __name__ == '__main__':
     def callback(result, confidence):
         print "result: " + result + " | " + str(confidence)
+    tts = LE_Text2Speech()
+    tts.start()
+    tts.speak(["你好", "今天天气真好"])
 
-    recongizer = LE_Speech_Recognizer(callback)
+    recongizer = LE_Speech2Text(callback)
     recongizer.start_recognizing()
     sleep(100)
     recongizer.stop_recognizing()
+    tts.stop()
     print "stop."
-    while True:
-        sleep(0.1)
+    # while True:
+    #     sleep(0.1)
