@@ -10,7 +10,7 @@ import logging as log
 import sys
 import traceback
 
-from usr.LE_Res import LE_Res
+from util.LE_Res import LE_Res
 
 class TracePrints(object):
       def __init__(self):    
