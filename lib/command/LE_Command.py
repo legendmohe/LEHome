@@ -8,7 +8,7 @@ import threading
 
 from LE_Command_Parser import LE_Command_Parser
 from lib.sound import LE_Sound
-from usr.LE_Res import LE_Res
+from util.LE_Res import LE_Res
 from lib.speech.LE_Speech import LE_Text2Speech
 
 class LE_Command:
