@@ -5,6 +5,7 @@ import os
 
 class LE_Res:
     settings = {}
+    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__),"../usr/"))
     
     @staticmethod
     def get(name):
@@ -18,13 +19,13 @@ class LE_Res:
 
     @staticmethod
     def get_res_path(elem):
-        elem = os.path.join(os.path.dirname(__file__) + '/res', LE_Res.get(elem))
+        elem = os.path.join(LE_Res.base_path + '/res/', LE_Res.get(elem))
         return elem
 
     @staticmethod
     def init(path):
         import json
-        path = os.path.join(os.path.dirname(__file__), path)
+        path = os.path.join(LE_Res.base_path, path)
         with open(path) as init_file:
             init_json = json.load(init_file)
             if not init_json:

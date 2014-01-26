@@ -7,10 +7,11 @@ from struct import pack, unpack
 from Queue import Queue
 from collections import deque
 from time import sleep
-import flac.encoder as encoder
+import wave
 import sys, os, subprocess
 import math
 import numpy as np
+import scipy.signal as signal
 import pyaudio, wave
 import urllib2, urllib
 import json 
@@ -77,6 +78,29 @@ class LE_Speech2Text(object):
 
             print "end"
 
+    class _filter:
+        def _spectinvert(taps):
+            l = len(taps)
+            return ([0]*(l/2) + [1] + [0]*(l/2)) - taps
+
+        def __init__(self, low, high, chunk, rate):
+            taps = chunk + 1
+            low = 20.0
+            high = 1000.0
+            fil_lowpass = signal.firwin(taps, low/(rate/2))
+            fil_highpass = self._spectinvert(signal.firwin(taps, high/(rate/2)))
+            fil_bandreject = fil_lowpass+fil_highpass
+            fil_bandpass = self._spectinvert(fil_bandreject)
+
+            self._fil = fil_bandpass
+            self._zi = [0]*(taps-1)
+
+        def filter(self, data):
+            data = ny.fromstring(data, dtype=ny.int16)
+            # print max(data)
+            (data, self._zi) = signal.lfilter(self._fil, 1, data, -1, self._zi)
+            return data.astype(ny.int16).tostring()
+
     def __init__(self, callback):
         self.keep_running = False
         self._condition = threading.Condition()
@@ -88,53 +112,21 @@ class LE_Speech2Text(object):
         self.THRESHOLD = 1300
         self.BEGIN_THRESHOLD = 4
         self.TIMEOUT_THRESHOLD = 10
-        self._flac_queue = Queue()
+        self._snd_queue = Queue()
         self._callback = callback
 
-    # SHORT_NORMALIZE = (1.0/32768.0)
-    # def get_rms(self, block ):
-    #     # RMS amplitude is defined as the square root of the 
-    #     # mean over time of the square of the amplitude.
-    #     # so we need to convert this string of bytes into 
-    #     # a string of 16-bit samples...
-    #
-    #     # we will get one short out for each 
-    #     # two chars in the string.
-    #     count = len(block)/2
-    #     format = "%dh"%(count)
-    #     shorts = unpack(format, block )
-    #
-    #     # iterate over the block.
-    #     sum_squares = 0.0
-    #     for sample in shorts:
-    #         # sample is a signed short in +/- 32768. 
-    #         # normalize it to 1.0
-    #         n = sample * self.SHORT_NORMALIZE
-    #         sum_squares += n*n
-    #     return math.sqrt( sum_squares / count )
-    def _normalize(self, snd_data):
-        "Average the volume out"
-        # print max(abs(i) for i in snd_data)
-        MAXIMUM = 500
-        times = float(MAXIMUM)/max(abs(i) for i in snd_data)
-
-        r = array('h')
-        for i in snd_data:
-            r.append(int(i*times))
-        return r
-
     def _is_silent(self, snd_data, sample_data):
-        # rms = self.get_rms(snd_data)
-        # print rms
-        # return rms < self.THRESHOLD
         # return len(snd_data) < self.THRESHOLD
         sample_data = list(sample_data)[0:self.BEGIN_THRESHOLD]
-        sample_len = [len(x) for x in sample_data]
-        return len(snd_data) < 1.2*sum(sample_len)/len(sample_len)
+        sample_data = np.fromstring(''.join(sample_data), dtype=np.int16)
+        sample_max = [max(x) for x in sample_data]
+        return max(snd_data) < 1.2*sum(sample_max)/len(sample_max)
 
     def _detecting(self):
         sample_data = deque(maxlen = 2*self.BEGIN_THRESHOLD)
         sample_data_should_load = True
+        fil = self._filter(200, 3600, self.CHUNK_SIZE, self.RATE)
+
         while self.keep_running:
             record_begin = False
             buffer_begin = False
@@ -147,7 +139,7 @@ class LE_Speech2Text(object):
 
             print "detecting:"
             while self.keep_running:
-                snd_data = self._flac_queue.get(block=True) #block
+                snd_data = self._snd_queue.get(block=True) #block
 
                 if record_begin:
                     silent = self._is_silent(snd_data, sample_data)
@@ -158,7 +150,7 @@ class LE_Speech2Text(object):
                         sample_data.append(snd_data)
                     silent = self._is_silent(snd_data, sample_data)
 
-                # print len(snd_data), silent
+                print max(snd_data), silent
                 if silent:
                     num_silent += 1
                     if num_sound < self.BEGIN_THRESHOLD:
@@ -184,28 +176,31 @@ class LE_Speech2Text(object):
                     print "data len: " + str(len(sound_data))
                     break
 
-                self._flac_queue.task_done()
+                self._snd_queue.task_done()
+
+            sound_data = fil.filter(sound_data)
+            sound_data = self._wav_to_flac(sound_data)
             self._queue.write_data(sound_data)
 
         print "stop detecting."
 
-    def _flac_write(self, env, buf, samples, current_frame):
-        # print current_frame, samples, len(buf)
-        if current_frame > 0:
-            # print str(self._flac_queue.qsize())
-            self._flac_queue.put(buf)
-        return True
+    def _wav_to_flac(self, wav_data):
+        filename = 'output'
+        wav_data = ''.join(wav_data)
+        with open(filename + '.wav', 'wb') as wf:
+            wf.setnchannels(self.CHANNELS)
+            wf.setsampwidth(self.SAMPLE_WIDTH)
+            wf.setframerate(self.RATE)
+            wf.writeframes(wav_data)
 
+        subprocess.call(['flac', '-f', filename + '.wav'])
+        with open(filename + '.flac', 'rb') as ff:
+            flac_data = ff.read()
+
+        # map(os.remove, (filename + '.flac', filename + '.wav'))
+        return flac_data
 
     def _recording(self):
-
-        # setup the encoder ...
-        self.enc = encoder.StreamEncoder()
-        self.enc.set_channels(1)
-        self.enc.set_sample_rate(self.RATE)
-        # initialize
-        if self.enc.init_stream(self._flac_write) != encoder.FLAC__STREAM_ENCODER_OK:
-            print "flac encode error"
 
         self._queue = self._queue(self._callback)
         self._queue.start()
@@ -216,26 +211,21 @@ class LE_Speech2Text(object):
                     rate = self.RATE,
                     input = True,
                     frames_per_buffer = self.CHUNK_SIZE)
+        self.SAMPLE_WIDTH = p.get_sample_size(self.FORMAT)
 
         print "* recording"
 
         while self.keep_running:
             sound_data = stream.read(self.CHUNK_SIZE)
-            # snd_data = array('h', sound_data)
-            # if byteorder == 'big':
-            #     snd_data.byteswap()
-            # snd_data = self._normalize(snd_data)
-            # sound_data = snd_data.tostring()
-            self.enc.process(sound_data, self.CHUNK_SIZE)
+            self._snd_queue.put(sound_data)
 
         print "* done recording"
 
-        # sample_width = p.get_sample_size(self.FORMAT)
         stream.stop_stream()
         stream.close()
         p.terminate()
 
-        self.enc.finish()
+        # self.enc.finish()
 
     def start_recognizing(self):
         self.keep_running = True
@@ -252,8 +242,8 @@ class LE_Speech2Text(object):
         self.keep_running = False # first
         self._queue.stop()
 
-        #self._flac_queue.join()
-        print str(self._flac_queue.qsize())
+        #self._snd_queue.join()
+        print str(self._snd_queue.qsize())
         # self._recording_thread.join()
         # self._detecting_thread.join()
 
