@@ -11,12 +11,18 @@ from lib.sound import LE_Sound
 from util.LE_Res import LE_Res
 from lib.speech.LE_Speech import LE_Text2Speech
 
+
 class LE_Command:
-    
-    def __init__(self, trigger, action, target, stop, finish, then, DEBUG = False):
+    def __init__(
+            self, trigger, action, target,
+            stop, finish, then, DEBUG=False
+            ):
         self.__registered_callbacks = {}
-        
-        self.__fsm = LE_Command_Parser(trigger, action, target, stop, finish, then, DEBUG = False)
+
+        self.__fsm = LE_Command_Parser(
+                trigger, action, target,
+                stop, finish, then, DEBUG=False
+                )
         self.__fsm.DEBUG = DEBUG
         self.__then_flag = then
 
@@ -28,9 +34,15 @@ class LE_Command:
         self.__work_queues = {}
 
         self.__speaker = LE_Text2Speech()
-            
 
-    def __then_callback(self, queue_id, trigger, action, target, message, state):
+    def __then_callback(self,
+                        queue_id,
+                        trigger,
+                        action,
+                        target,
+                        message,
+                        state
+                        ):
         def __worker_thread(work_queue):
             stop = False
             pass_value = None
@@ -42,7 +54,7 @@ class LE_Command:
                     pass_value = self.__invoke_callbacks(coms, msg)
 
                     if pass_value.lower() == "cancel":
-                        print "cancel queue: %d finish" %(queue_id)
+                        print "cancel queue: %d finish" % (queue_id)
                         LE_Sound.playmp3(LE_Res.get_res_path("sound/com_stop"))
                         self.__speaker.speak(u"正在取消")
                         with work_queue.mutex:
@@ -50,8 +62,10 @@ class LE_Command:
                         del self.__work_queues[queue_id]
                         stop = True
                     elif state in self.__registered_callbacks["finish"].keys():
-                        print "queue: %d finish" %(queue_id)
-                        LE_Sound.playmp3(LE_Res.get_res_path("sound/com_finish"))
+                        print "queue: %d finish" % (queue_id)
+                        LE_Sound.playmp3(
+                                        LE_Res.get_res_path("sound/com_finish")
+                                        )
                         self.__speaker.speak(u"正在执行")
                         del self.__work_queues[queue_id]
                         stop = True
@@ -63,15 +77,18 @@ class LE_Command:
         if trigger == "Error":
             self.__speaker.speak(u"我听不清楚")
             worker, work_queue = self.__work_queues[queue_id]
-            with work_queueq.mutex:
-                work_queueq.queue.clear()
+            with work_queue.mutex:
+                work_queue.queue.clear()
             del self.__work_queues[queue_id]
-            return 
+            return
 
         if queue_id not in self.__work_queues.keys():
             work_queue = Queue()
 
-            worker = threading.Thread(target=__worker_thread, args = (work_queue, ))
+            worker = threading.Thread(
+                    target=__worker_thread,
+                    args=(work_queue, )
+                    )
             worker.daemon = True
             # worker.start()
             self.__work_queues[queue_id] = (worker, work_queue)
@@ -81,29 +98,51 @@ class LE_Command:
             worker.start()
         elif state in self.__registered_callbacks["stop"].keys():
             worker, work_queue = self.__work_queues[queue_id]
-            with work_queueq.mutex:
-                work_queueq.queue.clear()
+            with work_queue.mutex:
+                work_queue.queue.clear()
             del self.__work_queues[queue_id]
-            return 
+            return
 
-        coms = OrderedDict([("trigger", trigger), ("action", action), ("target", target), ("then", state)])
+        coms = OrderedDict(
+                [("trigger", trigger),
+                    ("action", action),
+                    ("target", target),
+                    ("then", state)]
+                )
         work_queue.put((coms, message, state))
 
-
-    def __finish_callback(self, trigger, action, target, message, finish):
+    def __finish_callback(self,
+            trigger,
+            action,
+            target,
+            message,
+            finish):
         LE_Sound.playmp3(LE_Res.get_res_path("sound/com_finish"))
-        self.__speaker.speak(u"正在执行:" + ''.join(filter(None, (action, target))))
+        self.__speaker.speak(u"正在执行:" +
+                ''.join(filter(None, (action, target))))
 
-        coms = OrderedDict([("trigger", trigger), ("action", action), ("target", target), ("finish", finish)])
-        t = threading.Thread(target=self.__invoke_callbacks, args = (coms, message))
+        coms = OrderedDict([
+            ("trigger", trigger),
+            ("action", action),
+            ("target", target),
+            ("finish", finish)])
+        t = threading.Thread(
+                target=self.__invoke_callbacks,
+                args=(coms, message))
         t.daemon = True
         t.start()
 
     def __stop_callback(self, trigger, action, target, message, stop):
         LE_Sound.playmp3(LE_Res.get_res_path("sound/com_stop"))
-        self.__speaker.speak(u"正在取消:" + ''.join(filter(None, (action, target))))
+        self.__speaker.speak(u"正在取消:" +
+                ''.join(filter(None, (action, target))))
 
-        coms = [("trigger", trigger), ("action", action), ("target", target), ("stop", stop)]
+        coms = [
+                ("trigger", trigger),
+                ("action", action),
+                ("target", target),
+                ("stop", stop)
+                ]
         self.__invoke_callbacks(OrderedDict(coms), message)
 
     def __invoke_callbacks(self, coms, msg):
@@ -117,52 +156,52 @@ class LE_Command:
             callbacks = self.__registered_callbacks[com_type]
             if callbacks:
                 if coms[com_type] in callbacks:
-                    if coms[com_type] == None:
+                    if coms[com_type] is None:
                         continue
                     callback = callbacks[coms[com_type]]
                     if com_type == "trigger":
                         is_continue, return_value = callback(
-                                trigger = coms["trigger"],
-                                action = coms["action"],
-                                pre_value = return_value
+                                trigger=coms["trigger"],
+                                action=coms["action"],
+                                pre_value=return_value
                                 )
                     if com_type == "action":
                         is_continue, return_value = callback(
-                                action = coms["action"], 
-                                target = coms["target"], 
-                                msg = msg,
-                                pre_value = return_value
+                                action=coms["action"],
+                                target=coms["target"],
+                                msg=msg,
+                                pre_value=return_value
                                 )
                     if com_type == "target":
                         is_continue, return_value = callback(
-                                target = coms["target"], 
-                                msg = msg, 
-                                pre_value = return_value
+                                target=coms["target"],
+                                msg=msg,
+                                pre_value=return_value
                                 )
                     if com_type == "stop":
                         is_continue, return_value = callback(
-                                action = coms["action"], 
-                                target = coms["target"], 
-                                stop = coms["stop"],
-                                msg = msg, 
-                                pre_value = return_value
+                                action=coms["action"],
+                                target=coms["target"],
+                                stop=coms["stop"],
+                                msg=msg,
+                                pre_value=return_value
                                 )
                     if com_type == "finish":
                         is_continue, return_value = callback(
-                                action = coms["action"], 
-                                target = coms["target"], 
-                                finish = coms["finish"],
-                                msg = msg, 
-                                pre_value = return_value
+                                action=coms["action"],
+                                target=coms["target"],
+                                finish=coms["finish"],
+                                msg=msg,
+                                pre_value=return_value
                                 )
                     if com_type == "then":
                         is_continue, return_value = callback(
-                                action = coms["action"], 
-                                target = coms["target"], 
-                                state = coms["then"],
-                                msg = msg, 
-                                pre_value = return_value,
-                                pass_value = coms["pass_value"]
+                                action=coms["action"],
+                                target=coms["target"],
+                                state=coms["then"],
+                                msg=msg,
+                                pre_value=return_value,
+                                pass_value=coms["pass_value"]
                                 )
 
                     if not is_continue:
@@ -198,9 +237,9 @@ class LE_Command:
 
 if __name__ == '__main__':
     def action_callback(action = None, target = None,
-            msg = None, 
-            pre_value = None):
-        print "* action callback: %s, target: %s, message: %s pre_value: %s" %(action, target, msg, pre_value)
+            msg=None,
+            pre_value=None):
+        print "* action callback: %s, target: %s, message: %s pre_value: %s" % (action, target, msg, pre_value)
         return True, "pass"
     def target_callback(target = None,
             msg = None, 
@@ -210,8 +249,9 @@ if __name__ == '__main__':
     def stop_callback(action = None, target = None,
             msg = None, stop = None, 
             pre_value = None):
-        print "* stop callback: action: %s, target: %s, message: %s stop: %s pre_value: %s" %(action, target, msg, stop, pre_value)
+        print "* stop callback: action: %s, target: %s, message: %s stop: %s pre_value: %s" % (action, target, msg, stop, pre_value)
         return True, "pass"
+
     def finish_callback(action = None, target = None,
             msg = None, finish = None, 
             pre_value = None):
