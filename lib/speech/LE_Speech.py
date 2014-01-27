@@ -1,20 +1,16 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from sys import byteorder
-from array import array
-from struct import pack, unpack
 from Queue import Queue
 from collections import deque
 from time import sleep
 import wave
 import sys, os, subprocess
-import math
 import numpy as np
 import scipy.signal as signal
 import pyaudio, wave
 import urllib2, urllib
-import json 
+import json
 import threading
 import logging as log
 
@@ -49,17 +45,17 @@ class LE_Speech2Text(object):
                 return data
 
         def send_and_parse(self, data):
-            print "send stt request."
             xurl = 'http://www.google.com/speech-api/v1/recognize?xjerr=1&client=chromium&lang=' + self.lang
-            headers = {'Content-Type' : 'audio/x-flac; rate=' + self.rate}
+            content_type = 'audio/x-flac; rate=' + str(self.rate)
+            headers = {'Content-Type' : content_type}
             req = urllib2.Request(xurl, data, headers)
             response = urllib2.urlopen(req)
 
-            strlist = response.read().decode('utf-8')
+            result = response.read().decode('utf-8')
 
-            print "stt result: " + strlist
+            print "stt result: " + result
 
-            list_data = json.loads(strlist)["hypotheses"]
+            list_data = json.loads(result)["hypotheses"]
 
             if len(list_data) != 0:
                 return (list_data[0]["utterance"], list_data[0]["confidence"])
@@ -113,23 +109,21 @@ class LE_Speech2Text(object):
 
         self.FORMAT = pyaudio.paInt16
         self.CHANNELS = 1
-        self.RATE = 44100
-        self.CHUNK_SIZE = 256 #!!!!!
-        self.THRESHOLD = 1300.0
+        self.RATE = 16000
+        self.CHUNK_SIZE = 1024  # !!!!!
+        self.THRESHOLD = 2000.0
         self.BEGIN_THRESHOLD = 8
         self.TIMEOUT_THRESHOLD = self.BEGIN_THRESHOLD*2
         self._callback = callback
 
     def _is_silent(self, snd_data, sample_data):
         snd_data = np.fromstring(snd_data, dtype=np.int16)
-        # print max(snd_data)
-        # return max(snd_data) < self.THRESHOLD
         sample_data = list(sample_data)[0:self.BEGIN_THRESHOLD]
-        sample_data = [max(np.fromstring(''.join(x), dtype=np.int16)) for x in sample_data]
+        sample_data = [max(x) for x in sample_data]
         snd_max = max(snd_data)
-        print snd_max
+        # print snd_max
         return snd_max < self.THRESHOLD \
-            or snd_max < 1.2*sum(sample_data)/len(sample_data)
+                or snd_max < 2.0*sum(sample_data)/len(sample_data)
 
     def _wav_to_flac(self, wav_data):
         filename = 'output'
@@ -154,18 +148,18 @@ class LE_Speech2Text(object):
         self._queue.start()
 
         p = pyaudio.PyAudio()
-        stream = p.open(format = self.FORMAT,
-                    channels = self.CHANNELS,
-                    rate = self.RATE,
-                    input = True,
-                    frames_per_buffer = self.CHUNK_SIZE)
+        stream = p.open(format=self.FORMAT,
+                    channels=self.CHANNELS,
+                    rate=self.RATE,
+                    input=True,
+                    frames_per_buffer=self.CHUNK_SIZE)
         self.SAMPLE_WIDTH = p.get_sample_size(self.FORMAT)
 
         print "* recording"
 
         sample_data = deque(maxlen = 2*self.BEGIN_THRESHOLD)
         sample_data_should_load = True
-        fil = self._filter(20.0, 3600.0, self.CHUNK_SIZE, self.RATE)
+        fil = self._filter(200.0, 3600.0, self.CHUNK_SIZE, self.RATE)
 
         while self.keep_running:
             record_begin = False
@@ -189,7 +183,8 @@ class LE_Speech2Text(object):
                 else:
                     wnd_data.append(snd_data)
                     if sample_data_should_load:
-                        sample_data.append(snd_data)
+                        sample_data.append(
+                                np.fromstring(snd_data, dtype=np.int16))
                     silent = self._is_silent(snd_data, sample_data)
 
                 # print silent
