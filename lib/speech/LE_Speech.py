@@ -22,12 +22,12 @@ class LE_Speech2Text(object):
 
     class _queue(object):
 
-        def __init__(self, callback, lang = "zh-CN"):
+        def __init__(self, callback, lang = "zh-CN", rate=16000):
             self.write_queue = Queue()
             self.keep_streaming = True
-            self.RATE = 16000
             self.callback = callback
             self.lang = lang
+            self.rate = rate
 
         def start(self):
             self.process_thread = threading.Thread(target=self.process_thread)
@@ -49,14 +49,15 @@ class LE_Speech2Text(object):
                 return data
 
         def send_and_parse(self, data):
+            print "send stt request."
             xurl = 'http://www.google.com/speech-api/v1/recognize?xjerr=1&client=chromium&lang=' + self.lang
-            headers = {'Content-Type' : 'audio/x-flac; rate=16000'}
+            headers = {'Content-Type' : 'audio/x-flac; rate=' + self.rate}
             req = urllib2.Request(xurl, data, headers)
             response = urllib2.urlopen(req)
 
             strlist = response.read().decode('utf-8')
 
-            print "strlist" + strlist
+            print "stt result: " + strlist
 
             list_data = json.loads(strlist)["hypotheses"]
 
@@ -95,6 +96,10 @@ class LE_Speech2Text(object):
 
             self._fil = fil_bandpass
             self._zi = [0]*(taps-1)
+            self._taps = taps
+
+        def reset(self):
+            self._zi = [0]*(self._taps - 1)
 
         def filter(self, data):
             data = np.fromstring(data, dtype=np.int16)
@@ -108,12 +113,11 @@ class LE_Speech2Text(object):
 
         self.FORMAT = pyaudio.paInt16
         self.CHANNELS = 1
-        self.RATE = 16000
-        self.CHUNK_SIZE = 512 #!!!!!
-        self.THRESHOLD = 1200
-        self.BEGIN_THRESHOLD = 5
-        self.TIMEOUT_THRESHOLD = 10
-        self._snd_queue = Queue()
+        self.RATE = 44100
+        self.CHUNK_SIZE = 256 #!!!!!
+        self.THRESHOLD = 1300.0
+        self.BEGIN_THRESHOLD = 8
+        self.TIMEOUT_THRESHOLD = self.BEGIN_THRESHOLD*2
         self._callback = callback
 
     def _is_silent(self, snd_data, sample_data):
@@ -125,11 +129,43 @@ class LE_Speech2Text(object):
         snd_max = max(snd_data)
         print snd_max
         return snd_max < self.THRESHOLD \
-            and snd_max < 1.2*sum(sample_data)/len(sample_data)
+            or snd_max < 1.2*sum(sample_data)/len(sample_data)
 
-    def _detecting(self):
+    def _wav_to_flac(self, wav_data):
+        filename = 'output'
+        wav_data = ''.join(wav_data)
+        wf = wave.open(filename + '.wav', 'wb')
+        wf.setnchannels(self.CHANNELS)
+        wf.setsampwidth(self.SAMPLE_WIDTH)
+        wf.setframerate(self.RATE)
+        wf.writeframes(wav_data)
+        wf.close()
+
+        subprocess.call(['flac', '-f', '-s', filename + '.wav'])
+        with open(filename + '.flac', 'rb') as ff:
+            flac_data = ff.read()
+
+        # map(os.remove, (filename + '.flac', filename + '.wav'))
+        return flac_data
+
+    def _recording(self):
+
+        self._queue = self._queue(self._callback, rate=self.RATE)
+        self._queue.start()
+
+        p = pyaudio.PyAudio()
+        stream = p.open(format = self.FORMAT,
+                    channels = self.CHANNELS,
+                    rate = self.RATE,
+                    input = True,
+                    frames_per_buffer = self.CHUNK_SIZE)
+        self.SAMPLE_WIDTH = p.get_sample_size(self.FORMAT)
+
+        print "* recording"
+
         sample_data = deque(maxlen = 2*self.BEGIN_THRESHOLD)
         sample_data_should_load = True
+        fil = self._filter(20.0, 3600.0, self.CHUNK_SIZE, self.RATE)
 
         while self.keep_running:
             record_begin = False
@@ -140,11 +176,11 @@ class LE_Speech2Text(object):
             num_sound = 0
             sound_data = ""
             wnd_data = deque(maxlen = 2*self.BEGIN_THRESHOLD)
-            fil = self._filter(20.0, 3600.0, self.CHUNK_SIZE, self.RATE)
+            fil.reset()
 
             print "detecting:"
             while self.keep_running:
-                snd_data = self._snd_queue.get(block=True) #block
+                snd_data = stream.read(self.CHUNK_SIZE)
                 snd_data = fil.filter(snd_data)
 
                 if record_begin:
@@ -182,48 +218,8 @@ class LE_Speech2Text(object):
                     print "data len: " + str(len(sound_data))
                     break
 
-                self._snd_queue.task_done()
-
             sound_data = self._wav_to_flac(sound_data)
             self._queue.write_data(sound_data)
-
-        print "stop detecting."
-
-    def _wav_to_flac(self, wav_data):
-        filename = 'output'
-        wav_data = ''.join(wav_data)
-        wf = wave.open(filename + '.wav', 'wb')
-        wf.setnchannels(self.CHANNELS)
-        wf.setsampwidth(self.SAMPLE_WIDTH)
-        wf.setframerate(self.RATE)
-        wf.writeframes(wav_data)
-        wf.close()
-
-        subprocess.call(['flac', '-f', '-s', filename + '.wav'])
-        with open(filename + '.flac', 'rb') as ff:
-            flac_data = ff.read()
-
-        # map(os.remove, (filename + '.flac', filename + '.wav'))
-        return flac_data
-
-    def _recording(self):
-
-        self._queue = self._queue(self._callback)
-        self._queue.start()
-
-        p = pyaudio.PyAudio()
-        stream = p.open(format = self.FORMAT,
-                    channels = self.CHANNELS,
-                    rate = self.RATE,
-                    input = True,
-                    frames_per_buffer = self.CHUNK_SIZE)
-        self.SAMPLE_WIDTH = p.get_sample_size(self.FORMAT)
-
-        print "* recording"
-
-        while self.keep_running:
-            sound_data = stream.read(self.CHUNK_SIZE)
-            self._snd_queue.put(sound_data)
 
         print "* done recording"
 
@@ -231,7 +227,6 @@ class LE_Speech2Text(object):
         stream.close()
         p.terminate()
 
-        # self.enc.finish()
 
     def start_recognizing(self):
         self.keep_running = True
@@ -240,19 +235,9 @@ class LE_Speech2Text(object):
         self._recording_thread.daemon = True
         self._recording_thread.start()
 
-        self._detecting_thread = threading.Thread(target=self._detecting)
-        self._detecting_thread.daemon = True
-        self._detecting_thread.start()
-
     def stop_recognizing(self):
         self.keep_running = False # first
         self._queue.stop()
-
-        #self._snd_queue.join()
-        print str(self._snd_queue.qsize())
-        # self._recording_thread.join()
-        # self._detecting_thread.join()
-
 
 class LE_Text2Speech:
 
