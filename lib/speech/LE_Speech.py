@@ -79,14 +79,15 @@ class LE_Speech2Text(object):
             print "end"
 
     class _filter:
-        def _spectinvert(taps):
+        def _spectinvert(self, taps):
             l = len(taps)
             return ([0]*(l/2) + [1] + [0]*(l/2)) - taps
 
         def __init__(self, low, high, chunk, rate):
+            print "init filter:\
+                    low:%s high:%s chunk:%s rate:%s" \
+                    % (low, high, chunk, rate)
             taps = chunk + 1
-            low = 20.0
-            high = 1000.0
             fil_lowpass = signal.firwin(taps, low/(rate/2))
             fil_highpass = self._spectinvert(signal.firwin(taps, high/(rate/2)))
             fil_bandreject = fil_lowpass+fil_highpass
@@ -96,10 +97,10 @@ class LE_Speech2Text(object):
             self._zi = [0]*(taps-1)
 
         def filter(self, data):
-            data = ny.fromstring(data, dtype=ny.int16)
+            data = np.fromstring(data, dtype=np.int16)
             # print max(data)
             (data, self._zi) = signal.lfilter(self._fil, 1, data, -1, self._zi)
-            return data.astype(ny.int16).tostring()
+            return data.astype(np.int16).tostring()
 
     def __init__(self, callback):
         self.keep_running = False
@@ -108,24 +109,27 @@ class LE_Speech2Text(object):
         self.FORMAT = pyaudio.paInt16
         self.CHANNELS = 1
         self.RATE = 16000
-        self.CHUNK_SIZE = 256 #!!!!!
-        self.THRESHOLD = 1300
-        self.BEGIN_THRESHOLD = 4
+        self.CHUNK_SIZE = 512 #!!!!!
+        self.THRESHOLD = 1200
+        self.BEGIN_THRESHOLD = 5
         self.TIMEOUT_THRESHOLD = 10
         self._snd_queue = Queue()
         self._callback = callback
 
     def _is_silent(self, snd_data, sample_data):
-        # return len(snd_data) < self.THRESHOLD
+        snd_data = np.fromstring(snd_data, dtype=np.int16)
+        # print max(snd_data)
+        # return max(snd_data) < self.THRESHOLD
         sample_data = list(sample_data)[0:self.BEGIN_THRESHOLD]
-        sample_data = np.fromstring(''.join(sample_data), dtype=np.int16)
-        sample_max = [max(x) for x in sample_data]
-        return max(snd_data) < 1.2*sum(sample_max)/len(sample_max)
+        sample_data = [max(np.fromstring(''.join(x), dtype=np.int16)) for x in sample_data]
+        snd_max = max(snd_data)
+        print snd_max
+        return snd_max < self.THRESHOLD \
+            and snd_max < 1.2*sum(sample_data)/len(sample_data)
 
     def _detecting(self):
         sample_data = deque(maxlen = 2*self.BEGIN_THRESHOLD)
         sample_data_should_load = True
-        fil = self._filter(200, 3600, self.CHUNK_SIZE, self.RATE)
 
         while self.keep_running:
             record_begin = False
@@ -136,10 +140,12 @@ class LE_Speech2Text(object):
             num_sound = 0
             sound_data = ""
             wnd_data = deque(maxlen = 2*self.BEGIN_THRESHOLD)
+            fil = self._filter(20.0, 3600.0, self.CHUNK_SIZE, self.RATE)
 
             print "detecting:"
             while self.keep_running:
                 snd_data = self._snd_queue.get(block=True) #block
+                snd_data = fil.filter(snd_data)
 
                 if record_begin:
                     silent = self._is_silent(snd_data, sample_data)
@@ -150,7 +156,7 @@ class LE_Speech2Text(object):
                         sample_data.append(snd_data)
                     silent = self._is_silent(snd_data, sample_data)
 
-                print max(snd_data), silent
+                # print silent
                 if silent:
                     num_silent += 1
                     if num_sound < self.BEGIN_THRESHOLD:
@@ -178,7 +184,6 @@ class LE_Speech2Text(object):
 
                 self._snd_queue.task_done()
 
-            sound_data = fil.filter(sound_data)
             sound_data = self._wav_to_flac(sound_data)
             self._queue.write_data(sound_data)
 
@@ -187,13 +192,14 @@ class LE_Speech2Text(object):
     def _wav_to_flac(self, wav_data):
         filename = 'output'
         wav_data = ''.join(wav_data)
-        with open(filename + '.wav', 'wb') as wf:
-            wf.setnchannels(self.CHANNELS)
-            wf.setsampwidth(self.SAMPLE_WIDTH)
-            wf.setframerate(self.RATE)
-            wf.writeframes(wav_data)
+        wf = wave.open(filename + '.wav', 'wb')
+        wf.setnchannels(self.CHANNELS)
+        wf.setsampwidth(self.SAMPLE_WIDTH)
+        wf.setframerate(self.RATE)
+        wf.writeframes(wav_data)
+        wf.close()
 
-        subprocess.call(['flac', '-f', filename + '.wav'])
+        subprocess.call(['flac', '-f', '-s', filename + '.wav'])
         with open(filename + '.flac', 'rb') as ff:
             flac_data = ff.read()
 
