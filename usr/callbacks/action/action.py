@@ -39,7 +39,7 @@ class weather_report_callback:
         content += u'后天天气：' + ',' + we['temp3'] + ',' + we['weather3'] + '.\n'
         content += u'穿衣指数：' + we['index_d'] + '\n'
         
-        self._speaker.speak(content.split('\n'))
+        self._speaker.speak(content.split('\n'), inqueue=True)
 
         return True, "weather"
 

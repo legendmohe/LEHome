@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from Queue import Queue
+from Queue import Queue, Empty
 from collections import deque
 from time import sleep
 import wave
@@ -16,11 +16,12 @@ import json
 import threading
 import logging as log
 
+
 class LE_Speech2Text(object):
 
     class _queue(object):
 
-        def __init__(self, callback, lang = "zh-CN", rate=16000):
+        def __init__(self, callback, lang="zh-CN", rate=16000):
             self.write_queue = Queue()
             self.keep_streaming = True
             self.callback = callback
@@ -34,7 +35,7 @@ class LE_Speech2Text(object):
 
         def stop(self):
             print "Waiting write_queue to write all data"
-            self.keep_streaming=False
+            self.keep_streaming = False
             self.write_queue.join()
             print "Queue stop"
 
@@ -49,7 +50,7 @@ class LE_Speech2Text(object):
         def send_and_parse(self, data):
             xurl = 'http://www.google.com/speech-api/v1/recognize?xjerr=1&client=chromium&lang=' + self.lang
             content_type = 'audio/x-flac; rate=' + str(self.rate)
-            headers = {'Content-Type' : content_type}
+            headers = {'Content-Type':content_type}
             req = urllib2.Request(xurl, data, headers)
             response = urllib2.urlopen(req)
 
@@ -71,9 +72,10 @@ class LE_Speech2Text(object):
                         if result is not None:
                             self.callback(result, conf)
                         self.write_queue.task_done()
-                except Exception, e:
-                    # print e
+                except Empty:
                     pass
+                except Exception, e:
+                    print e
 
             print "end"
 
@@ -88,7 +90,9 @@ class LE_Speech2Text(object):
                     % (low, high, chunk, rate)
             taps = chunk + 1
             fil_lowpass = signal.firwin(taps, low/(rate/2))
-            fil_highpass = self._spectinvert(signal.firwin(taps, high/(rate/2)))
+            fil_highpass = self._spectinvert(
+                                signal.firwin(taps, high/(rate/2))
+                                )
             fil_bandreject = fil_lowpass+fil_highpass
             fil_bandpass = self._spectinvert(fil_bandreject)
 
@@ -139,15 +143,20 @@ class LE_Speech2Text(object):
         sample_data = list(sample_data)[0:self.BEGIN_THRESHOLD]
         sample_data = [max(x) for x in sample_data]
         snd_max = max(snd_data)
-        # print snd_max
+        print snd_max
         return snd_max < self.THRESHOLD or \
                 snd_max < 2.0*sum(sample_data)/len(sample_data)
+
+        # as_ints = array('h', snd_data)
+        # max_value = max(as_ints)
+        # print max_value
+        # return max_value < self.THRESHOLD
 
     def _wav_to_flac(self, wav_data):
 
         wav_data = self._normalize(array('h', wav_data))
         wav_data = self._add_silents(wav_data)
-        wav_data = pack('<' + ('h'*len(r)), *r)
+        wav_data = pack('<' + ('h'*len(wav_data)), *wav_data)
 
         filename = 'output'
         wav_data = ''.join(wav_data)
@@ -166,19 +175,18 @@ class LE_Speech2Text(object):
         return flac_data
 
     def _processing(self):
-        sample_data = deque(maxlen = 2*self.BEGIN_THRESHOLD)
+        sample_data = deque(maxlen=2*self.BEGIN_THRESHOLD)
         sample_data_should_load = True
         fil = self._filter(100.0, 3600.0, self.CHUNK_SIZE, self.RATE)
 
         while self.keep_running:
             record_begin = False
-            buffer_begin = False
             snd_slient_finished = False
             snd_sound_finished = False
             num_silent = 0
             num_sound = 0
             sound_data = ""
-            wnd_data = deque(maxlen = 2*self.BEGIN_THRESHOLD)
+            wnd_data = deque(maxlen=2*self.BEGIN_THRESHOLD)
             fil.reset()
 
             print "detecting:"
@@ -195,7 +203,8 @@ class LE_Speech2Text(object):
                     wnd_data.append(snd_data)
                     if sample_data_should_load:
                         sample_data.append(
-                                np.fromstring(snd_data, dtype=np.int16))
+                                    np.fromstring(snd_data, dtype=np.int16)
+                                )
                     silent = self._is_silent(snd_data, sample_data)
 
                 # print silent
@@ -206,7 +215,8 @@ class LE_Speech2Text(object):
                         snd_sound_finished = False
                     if num_silent > self.TIMEOUT_THRESHOLD:
                         snd_slient_finished = True
-                    if num_silent > 2*self.TIMEOUT_THRESHOLD: # enough time-gap for threshold
+                    # enough time-gap for threshold
+                    if num_silent > 2*self.TIMEOUT_THRESHOLD:
                         sample_data_should_load = True
                     else:
                         sample_data_should_load = False
@@ -226,7 +236,6 @@ class LE_Speech2Text(object):
 
             sound_data = self._wav_to_flac(sound_data)
             self._queue.write_data(sound_data)
-
 
     def _recording(self):
 
@@ -293,8 +302,10 @@ class LE_Text2Speech:
                 phrase = self.__speak_queue.get(block=True, timeout=2)
                 self.__speakSpeechFromText(phrase)
                 self.__speak_queue.task_done()
-            except:
+            except Empty:
                 pass
+            except Exception, ex:
+                print ex
         # try:
         #     self.__speaking_pipe.stdout.close()
         #     self.__speaking_pipe.stdin.close()
@@ -322,20 +333,25 @@ class LE_Text2Speech:
         self.__speak_thread.join()
         log.info("speaker stop.")
 
-    def speak(self, phrase):
+    def speak(self, phrase, inqueue=False):
         if not self.__keep_speaking:
             log.warning("__keep_speaking is False.")
             return
-            
         if isinstance(phrase, (list, tuple)):
             for item in phrase:
                 if isinstance(item, unicode):
-                    self.__speak_queue.put(item)
+                    if inqueue is True:
+                        self.__speak_queue.put(item)
+                    else:
+                        self.__speakSpeechFromText(item)
                 else:
                     print "phrase must be unicode"
         else:
             if isinstance(phrase, unicode):
-                self.__speak_queue.put(phrase)
+                if inqueue is True:
+                    self.__speak_queue.put(phrase)
+                else:
+                    self.__speakSpeechFromText(phrase)
             else:
                 print "phrase must be unicode"
 

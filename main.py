@@ -86,15 +86,15 @@ class LE_Home:
 
     def activate(self):
         print "=============================Activate==================================="
-        self.__com.start()
-        self.__rec.start_recognizing()
         self.__spk.start()
         self.__spk.speak(u"你好.")
+        self.__com.start()
+        self.__rec.start_recognizing()
 
     def deactivate(self):
+        self.__spk.stop()
         self.__com.stop()
         self.__rec.stop_recognizing()
-        self.__spk.stop()
 
 
 if __name__ == '__main__':
