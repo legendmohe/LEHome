@@ -4,20 +4,32 @@
 from Queue import Queue, Empty
 from collections import deque
 from time import sleep
-import wave
-import sys, os, subprocess
+import subprocess
 import numpy as np
 import scipy.signal as signal
 from array import array
 from struct import pack
-import pyaudio, wave
-import urllib2, urllib
+import pyaudio
+import wave
+import urllib2
+import urllib
 import json
 import threading
 import logging as log
 
 
 class LE_Speech2Text(object):
+    PAUSE = False
+
+    @classmethod
+    def pause(cls):
+        cls.PAUSE = True
+        print "stt pause."
+
+    @classmethod
+    def resume(cls):
+        cls.PAUSE = False
+        print "stt resume."
 
     class _queue(object):
 
@@ -44,7 +56,10 @@ class LE_Speech2Text(object):
 
         def gen_data(self):
             if self.keep_streaming:
-                data = self.write_queue.get(block=True, timeout=2) # block!
+                data = self.write_queue.get(
+                                        block=True,
+                                        timeout=2
+                                        ) # block!
                 return data
 
         def send_and_parse(self, data):
@@ -110,12 +125,14 @@ class LE_Speech2Text(object):
 
     def __init__(self, callback):
         self.keep_running = False
+        self._pause = False
 
         self.FORMAT = pyaudio.paInt16
         self.CHANNELS = 1
         self.RATE = 44100
+        self.STT_RATE = 16000
         self.CHUNK_SIZE = 512  # !!!!!
-        self.THRESHOLD = 2000.0
+        self.THRESHOLD = 1100.0
         self.BEGIN_THRESHOLD = 10
         self.TIMEOUT_THRESHOLD = self.BEGIN_THRESHOLD*3
         self.SILENTADDED = 0.5
@@ -143,7 +160,7 @@ class LE_Speech2Text(object):
         sample_data = list(sample_data)[0:self.BEGIN_THRESHOLD]
         sample_data = [max(x) for x in sample_data]
         snd_max = max(snd_data)
-        print snd_max
+        # print snd_max
         return snd_max < self.THRESHOLD or \
                 snd_max < 2.0*sum(sample_data)/len(sample_data)
 
@@ -154,9 +171,9 @@ class LE_Speech2Text(object):
 
     def _wav_to_flac(self, wav_data):
 
-        wav_data = self._normalize(array('h', wav_data))
-        wav_data = self._add_silents(wav_data)
-        wav_data = pack('<' + ('h'*len(wav_data)), *wav_data)
+        # wav_data = self._normalize(array('h', wav_data))
+        # wav_data = self._add_silents(array('h', wav_data))
+        # wav_data = pack('<' + ('h'*len(wav_data)), *wav_data)
 
         filename = 'output'
         wav_data = ''.join(wav_data)
@@ -167,7 +184,10 @@ class LE_Speech2Text(object):
         wf.writeframes(wav_data)
         wf.close()
 
-        subprocess.call(['flac', '-f', '-s', filename + '.wav'])
+        subprocess.call(
+                ['sox', '--norm=-1', filename + '.wav',
+                    '-r', str(self.STT_RATE), filename + '.flac']
+                )
         with open(filename + '.flac', 'rb') as ff:
             flac_data = ff.read()
 
@@ -239,7 +259,7 @@ class LE_Speech2Text(object):
 
     def _recording(self):
 
-        self._queue = self._queue(self._callback, rate=self.RATE)
+        self._queue = self._queue(self._callback, rate=self.STT_RATE)
         self._queue.start()
 
         p = pyaudio.PyAudio()
@@ -254,7 +274,8 @@ class LE_Speech2Text(object):
 
         while self.keep_running:
             snd_data = stream.read(self.CHUNK_SIZE)
-            self._processing_queue.put(snd_data)
+            if LE_Speech2Text.PAUSE is False:
+                self._processing_queue.put(snd_data)
         
         print "* done recording"
 
@@ -314,9 +335,10 @@ class LE_Text2Speech:
         # self.__speaking_pipe = None
 
     def __speakSpeechFromText(self, phrase):
+        LE_Speech2Text.pause()
         googleSpeechURL = self.__getGoogleSpeechURL(phrase)
         subprocess.call(["mpg123", "-q", googleSpeechURL])
-        # self.__speaking_pipe = Popen(["mpg123", "-q", googleSpeechURL], stdout=PIPE, stderr=STDOUT, close_fds=True)
+        LE_Speech2Text.resume()
 
     def start(self):
         log.info("speaker start.")
