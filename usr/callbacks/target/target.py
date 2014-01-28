@@ -1,14 +1,24 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+import glob
 import types
 import httplib
 import json
+import os
+import errno
+from datetime import datetime
+from lib.sound import LE_Sound
+from util.LE_Res import LE_Res
+from lib.speech.LE_Speech import LE_Speech2Text
+from lib.sound import LE_Sound
 
 class target_callback:
-    def callback(self, target = None,
-            msg = None, 
-            pre_value = None):
+    def callback(self,
+            action=None,
+            target=None,
+            msg=None, 
+            pre_value=None):
         print "* target callback: %s, message: %s pre_value: %s" %(target, msg, pre_value)
         return True, "pass"
 
@@ -37,7 +47,9 @@ class douban_callback:
         "豆瓣音乐人":"26",
                 }
     
-    def callback(self, target = None,
+    def callback(self,
+            action=None,
+            target = None,
             msg = None, 
             pre_value = None):
         if isinstance(pre_value, types.FunctionType):
@@ -50,3 +62,47 @@ class douban_callback:
             song = json.loads(httpConnection.getresponse().read())['song']
             play(song[0]['url'])
         return True, "pass"
+
+class message_callback:
+    def callback(
+            self,
+            action=None,
+            target=None,
+            msg=None, 
+            pre_value=None):
+        if action == u"记录":
+            if isinstance(pre_value, types.FunctionType):
+                path = "usr/message/"
+                try:
+                    os.makedirs(path)
+                except OSError as exc:
+                    if exc.errno == errno.EEXIST and os.path.isdir(path):
+                        pass
+                    else:
+                        print exc
+                        return True, "pass"
+
+                LE_Speech2Text.pause()
+                filepath = path + datetime.now().strftime("%m-%d_%H:%M") + ".mp3"
+                record = pre_value
+                record(filepath)
+                LE_Sound.playmp3(
+                                LE_Res.get_res_path("sound/com_stop")
+                                )
+                LE_Speech2Text.resume()
+        elif action == u"播放":
+            LE_Speech2Text.pause()
+
+            if isinstance(pre_value, types.FunctionType):
+                play = pre_value
+                for idx, filepath in enumerate(glob.glob("usr/message/*.mp3")):
+                    self._speaker.speak(u'第%d条留言' % (idx + 1))
+                    play(filepath)
+
+            LE_Sound.playmp3(
+                            LE_Res.get_res_path("sound/com_stop")
+                            )
+
+            LE_Speech2Text.resume()
+        return True, "pass"
+

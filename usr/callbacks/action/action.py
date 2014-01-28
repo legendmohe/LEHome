@@ -3,12 +3,6 @@
 import urllib2
 import json
 import subprocess
-import os
-import errno
-from datetime import datetime
-from lib.sound import LE_Sound
-from util.LE_Res import LE_Res
-from lib.speech.LE_Speech import LE_Speech2Text
 
 class action_callback:
     def callback(self,
@@ -91,7 +85,7 @@ class play_callback:
 
                 import subprocess
                 try:
-                    player = subprocess.Popen(['mpg123', path])
+                    player = subprocess.Popen(['play', path])
                     self._context["player"] = player
                     player.wait()
                     if not player.poll():
@@ -105,40 +99,49 @@ class play_callback:
         else:
             return True, "pass"
 
+class remove_callback:
+    def callback(self,
+            action=None,
+            target=None,
+            msg=None, 
+            pre_value=None):
+        
+
+        return True, "record"
+
 class record_callback:
     def callback(self,
             action=None,
             target=None,
             msg=None, 
             pre_value=None):
-        
 
-        return True, "record"
+        if action == u"记录" and target != None:
+            def record(path=None):
+                if not path:
+                    return
+                print "record : " + path
 
-class message_callback:
-    def callback(self,
-            action=None,
-            target=None,
-            msg=None, 
-            pre_value=None):
-        
-        path = "usr/message/"
-        try:
-            os.makedirs(path)
-        except OSError as exc:
-            if exc.errno == errno.EEXIST and os.path.isdir(path):
-                pass
-            else:
-                raise
+                if "recorder" in self._context:
+                    recorder = self._context["recorder"]
+                    if not recorder.poll():
+                        recorder.kill()
 
-        LE_Speech2Text.pause()
-        filepath = path + datetime.now().strftime("%m-%d_%H:%M") + ".flac"
-        subprocess.call([
-            "rec", filepath,
-            "rate", "16k", "silence", "1", "0.1", "3%", "1", "3.0", "3%"])
-
-        LE_Sound.playmp3(
-                        LE_Res.get_res_path("sound/com_stop")
-                        )
-        LE_Speech2Text.resume()
-        return True, "record"
+                import subprocess
+                try:
+                    recorder = subprocess.Popen([
+                            "rec", path,
+                            "rate", "16k",
+                            "silence", "1", "0.1", "3%", "1", "3.0", "3%"])
+                    self._context["recorder"] = recorder
+                    recorder.wait()
+                    if not recorder.poll():
+                        recorder.kill()
+                except Exception, ex:
+                    print " stop."
+                    # print ex
+                del self._context["recorder"]
+            
+            return True, record
+        else:
+            return True, "pass"

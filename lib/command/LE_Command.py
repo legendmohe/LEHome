@@ -166,6 +166,7 @@ class LE_Command:
                                 )
                     if com_type == "target":
                         is_continue, return_value = callback(
+                                action=coms["action"],
                                 target=coms["target"],
                                 msg=msg,
                                 pre_value=return_value

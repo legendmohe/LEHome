@@ -128,7 +128,7 @@ class LE_Command_Parser:
                     {'name': 'found_then_flag', 'src': 'trigger_state',  'dst': 'error_state'},
 
                     {'name': 'found_trigger', 'src': 'action_state',  'dst': 'message_state'},
-                    {'name': 'found_action', 'src': 'action_state',  'dst': 'error_state'},
+                    {'name': 'found_action', 'src': 'action_state',  'dst': 'message_state'},
                     {'name': 'found_target', 'src': 'action_state',  'dst': 'target_state'},
                     {'name': 'found_else', 'src': 'action_state',  'dst': 'message_state'},
 
