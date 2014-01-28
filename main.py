@@ -70,8 +70,8 @@ class LE_Home:
                         log.exception("init commands faild.")
 
     def __init_recognizer(self):
-        print 'initlizing recognizer...'
-        
+        print 'initlizing recognize...'
+        # LE_Speech2Text.collect_noise()
         self.__rec = LE_Speech2Text(self.__speech_callback)
 
     def __init_speaker(self):

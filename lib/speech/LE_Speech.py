@@ -31,6 +31,18 @@ class LE_Speech2Text(object):
         cls.PAUSE = False
         print "stt resume."
 
+    # @classmethod
+    # def collect_noise(cls):
+    #     print "preparing noise reduction."
+    #     rec = subprocess.Popen(['rec', '-r', '16000', '-b', '16', 'noise.wav'])
+    #     sleep(5)
+    #     rec.kill()
+
+    #     subprocess.call(
+    #             ['sox', 'noise.wav', '-n', 'noiseprof', 'noise.prof']
+    #             )
+    #     print "finish preparing."
+
     class _queue(object):
 
         def __init__(self, callback, lang="zh-CN", rate=16000):
@@ -188,6 +200,10 @@ class LE_Speech2Text(object):
                 ['sox', '--norm=-1', filename + '.wav',
                     '-r', str(self.STT_RATE), filename + '.flac']
                 )
+        # subprocess.call(
+        #         ['sox', filename + '.flac', filename + '2.flac',
+        #             'noisered', 'noise.prof']
+        #         )
         with open(filename + '.flac', 'rb') as ff:
             flac_data = ff.read()
 
@@ -211,7 +227,10 @@ class LE_Speech2Text(object):
 
             print "detecting:"
             while self.keep_running:
-                snd_data = self._processing_queue.get(block=True, timeout=2)
+                try:
+                    snd_data = self._processing_queue.get(block=True, timeout=2)
+                except:
+                    pass
                 if snd_data is None:
                     continue
                 snd_data = fil.filter(snd_data)
@@ -327,12 +346,6 @@ class LE_Text2Speech:
                 pass
             except Exception, ex:
                 print ex
-        # try:
-        #     self.__speaking_pipe.stdout.close()
-        #     self.__speaking_pipe.stdin.close()
-        # except:
-        #     pass
-        # self.__speaking_pipe = None
 
     def __speakSpeechFromText(self, phrase):
         LE_Speech2Text.pause()
@@ -354,6 +367,7 @@ class LE_Text2Speech:
         # self.__speak_queue.join()
         self.__speak_thread.join()
         log.info("speaker stop.")
+
 
     def speak(self, phrase, inqueue=False):
         if not self.__keep_speaking:

@@ -1,7 +1,8 @@
 {
     "command":{
         "trigger" : ["hello"],
-        "action" : ["开", "关", "播放", "停止播放", "天气预报"],
+        "action" : ["开", "关", "播放", "停止播放", "天气预报", "记录",
+                    "留言"],
         "target" : ["灯", "门", "豆瓣电台"],
         "stop" : ["算了"],
         "finish" : ["好吗", "谢谢"],
@@ -16,7 +17,9 @@
             "关":"action.action_callback",
             "播放":"action.play_callback",
             "停止播放":"action.stop_play_callback",
-            "天气预报":"action.weather_report_callback"
+            "天气预报":"action.weather_report_callback",
+            "记录":"action.record_callback",
+            "留言":"action.message_callback"
         },
         "target":{
             "灯":"target.target_callback",

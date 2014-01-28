@@ -2,6 +2,13 @@
 # encoding: utf-8
 import urllib2
 import json
+import subprocess
+import os
+import errno
+from datetime import datetime
+from lib.sound import LE_Sound
+from util.LE_Res import LE_Res
+from lib.speech.LE_Speech import LE_Speech2Text
 
 class action_callback:
     def callback(self,
@@ -97,3 +104,41 @@ class play_callback:
             return True, play
         else:
             return True, "pass"
+
+class record_callback:
+    def callback(self,
+            action=None,
+            target=None,
+            msg=None, 
+            pre_value=None):
+        
+
+        return True, "record"
+
+class message_callback:
+    def callback(self,
+            action=None,
+            target=None,
+            msg=None, 
+            pre_value=None):
+        
+        path = "usr/message/"
+        try:
+            os.makedirs(path)
+        except OSError as exc:
+            if exc.errno == errno.EEXIST and os.path.isdir(path):
+                pass
+            else:
+                raise
+
+        LE_Speech2Text.pause()
+        filepath = path + datetime.now().strftime("%m-%d_%H:%M") + ".flac"
+        subprocess.call([
+            "rec", filepath,
+            "rate", "16k", "silence", "1", "0.1", "3%", "1", "3.0", "3%"])
+
+        LE_Sound.playmp3(
+                        LE_Res.get_res_path("sound/com_stop")
+                        )
+        LE_Speech2Text.resume()
+        return True, "record"

@@ -66,8 +66,10 @@ class LE_Command:
                         stop = True
 
                     work_queue.task_done()
-                except:
+                except Queue.Empty, ex:
                     pass
+                except Exception, ex:
+                    print ex
 
         if trigger == "Error":
             worker, work_queue = self.__work_queues[queue_id]
