@@ -167,14 +167,15 @@ class LE_Speech2Text(object):
         r.extend([0 for i in xrange(int(self.SILENTADDED*self.RATE))])
         return r
 
-    def _is_silent(self, snd_data, sample_data):
+    def _is_silent(self, snd_data):
         snd_data = np.fromstring(snd_data, dtype=np.int16)
-        sample_data = list(sample_data)[0:self.BEGIN_THRESHOLD]
-        sample_data = [max(x) for x in sample_data]
+        # sample_data = list(sample_data)[0:self.BEGIN_THRESHOLD]
+        # sample_data = [max(x) for x in sample_data]
         snd_max = max(snd_data)
         # print snd_max
-        return snd_max < self.THRESHOLD or \
-                snd_max < 2.0*sum(sample_data)/len(sample_data)
+        return snd_max < self.THRESHOLD
+        # return snd_max < self.THRESHOLD or \
+        #         snd_max < 2.0*sum(sample_data)/len(sample_data)
 
         # as_ints = array('h', snd_data)
         # max_value = max(as_ints)
@@ -200,6 +201,10 @@ class LE_Speech2Text(object):
                 ['sox', '--norm=-1', filename + '.wav',
                     '-r', str(self.STT_RATE), filename + '.flac']
                 )
+        subprocess.call(
+                ['sox', '--norm=-1', filename + '.wav',
+                    '-r', str(self.STT_RATE), filename + '.flac']
+                )
         # subprocess.call(
         #         ['sox', filename + '.flac', filename + '2.flac',
         #             'noisered', 'noise.prof']
@@ -207,12 +212,13 @@ class LE_Speech2Text(object):
         with open(filename + '.flac', 'rb') as ff:
             flac_data = ff.read()
 
+        print "data len: " + str(len(flac_data))
         # map(os.remove, (filename + '.flac', filename + '.wav'))
         return flac_data
 
     def _processing(self):
-        sample_data = deque(maxlen=2*self.BEGIN_THRESHOLD)
-        sample_data_should_load = True
+        # sample_data = deque(maxlen=2*self.BEGIN_THRESHOLD)
+        # sample_data_should_load = True
         fil = self._filter(100.0, 3600.0, self.CHUNK_SIZE, self.RATE)
 
         while self.keep_running:
@@ -236,15 +242,15 @@ class LE_Speech2Text(object):
                 snd_data = fil.filter(snd_data)
 
                 if record_begin:
-                    silent = self._is_silent(snd_data, sample_data)
+                    silent = self._is_silent(snd_data)
                     sound_data += snd_data
                 else:
                     wnd_data.append(snd_data)
-                    if sample_data_should_load:
-                        sample_data.append(
-                                    np.fromstring(snd_data, dtype=np.int16)
-                                )
-                    silent = self._is_silent(snd_data, sample_data)
+                    # if sample_data_should_load:
+                    #     sample_data.append(
+                    #                 np.fromstring(snd_data, dtype=np.int16)
+                    #             )
+                    silent = self._is_silent(snd_data)
 
                 # print silent
                 if silent:
@@ -255,10 +261,10 @@ class LE_Speech2Text(object):
                     if num_silent > self.TIMEOUT_THRESHOLD:
                         snd_slient_finished = True
                     # enough time-gap for threshold
-                    if num_silent > 2*self.TIMEOUT_THRESHOLD:
-                        sample_data_should_load = True
-                    else:
-                        sample_data_should_load = False
+                    # if num_silent > 2*self.TIMEOUT_THRESHOLD:
+                    #     sample_data_should_load = True
+                    # else:
+                    #     sample_data_should_load = False
                 elif not silent:
                     num_sound += 1
                     if num_sound >= self.BEGIN_THRESHOLD and num_silent == 0:
@@ -270,7 +276,6 @@ class LE_Speech2Text(object):
                     snd_slient_finished = False
 
                 if snd_slient_finished and snd_sound_finished:
-                    print "data len: " + str(len(sound_data))
                     break
 
             sound_data = self._wav_to_flac(sound_data)

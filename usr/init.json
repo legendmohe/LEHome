@@ -42,7 +42,8 @@
     },
     "sound":{
         "com_finish":"com_finish.mp3",
-        "com_stop":"com_stop.mp3"
+        "com_stop":"com_stop.mp3",
+        "com_begin":"com_begin.mp3",
         "com_trash":"com_trash.mp3"
     }
 }

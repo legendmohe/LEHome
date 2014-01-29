@@ -9,6 +9,8 @@ import logging as log
 import sys
 import traceback
 from util.LE_Res import LE_Res
+from lib.sound import LE_Sound
+
 
 class TracePrints(object):
       def __init__(self):    
@@ -86,8 +88,10 @@ class LE_Home:
 
     def activate(self):
         print "==========================Activate============================"
+        LE_Sound.playmp3(
+                        LE_Res.get_res_path("sound/com_begin")
+                        )
         self._spk.start()
-        self._spk.speak(u"你好.")
         self._com.start()
         self._rec.start_recognizing()
 

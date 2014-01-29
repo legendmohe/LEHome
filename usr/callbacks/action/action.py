@@ -5,6 +5,8 @@ import json
 import subprocess
 import glob, os
 from lib.command.LE_Command import LE_Comfirmation
+from lib.sound import LE_Sound
+from util.LE_Res import LE_Res
 
 
 class action_callback:
