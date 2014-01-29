@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from lib.command.LE_Command import *
-from lib.speech.LE_Speech import *
+from lib.command.LE_Command import LE_Command
+from lib.speech.LE_Speech import LE_Speech2Text, LE_Text2Speech
 from time import sleep
-from pprint import pprint
 import importlib
 import logging as log
 import sys
 import traceback
-
 from util.LE_Res import LE_Res
 
 class TracePrints(object):
@@ -21,29 +19,30 @@ class TracePrints(object):
 
 # sys.stdout = TracePrints()
 
+
 class LE_Home:
     def __init__(self):
-        self.__confidence_threshold = 0.6
-        self.__context = {}
-        self.__init_speaker()
-        self.__init_recognizer()
-        self.__init_command()
+        self._confidence_threshold = 0.6
+        self._context = {}
+        self._init_speaker()
+        self._init_recognizer()
+        self._init_command()
 
-    def __init_command(self):
+    def _init_command(self):
         print 'initlizing command...'
 
         settings = LE_Res.init("init.json")
         if settings:
 
             com_json = settings['command']
-            self.__com = LE_Command(
-                    trigger = com_json["trigger"],
-                    action = com_json["action"],
-                    target =  com_json["target"],
-                    stop =  com_json["stop"],
-                    finish =  com_json["finish"],
-                    then =  com_json["then"],
-                    DEBUG = False)
+            self._com = LE_Command(
+                        trigger=com_json["trigger"],
+                        action=com_json["action"],
+                        target=com_json["target"],
+                        stop=com_json["stop"],
+                        finish=com_json["finish"],
+                        then=com_json["then"],
+                        DEBUG=False)
             
             cb_json = settings["callback"]
             for com_name in cb_json.keys():
@@ -58,43 +57,44 @@ class LE_Home:
                         cb_module = importlib.import_module(cb_module_name)
                         # pprint(dir(cb_module))
                         cb_object = getattr(cb_module, class_name)()
-                        cb_object._context = self.__context
-                        cb_object._speaker = self.__spk
+                        cb_object._context = self._context
+                        cb_object._speaker = self._spk
+                        cb_object._rec = self._rec
                         
                         print "load callback: " + cb_module_name + " for command token:" + cb_token
-                        self.__com.register_callback(
+                        self._com.register_callback(
                                     com_name,
                                     cb_token,
                                     cb_object.callback)
                     except Exception, e:
                         log.exception("init commands faild.")
 
-    def __init_recognizer(self):
+    def _init_recognizer(self):
         print 'initlizing recognize...'
         # LE_Speech2Text.collect_noise()
-        self.__rec = LE_Speech2Text(self.__speech_callback)
+        self._rec = LE_Speech2Text(self._speech_callback)
 
-    def __init_speaker(self):
+    def _init_speaker(self):
         print "initlizing speaker..."
 
-        self.__spk = LE_Text2Speech()
+        self._spk = LE_Text2Speech()
 
-    def __speech_callback(self, result, confidence):
+    def _speech_callback(self, result, confidence):
         print "result: " + result + " | " + str(confidence)
-        if confidence > self.__confidence_threshold:
-            self.__com.parse(result)
+        if confidence > self._confidence_threshold:
+            self._com.parse(result)
 
     def activate(self):
-        print "=============================Activate==================================="
-        self.__spk.start()
-        self.__spk.speak(u"你好.")
-        self.__com.start()
-        self.__rec.start_recognizing()
+        print "==========================Activate============================"
+        self._spk.start()
+        self._spk.speak(u"你好.")
+        self._com.start()
+        self._rec.start_recognizing()
 
     def deactivate(self):
-        self.__spk.stop()
-        self.__com.stop()
-        self.__rec.stop_recognizing()
+        self._spk.stop()
+        self._com.stop()
+        self._rec.stop_recognizing()
 
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 from collections import OrderedDict
-from Queue import Queue
+from Queue import Queue, Empty
 from time import sleep
 import threading
 
@@ -16,23 +16,23 @@ class LE_Command:
             self, trigger, action, target,
             stop, finish, then, DEBUG=False
             ):
-        self.__registered_callbacks = {}
+        self._registered_callbacks = {}
 
-        self.__fsm = LE_Command_Parser(
+        self._fsm = LE_Command_Parser(
                 trigger, action, target,
                 stop, finish, then, DEBUG=False
                 )
-        self.__fsm.DEBUG = DEBUG
-        self.__then_flag = then
+        self._fsm.DEBUG = DEBUG
+        self._then_flag = then
 
-        self.__fsm.finish_callback = self.__finish_callback
-        self.__fsm.stop_callback = self.__stop_callback
-        self.__fsm.then_callback = self.__then_callback
+        self._fsm.finish_callback = self._finish_callback
+        self._fsm.stop_callback = self._stop_callback
+        self._fsm.then_callback = self._then_callback
 
-        self.__keep_running = False
-        self.__work_queues = {}
+        self._keep_running = False
+        self._work_queues = {}
 
-    def __then_callback(self,
+    def _then_callback(self,
                         queue_id,
                         trigger,
                         action,
@@ -40,7 +40,7 @@ class LE_Command:
                         message,
                         state
                         ):
-        def __worker_thread(work_queue):
+        def _worker_thread(work_queue):
             stop = False
             pass_value = None
             while not stop:
@@ -48,21 +48,21 @@ class LE_Command:
                     coms, msg, state = work_queue.get(block=True, timeout=1)
                     if pass_value:
                         coms["pass_value"] = pass_value
-                    pass_value = self.__invoke_callbacks(coms, msg)
+                    pass_value = self._invoke_callbacks(coms, msg)
 
                     if pass_value.lower() == "cancel":
                         print "cancel queue: %d finish" % (queue_id)
                         LE_Sound.playmp3(LE_Res.get_res_path("sound/com_stop"))
                         with work_queue.mutex:
                             work_queue.queue.clear()
-                        del self.__work_queues[queue_id]
+                        del self._work_queues[queue_id]
                         stop = True
-                    elif state in self.__registered_callbacks["finish"].keys():
+                    elif state in self._registered_callbacks["finish"].keys():
                         print "queue: %d finish" % (queue_id)
                         LE_Sound.playmp3(
                                         LE_Res.get_res_path("sound/com_finish")
                                         )
-                        del self.__work_queues[queue_id]
+                        del self._work_queues[queue_id]
                         stop = True
 
                     work_queue.task_done()
@@ -72,31 +72,31 @@ class LE_Command:
                     print ex
 
         if trigger == "Error":
-            worker, work_queue = self.__work_queues[queue_id]
+            worker, work_queue = self._work_queues[queue_id]
             with work_queue.mutex:
                 work_queue.queue.clear()
-            del self.__work_queues[queue_id]
+            del self._work_queues[queue_id]
             return
 
-        if queue_id not in self.__work_queues.keys():
+        if queue_id not in self._work_queues.keys():
             work_queue = Queue()
 
             worker = threading.Thread(
-                    target=__worker_thread,
+                    target=_worker_thread,
                     args=(work_queue, )
                     )
             worker.daemon = True
             # worker.start()
-            self.__work_queues[queue_id] = (worker, work_queue)
+            self._work_queues[queue_id] = (worker, work_queue)
 
-        worker, work_queue = self.__work_queues[queue_id]
-        if state in self.__registered_callbacks["finish"].keys():
+        worker, work_queue = self._work_queues[queue_id]
+        if state in self._registered_callbacks["finish"].keys():
             worker.start()
-        elif state in self.__registered_callbacks["stop"].keys():
-            worker, work_queue = self.__work_queues[queue_id]
+        elif state in self._registered_callbacks["stop"].keys():
+            worker, work_queue = self._work_queues[queue_id]
             with work_queue.mutex:
                 work_queue.queue.clear()
-            del self.__work_queues[queue_id]
+            del self._work_queues[queue_id]
             return
 
         coms = OrderedDict(
@@ -107,7 +107,7 @@ class LE_Command:
                 )
         work_queue.put((coms, message, state))
 
-    def __finish_callback(self,
+    def _finish_callback(self,
             trigger,
             action,
             target,
@@ -121,12 +121,12 @@ class LE_Command:
             ("target", target),
             ("finish", finish)])
         t = threading.Thread(
-                target=self.__invoke_callbacks,
+                target=self._invoke_callbacks,
                 args=(coms, message))
         t.daemon = True
         t.start()
 
-    def __stop_callback(self, trigger, action, target, message, stop):
+    def _stop_callback(self, trigger, action, target, message, stop):
         LE_Sound.playmp3(LE_Res.get_res_path("sound/com_stop"))
 
         coms = [
@@ -135,17 +135,17 @@ class LE_Command:
                 ("target", target),
                 ("stop", stop)
                 ]
-        self.__invoke_callbacks(OrderedDict(coms), message)
+        self._invoke_callbacks(OrderedDict(coms), message)
 
-    def __invoke_callbacks(self, coms, msg):
+    def _invoke_callbacks(self, coms, msg):
         return_value = None
         is_continue = True
         for com_type in coms.keys():
             if not is_continue:
                 break
-            if not com_type in self.__registered_callbacks:
+            if not com_type in self._registered_callbacks:
                 continue
-            callbacks = self.__registered_callbacks[com_type]
+            callbacks = self._registered_callbacks[com_type]
             if callbacks:
                 if coms[com_type] in callbacks:
                     if coms[com_type] is None:
@@ -203,9 +203,9 @@ class LE_Command:
 
     def register_callback(self, com_type, com_item, callback):
         if com_type and com_item and callback:
-            if com_type not in self.__registered_callbacks:
-                self.__registered_callbacks[com_type] = {}
-            type_coms = self.__registered_callbacks[com_type]
+            if com_type not in self._registered_callbacks:
+                self._registered_callbacks[com_type] = {}
+            type_coms = self._registered_callbacks[com_type]
             if com_item in type_coms:
                 print "warning: " + com_item + ' has registered.'
             type_coms[com_item] = callback
@@ -214,17 +214,61 @@ class LE_Command:
             return
 
     def parse(self, word_stream):
-        if not self.__keep_running:
+        if not self._keep_running:
             print "invoke start() first."
             return
         for word in list(word_stream):
-            self.__fsm.put_into_parse_stream(word)
+            self._fsm.put_into_parse_stream(word)
 
     def start(self):
-        self.__keep_running = True
+        self._keep_running = True
 
     def stop(self):
-        self.__keep_running = False
+        self._keep_running = False
+
+
+class LE_Comfirmation:
+    def __init__(self, rec):
+        self._rec = rec
+
+    def confirm(self, ok="ok", cancel="cancel", cfd=0.5):
+        print "begin confirmation:ok=%s, cancel=%s, cfd=%f" % (ok, cancel, cfd)
+
+        queue = Queue(1)
+
+        def callback(result, confidence):
+            print "confirm: " + result
+            if confidence < cfd:
+                return
+            else:
+                try:
+                    queue.put(result, timeout=2)
+                except Empty:
+                    pass
+
+        old_callback = self._rec.queue.callback
+        self._rec.queue.callback = callback
+
+        confirmed = False
+        for idx in range(5):
+            try:
+                result = queue.get(timeout=4)
+                if result == ok:
+                    confirmed = True
+                    queue.task_done()
+                    break
+                elif result == cancel:
+                    confirmed = False
+                    queue.task_done()
+                    break
+            except Empty:
+                pass
+
+        self._rec.queue.callback = old_callback
+        if confirmed:
+            return True
+        else:
+            return False
 
 if __name__ == '__main__':
     def action_callback(action = None, target = None,

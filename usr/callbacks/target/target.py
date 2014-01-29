@@ -82,16 +82,16 @@ class message_callback:
                         print exc
                         return True, "pass"
 
-                LE_Speech2Text.pause()
+                self._rec.pause()
                 filepath = path + datetime.now().strftime("%m-%d_%H:%M") + ".mp3"
                 record = pre_value
                 record(filepath)
                 LE_Sound.playmp3(
                                 LE_Res.get_res_path("sound/com_stop")
                                 )
-                LE_Speech2Text.resume()
+                self._rec.resume()
         elif action == u"播放":
-            LE_Speech2Text.pause()
+            self._rec.pause()
 
             if isinstance(pre_value, types.FunctionType):
                 play = pre_value
@@ -103,6 +103,6 @@ class message_callback:
                             LE_Res.get_res_path("sound/com_stop")
                             )
 
-            LE_Speech2Text.resume()
+            self._rec.resume()
         return True, "pass"
 

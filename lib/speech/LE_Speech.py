@@ -19,16 +19,16 @@ import logging as log
 
 
 class LE_Speech2Text(object):
-    PAUSE = False
+    _PAUSE = False
 
     @classmethod
-    def pause(cls):
-        cls.PAUSE = True
+    def PAUSE(cls):
+        cls._PAUSE = True
         print "stt pause."
 
     @classmethod
-    def resume(cls):
-        cls.PAUSE = False
+    def RESUME(cls):
+        cls._PAUSE = False
         print "stt resume."
 
     # @classmethod
@@ -148,7 +148,7 @@ class LE_Speech2Text(object):
         self.BEGIN_THRESHOLD = 10
         self.TIMEOUT_THRESHOLD = self.BEGIN_THRESHOLD*3
         self.SILENTADDED = 0.5
-        self._callback = callback
+        self.callback = callback
 
         self._processing_queue = Queue()
 
@@ -274,12 +274,12 @@ class LE_Speech2Text(object):
                     break
 
             sound_data = self._wav_to_flac(sound_data)
-            self._queue.write_data(sound_data)
+            self.queue.write_data(sound_data)
 
     def _recording(self):
 
-        self._queue = self._queue(self._callback, rate=self.STT_RATE)
-        self._queue.start()
+        self.queue = self._queue(self.callback, rate=self.STT_RATE)
+        self.queue.start()
 
         p = pyaudio.PyAudio()
         stream = p.open(format=self.FORMAT,
@@ -293,7 +293,7 @@ class LE_Speech2Text(object):
 
         while self.keep_running:
             snd_data = stream.read(self.CHUNK_SIZE)
-            if LE_Speech2Text.PAUSE is False:
+            if LE_Speech2Text._PAUSE is False and self._pause is False:
                 self._processing_queue.put(snd_data)
         
         print "* done recording"
@@ -316,7 +316,15 @@ class LE_Speech2Text(object):
 
     def stop_recognizing(self):
         self.keep_running = False # first
-        self._queue.stop()
+        self.queue.stop()
+
+    def pause(self):
+        self._pause = True
+        print "stt pause."
+
+    def resume(self):
+        self._pause = False
+        print "stt resume."
 
 class LE_Text2Speech:
 
@@ -348,10 +356,10 @@ class LE_Text2Speech:
                 print ex
 
     def __speakSpeechFromText(self, phrase):
-        LE_Speech2Text.pause()
+        LE_Speech2Text.PAUSE()
         googleSpeechURL = self.__getGoogleSpeechURL(phrase)
         subprocess.call(["mpg123", "-q", googleSpeechURL])
-        LE_Speech2Text.resume()
+        LE_Speech2Text.RESUME()
 
     def start(self):
         log.info("speaker start.")

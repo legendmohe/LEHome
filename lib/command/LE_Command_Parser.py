@@ -18,9 +18,9 @@ class LE_Command_Parser:
 
     DEBUG = False
     
-    __error_occoured = False
-    __message_buf = ''
-    __unit_map = {
+    _error_occoured = False
+    _message_buf = ''
+    _unit_map = {
             'finish':"",
             'stop':"",
             'then' :"",
@@ -30,85 +30,84 @@ class LE_Command_Parser:
             'message':""
             }
 
-    __finish_succeed = False
-    __stop_succeed = False
-    __then_succeed = False
-    __then_queue_id = -1
-    __in_then = False
+    _finish_succeed = False
+    _stop_succeed = False
+    _then_succeed = False
+    _then_queue_id = -1
 
     def onfound_trigger(self, e):
         if self.DEBUG:
             print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
-        self.__unit_map['trigger'] = e.args[1]
+        self._unit_map['trigger'] = e.args[1]
         
         if e.dst == "error_state":
-            self.__error_occoured = True
+            self._error_occoured = True
 
     def onfound_target(self, e):
         if self.DEBUG:
             print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
-        self.__unit_map['target'] = e.args[1]
+        self._unit_map['target'] = e.args[1]
         
         if e.dst == "error_state":
-            self.__error_occoured = True
+            self._error_occoured = True
 
     def onfound_action(self, e):
         if self.DEBUG:
             print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
-        self.__unit_map['action'] = e.args[1]
+        self._unit_map['action'] = e.args[1]
 
         if e.dst == "error_state":
-            self.__error_occoured = True
+            self._error_occoured = True
 
     def onfound_else(self, e):
         if self.DEBUG:
             print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
 
         if e.dst == "error_state":
-            self.__error_occoured = True
+            self._error_occoured = True
 
     def onfound_finish_flag(self, e):
         if self.DEBUG:
             print 'finish ! = event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
 
-        self.__unit_map['finish'] = e.args[1]
-        self.__finish_succeed = True
+        self._unit_map['finish'] = e.args[1]
+        self._finish_succeed = True
 
         if e.dst == "error_state":
-            self.__error_occoured = True
+            self._error_occoured = True
 
     def onfound_stop_flag(self, e):
         if self.DEBUG:
             print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
 
-        self.__unit_map['stop'] = e.args[1]
-        self.__stop_succeed = True
+        self._unit_map['stop'] = e.args[1]
+        self._stop_succeed = True
 
         if e.dst == "error_state":
-            self.__error_occoured = True
+            self._error_occoured = True
 
     def onfound_then_flag(self, e):
         if self.DEBUG:
             print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
 
-        self.__unit_map['then'] = e.args[1]
-        self.__then_succeed = True
-        if self.__then_queue_id == -1:
-            self.__then_queue_id = int(time.time())
+        self._unit_map['then'] = e.args[1]
+        self._then_succeed = True
+        if self._then_queue_id == -1:
+            self._then_queue_id = int(time.time())
 
         if e.dst == "error_state":
-            self.__error_occoured = True
+            self._error_occoured = True
     
     def onreset(self, e):
         if self.DEBUG:
             print 'reset ! = event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
 
-        self.__error_occoured = False
+        self._error_occoured = False
 
         if e.dst == "error_state":
-            self.__error_occoured = True
+            self._error_occoured = True
 
-    __FSM = Fysom({
+    _FSM = Fysom({
         'initial': 'initial_state',
         #'final': 'initial_state',
         'events': [
@@ -173,24 +172,24 @@ class LE_Command_Parser:
 
         self.DEBUG = DEBUG
 
-        self.__FSM.onfound_trigger = self.onfound_trigger
-        self.__FSM.onfound_else = self.onfound_else
-        self.__FSM.onfound_action = self.onfound_action
-        self.__FSM.onfound_target = self.onfound_target
-        self.__FSM.onfound_finish_flag = self.onfound_finish_flag
-        self.__FSM.onfound_stop_flag = self.onfound_stop_flag
-        self.__FSM.onfound_then_flag = self.onfound_then_flag
-        self.__FSM.onreset = self.onreset 
+        self._FSM.onfound_trigger = self.onfound_trigger
+        self._FSM.onfound_else = self.onfound_else
+        self._FSM.onfound_action = self.onfound_action
+        self._FSM.onfound_target = self.onfound_target
+        self._FSM.onfound_finish_flag = self.onfound_finish_flag
+        self._FSM.onfound_stop_flag = self.onfound_stop_flag
+        self._FSM.onfound_then_flag = self.onfound_then_flag
+        self._FSM.onreset = self.onreset 
 
-        self.__token_buf = []
-        self.__match_stack = []
+        self._token_buf = []
+        self._match_stack = []
 
         self.finish_callback = None
         self.stop_callback = None
         self.then_callback = None
     
-    def __reset(self):
-        self.__unit_map = {
+    def _reset(self):
+        self._unit_map = {
                 'finish':"",
                 'stop':"",
                 'then':"",
@@ -199,15 +198,15 @@ class LE_Command_Parser:
                 'target':"",
                 'message':""
                 }
-        self.__FSM.current = "initial_state"
-        del self.__token_buf[:]
-        del self.__match_stack[:]
+        self._FSM.current = "initial_state"
+        del self._token_buf[:]
+        del self._match_stack[:]
 
-    def __parse_token(self, word):
+    def _parse_token(self, word):
         # word = word.encode("utf-8")
         # print word, type(word)
-        self.__token_buf.append(word)
-        _temp_str = "".join(self.__token_buf)
+        self._token_buf.append(word)
+        _temp_str = "".join(self._token_buf)
         _no_match = True
         _index = 1
         for token_tuple in self.FLAG: 
@@ -218,16 +217,16 @@ class LE_Command_Parser:
                 if match_str.startswith(_temp_str):
                     _found_match_in_token_flag_array = True #found match
                     _no_match = False #for no match in each match token
-                    if _token_type not in self.__match_stack:
-                        heappush(self.__match_stack, _token_type) # use heap
+                    if _token_type not in self._match_stack:
+                        heappush(self._match_stack, _token_type) # use heap
                         
                     if len(match_str) == len(_temp_str):
                         # if current match type is on top of heap, that means it has the
                         # highest priority.now it totally match the buf, so we get the 
                         # token type
-                        if self.__match_stack[0] == _token_type: 
-                            del self.__match_stack[:]
-                            del self.__token_buf[:]
+                        if self._match_stack[0] == _token_type: 
+                            del self._match_stack[:]
+                            del self._token_buf[:]
                             return _temp_str, _token_type[1] #that we found the final type
 
                     # we found the current buf's token type, so we clean the scene
@@ -237,25 +236,25 @@ class LE_Command_Parser:
                 elif _temp_str.startswith(match_str):
                     _found_match_in_token_flag_array = True
                     _no_match = False
-                    if _token_type not in self.__match_stack:
-                        heappush(self.__match_stack, _token_type)
+                    if _token_type not in self._match_stack:
+                        heappush(self._match_stack, _token_type)
 
                     # in case that lower token has short lengh, and it match
-                    if self.__match_stack[0] == _token_type:
-                        del self.__match_stack[:]
-                        del self.__token_buf[0:len(match_str)] #r
+                    if self._match_stack[0] == _token_type:
+                        del self._match_stack[:]
+                        del self._token_buf[0:len(match_str)] #r
                         return _temp_str, _token_type[1]
                     break
 
             #buf will never match the current token type, so we pop it
-            if not _found_match_in_token_flag_array and _token_type in self.__match_stack:
-                self.__match_stack.remove(_token_type)
-                heapify(self.__match_stack)
+            if not _found_match_in_token_flag_array and _token_type in self._match_stack:
+                self._match_stack.remove(_token_type)
+                heapify(self._match_stack)
 
             _index += 1
 
         if _no_match:
-            return self.__token_buf.pop(0), "Else"
+            return self._token_buf.pop(0), "Else"
 
         return None, None
                 
@@ -265,42 +264,42 @@ class LE_Command_Parser:
             print "parse: %s" %(stream_term)
 
         for item in list(stream_term):
-            _token, _token_type = self.__parse_token(item)
+            _token, _token_type = self._parse_token(item)
             if _token == None:
                 #print "continue"
                 continue
             if _token_type == "trigger":
-                self.__FSM.found_trigger(self, _token)
+                self._FSM.found_trigger(self, _token)
             elif _token_type == "action":
-                self.__FSM.found_action(self, _token)
+                self._FSM.found_action(self, _token)
             elif _token_type == "target":
-                self.__FSM.found_target(self, _token)
+                self._FSM.found_target(self, _token)
             elif _token_type == "stop":
-                self.__FSM.found_stop_flag(self, _token)
+                self._FSM.found_stop_flag(self, _token)
                 
-                if self.__stop_succeed:
-                    self.__unit_map['message'] = self.__message_buf
-                    if self.__then_queue_id != -1:
+                if self._stop_succeed:
+                    self._unit_map['message'] = self._message_buf
+                    if self._then_queue_id != -1:
                         if self.then_callback :
                             self.then_callback(
-                                    self.__then_queue_id
-                                    , self.__unit_map['trigger']
-                                    , self.__unit_map['action']
-                                    , self.__unit_map['target']
-                                    , self.__unit_map['message']
-                                    , self.__unit_map['stop']
+                                    self._then_queue_id
+                                    , self._unit_map['trigger']
+                                    , self._unit_map['action']
+                                    , self._unit_map['target']
+                                    , self._unit_map['message']
+                                    , self._unit_map['stop']
                                     )
-                        self.__then_queue_id = -1
+                        self._then_queue_id = -1
                     elif self.stop_callback:
                         self.stop_callback(
-                                    self.__unit_map['trigger']
-                                    , self.__unit_map['action']
-                                    , self.__unit_map['target']
-                                    , self.__unit_map['message']
-                                    , self.__unit_map['stop']
+                                    self._unit_map['trigger']
+                                    , self._unit_map['action']
+                                    , self._unit_map['target']
+                                    , self._unit_map['message']
+                                    , self._unit_map['stop']
                                     )
-                    self.__stop_succeed = False
-                    self.__unit_map = {
+                    self._stop_succeed = False
+                    self._unit_map = {
                             'finish':"",
                             'stop':"",
                             'then':"",
@@ -310,34 +309,34 @@ class LE_Command_Parser:
                             'message':""
                             }
 
-                self.__message_buf = ''
-                # self.__reset()
+                self._message_buf = ''
+                # self._reset()
             elif _token_type == "finish":
-                self.__FSM.found_finish_flag(self, _token)
+                self._FSM.found_finish_flag(self, _token)
 
-                if self.__finish_succeed :
-                    self.__unit_map['message'] = self.__message_buf
-                    if self.__then_queue_id != -1:
+                if self._finish_succeed :
+                    self._unit_map['message'] = self._message_buf
+                    if self._then_queue_id != -1:
                         if self.then_callback :
                             self.then_callback(
-                                    self.__then_queue_id
-                                    , self.__unit_map['trigger']
-                                    , self.__unit_map['action']
-                                    , self.__unit_map['target']
-                                    , self.__unit_map['message']
-                                    , self.__unit_map['finish']
+                                    self._then_queue_id
+                                    , self._unit_map['trigger']
+                                    , self._unit_map['action']
+                                    , self._unit_map['target']
+                                    , self._unit_map['message']
+                                    , self._unit_map['finish']
                                     )
-                        self.__then_queue_id = -1
-                    elif self.finish_callback and self.__unit_map['action'] :
+                        self._then_queue_id = -1
+                    elif self.finish_callback and self._unit_map['action'] :
                         self.finish_callback(
-                                self.__unit_map['trigger']
-                                , self.__unit_map['action']
-                                , self.__unit_map['target']
-                                , self.__unit_map['message']
-                                , self.__unit_map['finish']
+                                self._unit_map['trigger']
+                                , self._unit_map['action']
+                                , self._unit_map['target']
+                                , self._unit_map['message']
+                                , self._unit_map['finish']
                                 )
-                    self.__finish_succeed = False
-                    self.__unit_map = {
+                    self._finish_succeed = False
+                    self._unit_map = {
                             'finish':"",
                             'stop':"",
                             'then':"",
@@ -347,24 +346,24 @@ class LE_Command_Parser:
                             'message':""
                             }
 
-                self.__message_buf = ''
-                # self.__reset()
+                self._message_buf = ''
+                # self._reset()
             elif _token_type == "then":
-                self.__FSM.found_then_flag(self, _token)
+                self._FSM.found_then_flag(self, _token)
 
-                if self.__then_succeed:
-                    self.__unit_map['message'] = self.__message_buf
+                if self._then_succeed:
+                    self._unit_map['message'] = self._message_buf
                     if self.then_callback :
                         self.then_callback(
-                                self.__then_queue_id
-                                , self.__unit_map['trigger']
-                                , self.__unit_map['action']
-                                , self.__unit_map['target']
-                                , self.__unit_map['message']
-                                , self.__unit_map['then']
+                                self._then_queue_id
+                                , self._unit_map['trigger']
+                                , self._unit_map['action']
+                                , self._unit_map['target']
+                                , self._unit_map['message']
+                                , self._unit_map['then']
                                 )
-                    self.__then_succeed = False
-                    self.__unit_map = {
+                    self._then_succeed = False
+                    self._unit_map = {
                             'finish':"",
                             'stop':"",
                             'then':"",
@@ -373,32 +372,32 @@ class LE_Command_Parser:
                             'target':"",
                             'message':""
                             }
-                self.__message_buf = ''
+                self._message_buf = ''
             elif _token_type == "Else":
-                self.__FSM.found_else(self, _token)
+                self._FSM.found_else(self, _token)
 
-            if self.__FSM.current == 'message_state':
-                self.__message_buf += _token
+            if self._FSM.current == 'message_state':
+                self._message_buf += _token
 
-            if self.__error_occoured:
+            if self._error_occoured:
                 if self.DEBUG:
                     print "error occoured."
-                if self.__then_queue_id != -1:
+                if self._then_queue_id != -1:
                     if self.then_callback :
                             self.then_callback(
-                                    self.__then_queue_id
+                                    self._then_queue_id
                                     , "Error" 
                                     , None 
                                     , None
                                     , None
                                     , None
                                     )
-                    self.__then_queue_id = -1
-                self.__FSM.reset()
-            # print self.__FSM.current
+                    self._then_queue_id = -1
+                self._FSM.reset()
+            # print self._FSM.current
 
-    def __reset_unit(self):
-        self.__unit_map = {
+    def _reset_unit(self):
+        self._unit_map = {
                 'finish':"",
                 'stop':"",
                 'then':"",
@@ -409,7 +408,7 @@ class LE_Command_Parser:
                 }
 
     def reset(self):
-        self.__reset()
+        self._reset()
 
 if __name__ == '__main__':
     def test_callback(trigger, action, target, message, finish):

@@ -3,6 +3,9 @@
 import urllib2
 import json
 import subprocess
+import glob, os
+from lib.command.LE_Command import LE_Comfirmation
+
 
 class action_callback:
     def callback(self,
@@ -106,8 +109,22 @@ class remove_callback:
             msg=None, 
             pre_value=None):
         
+        self._speaker.speak(u'确认删除' + msg + u'?')
+        cfm = LE_Comfirmation(self._rec)
+        is_cfm = cfm.confirm()
+        if is_cfm:
+            if target == u"留言":
+                filelist = glob.glob("usr/message/*.mp3")
+                for f in filelist:
+                    os.remove(f)
+                    print "remove:%s" % (f)
+            LE_Sound.playmp3(
+                            LE_Res.get_res_path("sound/com_trash")
+                            )
+        else:
+            print u"cancel"
 
-        return True, "record"
+        return True, "remove"
 
 class record_callback:
     def callback(self,
@@ -145,3 +162,13 @@ class record_callback:
             return True, record
         else:
             return True, "pass"
+
+class cal_callback:
+    def callback(self,
+            action=None,
+            target=None,
+            msg=None, 
+            pre_value=None):
+        
+
+        return True, "cal"
