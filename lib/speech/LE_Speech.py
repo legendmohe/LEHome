@@ -286,13 +286,14 @@ class LE_Speech2Text(object):
         self.queue.start()
 
         p = pyaudio.PyAudio()
-        print "default rate:", p.get_device_info_by_index(0)['defaultSampleRate']
         stream = p.open(format=self.FORMAT,
                     channels=self.CHANNELS,
                     rate=self.RATE,
                     input=True,
                     frames_per_buffer=self.CHUNK_SIZE)
         self.SAMPLE_WIDTH = p.get_sample_size(self.FORMAT)
+        self.RATE = p.get_device_info_by_index(0)['defaultSampleRate']
+        print "default rate:", self.RATE
 
         print "* recording"
 
