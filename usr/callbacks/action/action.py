@@ -174,3 +174,45 @@ class cal_callback:
         
 
         return True, "cal"
+
+class memo_callback:
+    def callback(self,
+            action=None,
+            target=None,
+            msg=None, 
+            pre_value=None):
+        
+        if action == u"录音" and target == None:
+            try:
+                path = "usr/memo/"
+                try:
+                    os.makedirs(path)
+                except OSError as exc:
+                    if exc.errno == errno.EEXIST and os.path.isdir(path):
+                        pass
+                    else:
+                        print exc
+                        return True, "pass"
+
+                self._rec.pause()
+                filepath = path + datetime.now().strftime("%y-%m-%d_%H:%M:%S") + ".mp3"
+                subprocess.call([
+                        "rec", path,
+                        "rate", "16k",
+                        "silence", "1", "0.1", "3%", "1", "5.0", "3%"])
+                LE_Sound.playmp3(
+                                LE_Res.get_res_path("sound/com_stop")
+                                )
+                self._rec.resume()
+            except Exception, ex:
+                print " stop."
+                # print ex
+        return True, "memo"
+
+class set_callback:
+    def callback(self,
+            action=None,
+            target=None,
+            msg=None, 
+            pre_value=None):
+        return True, "set"

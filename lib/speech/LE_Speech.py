@@ -78,10 +78,14 @@ class LE_Speech2Text(object):
             xurl = 'http://www.google.com/speech-api/v1/recognize?xjerr=1&client=chromium&lang=' + self.lang
             content_type = 'audio/x-flac; rate=' + str(self.rate)
             headers = {'Content-Type':content_type}
-            req = urllib2.Request(xurl, data, headers)
-            response = urllib2.urlopen(req)
+            try:
+                req = urllib2.Request(xurl, data, headers)
+                response = urllib2.urlopen(req)
 
-            result = response.read().decode('utf-8')
+                result = response.read().decode('utf-8')
+            except Exception, ex:
+                print "request error:", ex
+                return None, None
 
             print "stt result: " + result
 
@@ -89,6 +93,7 @@ class LE_Speech2Text(object):
 
             if len(list_data) != 0:
                 return (list_data[0]["utterance"], list_data[0]["confidence"])
+            return None, None
 
         def process_thread(self):
             while self.keep_streaming:
@@ -141,10 +146,10 @@ class LE_Speech2Text(object):
 
         self.FORMAT = pyaudio.paInt16
         self.CHANNELS = 1
-        self.RATE = 44100
+        self.RATE = 48000
         self.STT_RATE = 16000
         self.CHUNK_SIZE = 512  # !!!!!
-        self.THRESHOLD = 1100.0
+        self.THRESHOLD = 1500.0
         self.BEGIN_THRESHOLD = 10
         self.TIMEOUT_THRESHOLD = self.BEGIN_THRESHOLD*3
         self.SILENTADDED = 0.5
@@ -201,10 +206,6 @@ class LE_Speech2Text(object):
                 ['sox', '--norm=-1', filename + '.wav',
                     '-r', str(self.STT_RATE), filename + '.flac']
                 )
-        subprocess.call(
-                ['sox', '--norm=-1', filename + '.wav',
-                    '-r', str(self.STT_RATE), filename + '.flac']
-                )
         # subprocess.call(
         #         ['sox', filename + '.flac', filename + '2.flac',
         #             'noisered', 'noise.prof']
@@ -219,7 +220,7 @@ class LE_Speech2Text(object):
     def _processing(self):
         # sample_data = deque(maxlen=2*self.BEGIN_THRESHOLD)
         # sample_data_should_load = True
-        fil = self._filter(100.0, 3600.0, self.CHUNK_SIZE, self.RATE)
+        fil = self._filter(100.0, 3300.0, self.CHUNK_SIZE, self.RATE)
 
         while self.keep_running:
             record_begin = False
@@ -236,8 +237,6 @@ class LE_Speech2Text(object):
                 try:
                     snd_data = self._processing_queue.get(block=True, timeout=2)
                 except:
-                    pass
-                if snd_data is None:
                     continue
                 snd_data = fil.filter(snd_data)
 
@@ -287,6 +286,7 @@ class LE_Speech2Text(object):
         self.queue.start()
 
         p = pyaudio.PyAudio()
+        print "default rate:", p.get_device_info_by_index(0)['defaultSampleRate']
         stream = p.open(format=self.FORMAT,
                     channels=self.CHANNELS,
                     rate=self.RATE,
@@ -297,7 +297,13 @@ class LE_Speech2Text(object):
         print "* recording"
 
         while self.keep_running:
-            snd_data = stream.read(self.CHUNK_SIZE)
+            try:
+                snd_data = stream.read(self.CHUNK_SIZE)
+            except IOError as ex:
+                print "OverflowError"
+                if ex[1] != pyaudio.paInputOverflowed:
+                    raise
+                snd_data = '\x00' * self.CHUNK_SIZE
             if LE_Speech2Text._PAUSE is False and self._pause is False:
                 self._processing_queue.put(snd_data)
         

@@ -60,7 +60,7 @@ class LE_Command:
                     elif state in self._registered_callbacks["finish"].keys():
                         print "queue: %d finish" % (queue_id)
                         LE_Sound.playmp3(
-                                        LE_Res.get_res_path("sound/com_finish")
+                                        LE_Res.get_res_path("sound/com_begin")
                                         )
                         del self._work_queues[queue_id]
                         stop = True
@@ -113,7 +113,7 @@ class LE_Command:
             target,
             message,
             finish):
-        LE_Sound.playmp3(LE_Res.get_res_path("sound/com_finish"))
+        LE_Sound.playmp3(LE_Res.get_res_path("sound/com_begin"))
 
         coms = OrderedDict([
             ("trigger", trigger),

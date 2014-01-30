@@ -7,7 +7,9 @@ import httplib
 import json
 import os
 import errno
+import re
 from datetime import datetime
+from subprocess import PIPE, Popen
 from lib.sound import LE_Sound
 from util.LE_Res import LE_Res
 from lib.speech.LE_Speech import LE_Speech2Text
@@ -106,3 +108,49 @@ class message_callback:
             self._rec.resume()
         return True, "pass"
 
+
+class remind_callback:
+    def callback(self,
+            action=None,
+            target=None,
+            msg=None, 
+            pre_value=None):
+
+        if msg is None:
+            return False, "remind"
+
+        minutes = "2"
+        if msg.startswith(u"一分"):
+            minutes = "1"
+        elif msg.startswith(u"两分"):
+            minutes = "2"
+        elif msg.startswith(u"三分"):
+            minutes = "3"
+        elif msg.startswith(u"五分"):
+            minutes = "5"
+        elif msg.startswith(u"十分"):
+            minutes = "10"
+        elif msg.startswith(u"十五分"):
+            minutes = "15"
+        else:
+            m = re.match(r"(\d+)分.*", msg)
+            if m:
+                minutes = m.group(1)
+            else:
+                return False, "remind"
+
+        self._rec.pause()
+        p = Popen(["at", "now", "+", minutes, "minutes"],
+                stdin=PIPE,
+                stdout=PIPE,
+                bufsize=1)
+        print >>p.stdin, "play " + LE_Res.get_res_path("sound/com_bell") + " repeat 4"
+        print p.communicate("EOF")[0]
+
+        LE_Sound.playmp3(
+                        LE_Res.get_res_path("sound/com_stop")
+                        )
+        self._rec.resume()
+        self._speaker.speak(u"设置提醒" + minutes + u"分钟")
+
+        return True, "remind"
