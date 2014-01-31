@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # encoding: utf-8
 from time import sleep
+from lib.sound import LE_Sound
+from util.LE_Res import LE_Res
 
 class time_callback:
     def callback(self,

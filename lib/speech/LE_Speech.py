@@ -149,7 +149,7 @@ class LE_Speech2Text(object):
         self.RATE = 48000
         self.STT_RATE = 16000
         self.CHUNK_SIZE = 512  # !!!!!
-        self.THRESHOLD = 1500.0
+        self.THRESHOLD = 1000.0
         self.BEGIN_THRESHOLD = 10
         self.TIMEOUT_THRESHOLD = self.BEGIN_THRESHOLD*3
         self.SILENTADDED = 0.5
@@ -220,7 +220,7 @@ class LE_Speech2Text(object):
     def _processing(self):
         # sample_data = deque(maxlen=2*self.BEGIN_THRESHOLD)
         # sample_data_should_load = True
-        fil = self._filter(100.0, 3300.0, self.CHUNK_SIZE, self.RATE)
+        fil = self._filter(80.0, 4000.0, self.CHUNK_SIZE, self.RATE)
 
         while self.keep_running:
             record_begin = False

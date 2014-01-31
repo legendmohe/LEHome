@@ -1,6 +1,6 @@
 {
     "command":{
-        "delay" : ["延时"],
+        "delay" : ["定时"],
         "trigger" : ["hello"],
         "action" : ["开", "关", "播放", "停止播放", "天气预报", "记录",
                     "删除", "录音", "设置"],
@@ -11,7 +11,7 @@
     },
     "callback":{
         "delay":{
-            "延时":"delay.delay_callback"
+            "定时":"delay.delay_callback"
         },
         "trigger":{
             "hello":"trigger.trigger_callback"

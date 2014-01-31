@@ -363,7 +363,6 @@ class LE_Command_Parser:
             elif _token_type == "Else":
                 self._FSM.found_else(self, _token)
                 if self._FSM.current == 'delay_state':  # put it into buf here
-                    print "found_delay:", self._delay_buf
                     self._delay_buf += _token
 
             if self._FSM.current == 'message_state':
