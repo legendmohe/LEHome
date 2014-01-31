@@ -38,6 +38,7 @@ class LE_Home:
 
             com_json = settings['command']
             self._com = LE_Command(
+                        delay=com_json["delay"],
                         trigger=com_json["trigger"],
                         action=com_json["action"],
                         target=com_json["target"],

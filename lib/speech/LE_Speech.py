@@ -281,10 +281,6 @@ class LE_Speech2Text(object):
             self.queue.write_data(sound_data)
 
     def _recording(self):
-
-        self.queue = self._queue(self.callback, rate=self.STT_RATE)
-        self.queue.start()
-
         p = pyaudio.PyAudio()
         stream = p.open(format=self.FORMAT,
                     channels=self.CHANNELS,
@@ -294,6 +290,9 @@ class LE_Speech2Text(object):
         self.SAMPLE_WIDTH = p.get_sample_size(self.FORMAT)
         self.RATE = p.get_device_info_by_index(0)['defaultSampleRate']
         print "default rate:", self.RATE
+
+        self.queue = self._queue(self.callback, rate=self.STT_RATE)
+        self.queue.start()
 
         print "* recording"
 

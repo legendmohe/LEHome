@@ -7,33 +7,31 @@ import time
 
 class LE_Command_Parser:
 
-    FLAG = {
-            "trigger" : [],
-            "action" : [],
-            "target" : [],
-            "stop" : [],
-            "finish" : [],
-            "then" :[],
-            }
-
-    DEBUG = False
-    
     _error_occoured = False
     _message_buf = ''
+    _delay_buf = ''
     _unit_map = {
+            'delay':"",
             'finish':"",
             'stop':"",
             'then' :"",
             'trigger':"",
             'action':"",
             'target':"",
-            'message':""
             }
 
     _finish_succeed = False
     _stop_succeed = False
     _then_succeed = False
     _then_queue_id = -1
+
+    def onfound_delay(self, e):
+        if self.DEBUG:
+            print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+        self._unit_map['delay'] = e.args[1]
+
+        if e.dst == "error_state":
+            self._error_occoured = True
 
     def onfound_trigger(self, e):
         if self.DEBUG:
@@ -97,7 +95,7 @@ class LE_Command_Parser:
 
         if e.dst == "error_state":
             self._error_occoured = True
-    
+
     def onreset(self, e):
         if self.DEBUG:
             print 'reset ! = event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
@@ -111,6 +109,7 @@ class LE_Command_Parser:
         'initial': 'initial_state',
         #'final': 'initial_state',
         'events': [
+                    {'name': 'found_delay', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_trigger', 'src': 'initial_state',  'dst': 'trigger_state'},
                     {'name': 'found_action', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_target', 'src': 'initial_state',  'dst': 'initial_state'},
@@ -119,6 +118,15 @@ class LE_Command_Parser:
                     {'name': 'found_finish_flag', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_then_flag', 'src': 'initial_state',  'dst': 'initial_state'},
 
+                    {'name': 'found_delay', 'src': 'delay_state',  'dst': 'error_state'},
+                    {'name': 'found_trigger', 'src': 'delay_state',  'dst': 'error_state'},
+                    {'name': 'found_action', 'src': 'delay_state',  'dst': 'action_state'},
+                    {'name': 'found_target', 'src': 'delay_state',  'dst': 'error_state'},
+                    {'name': 'found_else', 'src': 'delay_state',  'dst': 'delay_state'},
+                    {'name': 'found_finish_flag', 'src': 'delay_state',  'dst': 'error_state'},
+                    {'name': 'found_then_flag', 'src': 'delay_state',  'dst': 'error_state'},
+
+                    {'name': 'found_delay', 'src': 'trigger_state',  'dst': 'delay_state'},
                     {'name': 'found_trigger', 'src': 'trigger_state',  'dst': 'trigger_state'},
                     {'name': 'found_action', 'src': 'trigger_state',  'dst': 'action_state'},
                     {'name': 'found_target', 'src': 'trigger_state',  'dst': 'error_state'},
@@ -126,21 +134,25 @@ class LE_Command_Parser:
                     {'name': 'found_finish_flag', 'src': 'trigger_state',  'dst': 'initial_state'},
                     {'name': 'found_then_flag', 'src': 'trigger_state',  'dst': 'error_state'},
 
+                    {'name': 'found_delay', 'src': 'action_state',  'dst': 'message_state'},
                     {'name': 'found_trigger', 'src': 'action_state',  'dst': 'message_state'},
                     {'name': 'found_action', 'src': 'action_state',  'dst': 'message_state'},
                     {'name': 'found_target', 'src': 'action_state',  'dst': 'target_state'},
                     {'name': 'found_else', 'src': 'action_state',  'dst': 'message_state'},
 
+                    {'name': 'found_delay', 'src': 'target_state',  'dst': 'message_state'},
                     {'name': 'found_trigger', 'src': 'target_state',  'dst': 'message_state'},
                     {'name': 'found_action', 'src': 'target_state',  'dst': 'message_state'},
                     {'name': 'found_target', 'src': 'target_state',  'dst': 'message_state'},
                     {'name': 'found_else', 'src': 'target_state',  'dst': 'message_state'},
 
+                    {'name': 'found_delay', 'src': 'message_state',  'dst': 'message_state'},
                     {'name': 'found_trigger', 'src': 'message_state',  'dst': 'message_state'},
                     {'name': 'found_action', 'src': 'message_state',  'dst': 'message_state'},
                     {'name': 'found_target', 'src': 'message_state',  'dst': 'message_state'},
                     {'name': 'found_else', 'src': 'message_state',  'dst': 'message_state'},
 
+                    {'name': 'found_delay', 'src': 'message_state',  'dst': 'message_state'},
                     {'name': 'found_trigger', 'src': 'message_state',  'dst': 'message_state'},
                     {'name': 'found_action', 'src': 'message_state',  'dst': 'message_state'},
                     {'name': 'found_target', 'src': 'message_state',  'dst': 'message_state'},
@@ -148,7 +160,7 @@ class LE_Command_Parser:
 
                     {'name': 'reset', 'src': 'error_state',  'dst': 'initial_state'},
                     {'name': 'found_stop_flag',
-                        'src': ['trigger_state', 'action_state', 'target_state', 'message_state'], 
+                        'src': ['trigger_state', 'action_state', 'target_state', 'message_state', 'delay_state'], 
                         'dst': 'initial_state'},
                     {'name': 'found_finish_flag', 
                         'src': ['action_state', 'target_state', 'message_state'], 
@@ -160,8 +172,9 @@ class LE_Command_Parser:
         }
         )
 
-    def __init__(self, trigger, action, target, stop, finish, then, DEBUG = False):
+    def __init__(self, delay, trigger, action, target, stop, finish, then, DEBUG = False):
         self.FLAG = [
+            ('delay' , delay),
             ('trigger' , trigger),
             ('stop' , stop),
             ('finish' , finish),
@@ -172,6 +185,7 @@ class LE_Command_Parser:
 
         self.DEBUG = DEBUG
 
+        self._FSM.onfound_delay = self.onfound_delay
         self._FSM.onfound_trigger = self.onfound_trigger
         self._FSM.onfound_else = self.onfound_else
         self._FSM.onfound_action = self.onfound_action
@@ -179,7 +193,7 @@ class LE_Command_Parser:
         self._FSM.onfound_finish_flag = self.onfound_finish_flag
         self._FSM.onfound_stop_flag = self.onfound_stop_flag
         self._FSM.onfound_then_flag = self.onfound_then_flag
-        self._FSM.onreset = self.onreset 
+        self._FSM.onreset = self.onreset
 
         self._token_buf = []
         self._match_stack = []
@@ -187,17 +201,9 @@ class LE_Command_Parser:
         self.finish_callback = None
         self.stop_callback = None
         self.then_callback = None
-    
+
     def _reset(self):
-        self._unit_map = {
-                'finish':"",
-                'stop':"",
-                'then':"",
-                'trigger':"",
-                'action':"",
-                'target':"",
-                'message':""
-                }
+        self._reset_unit()
         self._FSM.current = "initial_state"
         del self._token_buf[:]
         del self._match_stack[:]
@@ -222,7 +228,7 @@ class LE_Command_Parser:
                         
                     if len(match_str) == len(_temp_str):
                         # if current match type is on top of heap, that means it has the
-                        # highest priority.now it totally match the buf, so we get the 
+                        # highest priority. now it totally match the buf, so we get the 
                         # token type
                         if self._match_stack[0] == _token_type: 
                             del self._match_stack[:]
@@ -268,7 +274,9 @@ class LE_Command_Parser:
             if _token == None:
                 #print "continue"
                 continue
-            if _token_type == "trigger":
+            if _token_type == "delay":
+                self._FSM.found_delay(self, _token)
+            elif _token_type == "trigger":
                 self._FSM.found_trigger(self, _token)
             elif _token_type == "action":
                 self._FSM.found_action(self, _token)
@@ -276,17 +284,16 @@ class LE_Command_Parser:
                 self._FSM.found_target(self, _token)
             elif _token_type == "stop":
                 self._FSM.found_stop_flag(self, _token)
-                
                 if self._stop_succeed:
-                    self._unit_map['message'] = self._message_buf
                     if self._then_queue_id != -1:
-                        if self.then_callback :
+                        if self.then_callback:
                             self.then_callback(
                                     self._then_queue_id
+                                    , (self._unit_map['delay'], self._delay_buf)
                                     , self._unit_map['trigger']
                                     , self._unit_map['action']
                                     , self._unit_map['target']
-                                    , self._unit_map['message']
+                                    , self._message_buf
                                     , self._unit_map['stop']
                                     )
                         self._then_queue_id = -1
@@ -295,86 +302,69 @@ class LE_Command_Parser:
                                     self._unit_map['trigger']
                                     , self._unit_map['action']
                                     , self._unit_map['target']
-                                    , self._unit_map['message']
+                                    , self._message_buf
                                     , self._unit_map['stop']
                                     )
                     self._stop_succeed = False
-                    self._unit_map = {
-                            'finish':"",
-                            'stop':"",
-                            'then':"",
-                            'trigger':"",
-                            'action':"",
-                            'target':"",
-                            'message':""
-                            }
+                    self._reset_unit()
 
                 self._message_buf = ''
+                self._delay_buf = ''
                 # self._reset()
             elif _token_type == "finish":
                 self._FSM.found_finish_flag(self, _token)
 
                 if self._finish_succeed :
-                    self._unit_map['message'] = self._message_buf
                     if self._then_queue_id != -1:
                         if self.then_callback :
                             self.then_callback(
                                     self._then_queue_id
+                                    , (self._unit_map['delay'], self._delay_buf)
                                     , self._unit_map['trigger']
                                     , self._unit_map['action']
                                     , self._unit_map['target']
-                                    , self._unit_map['message']
+                                    , self._message_buf
                                     , self._unit_map['finish']
                                     )
                         self._then_queue_id = -1
                     elif self.finish_callback and self._unit_map['action'] :
                         self.finish_callback(
-                                self._unit_map['trigger']
+                                (self._unit_map['delay'], self._delay_buf)
+                                , self._unit_map['trigger']
                                 , self._unit_map['action']
                                 , self._unit_map['target']
-                                , self._unit_map['message']
+                                , self._message_buf
                                 , self._unit_map['finish']
                                 )
                     self._finish_succeed = False
-                    self._unit_map = {
-                            'finish':"",
-                            'stop':"",
-                            'then':"",
-                            'trigger':"",
-                            'action':"",
-                            'target':"",
-                            'message':""
-                            }
+                    self._reset_unit()
 
                 self._message_buf = ''
+                self._delay_buf = ''
                 # self._reset()
             elif _token_type == "then":
                 self._FSM.found_then_flag(self, _token)
 
                 if self._then_succeed:
-                    self._unit_map['message'] = self._message_buf
                     if self.then_callback :
                         self.then_callback(
                                 self._then_queue_id
+                                , (self._unit_map['delay'], _delay_buf)
                                 , self._unit_map['trigger']
                                 , self._unit_map['action']
                                 , self._unit_map['target']
-                                , self._unit_map['message']
+                                , self._message_buf
                                 , self._unit_map['then']
                                 )
                     self._then_succeed = False
-                    self._unit_map = {
-                            'finish':"",
-                            'stop':"",
-                            'then':"",
-                            'trigger':"",
-                            'action':"",
-                            'target':"",
-                            'message':""
-                            }
+                    self._reset_unit()
                 self._message_buf = ''
+                self._delay_buf = ''
             elif _token_type == "Else":
                 self._FSM.found_else(self, _token)
+                if self._FSM.current == 'delay_state':  # put it into buf here
+                    print "found_delay:", self._delay_buf
+                    self._delay_buf += _token
 
             if self._FSM.current == 'message_state':
                 self._message_buf += _token
@@ -386,6 +376,7 @@ class LE_Command_Parser:
                     if self.then_callback :
                             self.then_callback(
                                     self._then_queue_id
+                                    , None
                                     , "Error" 
                                     , None 
                                     , None
@@ -394,17 +385,18 @@ class LE_Command_Parser:
                                     )
                     self._then_queue_id = -1
                 self._FSM.reset()
+                self._reset_unit()
             # print self._FSM.current
 
     def _reset_unit(self):
         self._unit_map = {
+                'delay':"",
                 'finish':"",
                 'stop':"",
                 'then':"",
                 'trigger':"",
                 'action':"",
                 'target':"",
-                'message':""
                 }
 
     def reset(self):

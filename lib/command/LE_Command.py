@@ -13,13 +13,13 @@ from util.LE_Res import LE_Res
 
 class LE_Command:
     def __init__(
-            self, trigger, action, target,
+            self, delay, trigger, action, target,
             stop, finish, then, DEBUG=False
             ):
         self._registered_callbacks = {}
 
         self._fsm = LE_Command_Parser(
-                trigger, action, target,
+                delay, trigger, action, target,
                 stop, finish, then, DEBUG=False
                 )
         self._fsm.DEBUG = DEBUG
@@ -34,6 +34,7 @@ class LE_Command:
 
     def _then_callback(self,
                         queue_id,
+                        delay,
                         trigger,
                         action,
                         target,
@@ -45,10 +46,10 @@ class LE_Command:
             pass_value = None
             while not stop:
                 try:
-                    coms, msg, state = work_queue.get(block=True, timeout=1)
+                    coms, msg, state, t = work_queue.get(block=True, delayout=1)
                     if pass_value:
                         coms["pass_value"] = pass_value
-                    pass_value = self._invoke_callbacks(coms, msg)
+                    pass_value = self._invoke_callbacks(coms, msg, t)
 
                     if pass_value.lower() == "cancel":
                         print "cancel queue: %d finish" % (queue_id)
@@ -69,7 +70,7 @@ class LE_Command:
                 except Queue.Empty, ex:
                     pass
                 except Exception, ex:
-                    print ex
+                    print "parser: ", ex
 
         if trigger == "Error":
             worker, work_queue = self._work_queues[queue_id]
@@ -99,30 +100,33 @@ class LE_Command:
             del self._work_queues[queue_id]
             return
 
-        coms = OrderedDict(
-                [("trigger", trigger),
+        coms = OrderedDict( [
+                    ("delay", delay[0]),
+                    ("trigger", trigger),
                     ("action", action),
                     ("target", target),
-                    ("then", state)]
-                )
-        work_queue.put((coms, message, state))
+                    ("then", state)
+                    ])
+        work_queue.put((coms, message, state, delay[1]))
 
     def _finish_callback(self,
-            trigger,
-            action,
-            target,
-            message,
-            finish):
+                        delay,
+                        trigger,
+                        action,
+                        target,
+                        message,
+                        finish):
         LE_Sound.playmp3(LE_Res.get_res_path("sound/com_begin"))
 
         coms = OrderedDict([
+            ("delay", delay[0]),
             ("trigger", trigger),
             ("action", action),
             ("target", target),
             ("finish", finish)])
         t = threading.Thread(
                 target=self._invoke_callbacks,
-                args=(coms, message))
+                args=(coms, message, delay[1]))
         t.daemon = True
         t.start()
 
@@ -135,9 +139,9 @@ class LE_Command:
                 ("target", target),
                 ("stop", stop)
                 ]
-        self._invoke_callbacks(OrderedDict(coms), message)
+        self._invoke_callbacks(OrderedDict(coms), message, delay=None)
 
-    def _invoke_callbacks(self, coms, msg):
+    def _invoke_callbacks(self, coms, msg, delay):
         return_value = None
         is_continue = True
         for com_type in coms.keys():
@@ -151,27 +155,34 @@ class LE_Command:
                     if coms[com_type] is None:
                         continue
                     callback = callbacks[coms[com_type]]
-                    if com_type == "trigger":
+                    if com_type == "delay":
+                        is_continue, return_value = callback(
+                                delay=delay,
+                                action=coms["action"],
+                                target=coms["target"],
+                                )
+                        print is_continue, return_value
+                    elif com_type == "trigger":
                         is_continue, return_value = callback(
                                 trigger=coms["trigger"],
                                 action=coms["action"],
                                 pre_value=return_value
                                 )
-                    if com_type == "action":
+                    elif com_type == "action":
                         is_continue, return_value = callback(
                                 action=coms["action"],
                                 target=coms["target"],
                                 msg=msg,
                                 pre_value=return_value
                                 )
-                    if com_type == "target":
+                    elif com_type == "target":
                         is_continue, return_value = callback(
                                 action=coms["action"],
                                 target=coms["target"],
                                 msg=msg,
                                 pre_value=return_value
                                 )
-                    if com_type == "stop":
+                    elif com_type == "stop":
                         is_continue, return_value = callback(
                                 action=coms["action"],
                                 target=coms["target"],
@@ -179,7 +190,7 @@ class LE_Command:
                                 msg=msg,
                                 pre_value=return_value
                                 )
-                    if com_type == "finish":
+                    elif com_type == "finish":
                         is_continue, return_value = callback(
                                 action=coms["action"],
                                 target=coms["target"],
@@ -187,7 +198,7 @@ class LE_Command:
                                 msg=msg,
                                 pre_value=return_value
                                 )
-                    if com_type == "then":
+                    elif com_type == "then":
                         is_continue, return_value = callback(
                                 action=coms["action"],
                                 target=coms["target"],
@@ -271,6 +282,9 @@ class LE_Comfirmation:
             return False
 
 if __name__ == '__main__':
+    def delay_callback(delay=None, action = None, target = None):
+        print "* delay callback: %s, action: %s, target: %s" % (delay, action, target)
+        return True, "pass"
     def action_callback(action = None, target = None,
             msg=None,
             pre_value=None):
@@ -298,17 +312,19 @@ if __name__ == '__main__':
         print "* then callback: action: %s, target: %s, message: %s state: %s pre_value: %s pass_value %s" %(action, target, msg, state, pre_value, pass_value)
         return True, "pass"
 
-    parser_target = "你好启动开灯1结束"
+    parser_target = "你好启动定时5分钟开灯1结束"
     commander = LE_Command(
-            trigger = ["启动"],
-            action = ["开", "关"],
-            target = ["灯", "门"],
-            stop = ["停止"],
-            finish = ["结束"],
-            then = ["然后"],
-            DEBUG = False)
+            delay=["定时"],
+            trigger=["启动"],
+            action=["开", "关"],
+            target=["灯", "门"],
+            stop=["停止"],
+            finish=["结束"],
+            then=["然后"],
+            DEBUG=False)
     commander.start()
     
+    commander.register_callback("delay", "定时", delay_callback)
     commander.register_callback("action", "开", action_callback)
     commander.register_callback("action", "关", action_callback)
     commander.register_callback("target", "灯", target_callback)
