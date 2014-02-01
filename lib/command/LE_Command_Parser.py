@@ -349,7 +349,7 @@ class LE_Command_Parser:
                     if self.then_callback :
                         self.then_callback(
                                 self._then_queue_id
-                                , (self._unit_map['delay'], _delay_buf)
+                                , (self._unit_map['delay'], self._delay_buf)
                                 , self._unit_map['trigger']
                                 , self._unit_map['action']
                                 , self._unit_map['target']

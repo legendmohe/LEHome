@@ -46,7 +46,7 @@ class LE_Command:
             pass_value = None
             while not stop:
                 try:
-                    coms, msg, state, t = work_queue.get(block=True, delayout=1)
+                    coms, msg, state, t = work_queue.get(block=True, timeout=1)
                     if pass_value:
                         coms["pass_value"] = pass_value
                     pass_value = self._invoke_callbacks(coms, msg, t)
@@ -67,7 +67,7 @@ class LE_Command:
                         stop = True
 
                     work_queue.task_done()
-                except Queue.Empty, ex:
+                except Empty, ex:
                     pass
                 except Exception, ex:
                     print "parser: ", ex
