@@ -1,5 +1,8 @@
 {
     "command":{
+        "if" : ["如果"],
+        "then" : ["那么"],
+        "else" : ["否则"],
         "delay" : ["定时"],
         "trigger" : ["hello"],
         "action" : ["开", "关", "播放", "停止播放", "天气预报", "记录",
@@ -7,7 +10,7 @@
         "target" : ["灯", "门", "豆瓣电台", "留言", "提醒"],
         "stop" : ["算了"],
         "finish" : ["好吗", "谢谢"],
-        "then" : ["然后", "接着"]
+        "next" : ["然后", "接着"]
     },
     "callback":{
         "delay":{
@@ -41,9 +44,9 @@
             "好吗":"finish.finish_callback",
             "谢谢":"finish.finish_callback"
         },
-        "then":{
-            "接着":"then.then_callback",
-            "然后":"then.then_callback"
+        "next":{
+            "接着":"next.next_callback",
+            "然后":"next.next_callback"
         }
     },
     "sound":{

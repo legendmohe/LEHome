@@ -13,6 +13,7 @@ class Statement:
         self.stop = ""
         self.finish = ""
         self.ifs = ""
+        self.thens = ""
         self.elses = ""
 
 
@@ -24,4 +25,5 @@ class Block:
 class IfStatement:
     def __init__(self):
         self.if_block = Block()
+        self.then_block = Block()
         self.else_block = Block()

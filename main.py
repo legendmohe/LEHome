@@ -37,15 +37,18 @@ class LE_Home:
         if settings:
 
             com_json = settings['command']
-            self._com = LE_Command(
-                        delay=com_json["delay"],
-                        trigger=com_json["trigger"],
-                        action=com_json["action"],
-                        target=com_json["target"],
-                        stop=com_json["stop"],
-                        finish=com_json["finish"],
-                        then=com_json["then"],
-                        DEBUG=False)
+            self._com = LE_Command({
+                        "ifs":com_json["if"],
+                        "thens":com_json["then"],
+                        "elses":com_json["else"],
+                        "delay":com_json["delay"],
+                        "trigger":com_json["trigger"],
+                        "action":com_json["action"],
+                        "target":com_json["target"],
+                        "stop":com_json["stop"],
+                        "finish":com_json["finish"],
+                        "nexts":com_json["next"],
+                        })
             
             cb_json = settings["callback"]
             for com_name in cb_json.keys():

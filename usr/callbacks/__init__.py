@@ -39,7 +39,7 @@ import action
 import target
 import finish
 import stop
-import then
+import next
 import trigger
 # from action import *
 # from target import *
