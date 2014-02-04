@@ -53,6 +53,9 @@ class LE_Home:
                 for cb_token in cbs.keys():
                     try:
                         token = cbs[cb_token].encode("utf-8")
+                        if token == "" or token is None:
+                            print "token ", token, " no callbacks."
+                            continue
                         dpos = token.rindex('.')
                         module_name = token[:dpos]
                         class_name = token[dpos + 1:]

@@ -3,7 +3,7 @@
 
 from fysom import Fysom
 from heapq import heappush, heapify
-import time
+from LEElements import Statement, IfStatement, Block
 
 
 class LE_Command_Parser:
@@ -11,25 +11,13 @@ class LE_Command_Parser:
     _error_occoured = False
     _message_buf = ''
     _delay_buf = ''
-    _unit_map = {
-                'delay':"",
-                'finish':"",
-                'stop':"",
-                'then' :"",
-                'trigger':"",
-                'action':"",
-                'target':"",
-                }
-
-    _finish_succeed = False
-    _stop_succeed = False
-    _then_succeed = False
-    _then_queue_id = -1
+    _statement = Statement()
+    _block_stack = [Block()]
 
     def onfound_delay(self, e):
         if self.DEBUG:
             print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
-        self._unit_map['delay'] = e.args[1]
+        self._statement.delay = e.args[1]
 
         if e.dst == "error_state":
             self._error_occoured = True
@@ -37,28 +25,28 @@ class LE_Command_Parser:
     def onfound_trigger(self, e):
         if self.DEBUG:
             print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
-        self._unit_map['trigger'] = e.args[1]
-        
+        self._statement.trigger = e.args[1]
+
         if e.dst == "error_state":
             self._error_occoured = True
 
     def onfound_target(self, e):
         if self.DEBUG:
             print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
-        self._unit_map['target'] = e.args[1]
-        
+        self._statement.target = e.args[1]
+
         if e.dst == "error_state":
             self._error_occoured = True
 
     def onfound_action(self, e):
         if self.DEBUG:
             print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
-        self._unit_map['action'] = e.args[1]
+        self._statement.action = e.args[1]
 
         if e.dst == "error_state":
             self._error_occoured = True
 
-    def onfound_else(self, e):
+    def onfound_others(self, e):
         if self.DEBUG:
             print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
 
@@ -67,71 +55,165 @@ class LE_Command_Parser:
 
     def onfound_finish_flag(self, e):
         if self.DEBUG:
-            print 'finish ! = event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+            print 'finish ! = event: %s, src: %s, dst: %s' \
+                                % (e.event, e.src, e.dst)
 
-        self._unit_map['finish'] = e.args[1]
-        self._finish_succeed = True
+        self._statement.finish = e.args[1]
 
         if e.dst == "error_state":
             self._error_occoured = True
+        elif e.src in ['action_state', 'target_state', 'message_state']:
+            block = self._block_stack[-1]
+            if isinstance(block, Block):
+                self._append_statement(block)
+
+            if self.finish_callback:
+                self.finish_callback(self._block_stack[0])
+
+            self._reset_element()
 
     def onfound_stop_flag(self, e):
         if self.DEBUG:
             print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
 
-        self._unit_map['stop'] = e.args[1]
-        self._stop_succeed = True
+        self._statement.stop = e.args[1]
 
         if e.dst == "error_state":
             self._error_occoured = True
+        elif e.src in ['trigger_state',
+                        'action_state',
+                        'target_state',
+                        'message_state',
+                        'delay_state']:
+            block = self._block_stack[-1]
+            if isinstance(block, Block):
+                self._append_statement(block)
+
+            if self.stop_callback:
+                self.stop_callback(self._block_stack[0])
+
+            self._reset_element()
 
     def onfound_then_flag(self, e):
         if self.DEBUG:
             print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
 
-        self._unit_map['then'] = e.args[1]
-        self._then_succeed = True
-        if self._then_queue_id == -1:
-            self._then_queue_id = int(time.time())
+        self._statement.then = e.args[1]
+        if e.dst == "trigger_state":
+            block = self._block_stack[-1]
+            self._append_statement(block)
 
         if e.dst == "error_state":
             self._error_occoured = True
+
+    def onfound_if(self, e):
+        if self.DEBUG:
+            print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+        self._statement.ifs = e.args[1]
+
+        if e.dst == "error_state":
+            self._error_occoured = True
+
+        block = self._block_stack[-1]
+        if isinstance(block, Block):
+            ifs = IfStatement()
+            block.statements.append(ifs)
+            self._block_stack.append(ifs)
+            self._block_stack.append(ifs.if_block)
+        # elif isinstance(block, IfStatement):
+        #     print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+        #     print "if statement can't be nasted."
+
+    def onfound_else(self, e):
+        if self.DEBUG:
+            print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+        self._statement.elses = e.args[1]
+
+        if e.dst == "error_state":
+            self._error_occoured = True
+
+        block = self._block_stack.pop()
+        ifs = self._block_stack[-1]
+        if isinstance(block, Block) and isinstance(ifs, IfStatement):
+            self._append_statement(block)
+            self._block_stack.append(ifs.else_block)
+        else:
+            print "single else error."
 
     def onreset(self, e):
         if self.DEBUG:
-            print 'reset ! = event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
-
-        self._error_occoured = False
+            print 'reset ! = event: %s, src: %s, dst: %s' \
+                    % (e.event, e.src, e.dst)
 
         if e.dst == "error_state":
             self._error_occoured = True
+
+    def onerror_state(self, e):
+        if self.DEBUG:
+            print 'onerror_state event: %s, src: %s, dst: %s' \
+                    % (e.event, e.src, e.dst)
+
+        if self.DEBUG:
+            print "error occoured."
+
+    def ontrigger_state(self, e):
+        if self.DEBUG:
+            print 'ontrigger_state event: %s, src: %s, dst: %s' \
+                    % (e.event, e.src, e.dst)
+
+    def oninitial_state(self, e):
+        if self.DEBUG:
+            print 'oninitial_state event: %s, src: %s, dst: %s' \
+                    % (e.event, e.src, e.dst)
+
+    def _append_statement(self, block):
+        self._statement.delay_time = self._delay_buf
+        self._statement.msg = self._message_buf
+        block.statements.append(self._statement)
+        self._statement = Statement()
 
     _FSM = Fysom({
         'initial': 'initial_state',
         #'final': 'initial_state',
         'events': [
+                    {'name': 'found_if', 'src': 'initial_state',  'dst': 'initial_state'},
+                    {'name': 'found_else', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_delay', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_trigger', 'src': 'initial_state',  'dst': 'trigger_state'},
                     {'name': 'found_action', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_target', 'src': 'initial_state',  'dst': 'initial_state'},
-                    {'name': 'found_else', 'src': 'initial_state',  'dst': 'initial_state'},
+                    {'name': 'found_others', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_stop_flag', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_finish_flag', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_then_flag', 'src': 'initial_state',  'dst': 'initial_state'},
 
+                    {'name': 'found_if', 'src': 'delay_state',  'dst': 'error_state'},
+                    {'name': 'found_else', 'src': 'delay_state',  'dst': 'error_state'},
                     {'name': 'found_delay', 'src': 'delay_state',  'dst': 'error_state'},
                     {'name': 'found_trigger', 'src': 'delay_state',  'dst': 'error_state'},
                     {'name': 'found_action', 'src': 'delay_state',  'dst': 'action_state'},
                     {'name': 'found_target', 'src': 'delay_state',  'dst': 'error_state'},
-                    {'name': 'found_else', 'src': 'delay_state',  'dst': 'delay_state'},
+                    {'name': 'found_others', 'src': 'delay_state',  'dst': 'delay_state'},
                     {'name': 'found_finish_flag', 'src': 'delay_state',  'dst': 'error_state'},
                     {'name': 'found_then_flag', 'src': 'delay_state',  'dst': 'error_state'},
 
+                    {'name': 'found_if', 'src': 'if_state',  'dst': 'error_state'},
+                    {'name': 'found_else', 'src': 'if_state',  'dst': 'error_state'},
+                    {'name': 'found_delay', 'src': 'if_state',  'dst': 'delay_state'},
+                    {'name': 'found_trigger', 'src': 'if_state',  'dst': 'error_state'},
+                    {'name': 'found_action', 'src': 'if_state',  'dst': 'action_state'},
+                    {'name': 'found_target', 'src': 'if_state',  'dst': 'error_state'},
+                    {'name': 'found_others', 'src': 'if_state',  'dst': 'error_state'},
+                    {'name': 'found_finish_flag', 'src': 'if_state',  'dst': 'error_state'},
+                    {'name': 'found_then_flag', 'src': 'if_state',  'dst': 'error_state'},
+
+                    {'name': 'found_if', 'src': 'trigger_state',  'dst': 'if_state'},
+                    {'name': 'found_else', 'src': 'trigger_state',  'dst': 'error_state'},
                     {'name': 'found_delay', 'src': 'trigger_state',  'dst': 'delay_state'},
                     {'name': 'found_trigger', 'src': 'trigger_state',  'dst': 'trigger_state'},
                     {'name': 'found_action', 'src': 'trigger_state',  'dst': 'action_state'},
                     {'name': 'found_target', 'src': 'trigger_state',  'dst': 'error_state'},
-                    {'name': 'found_else', 'src': 'trigger_state',  'dst': 'error_state'},
+                    {'name': 'found_others', 'src': 'trigger_state',  'dst': 'error_state'},
                     {'name': 'found_finish_flag', 'src': 'trigger_state',  'dst': 'initial_state'},
                     {'name': 'found_then_flag', 'src': 'trigger_state',  'dst': 'error_state'},
 
@@ -139,29 +221,23 @@ class LE_Command_Parser:
                     {'name': 'found_trigger', 'src': 'action_state',  'dst': 'message_state'},
                     {'name': 'found_action', 'src': 'action_state',  'dst': 'message_state'},
                     {'name': 'found_target', 'src': 'action_state',  'dst': 'target_state'},
-                    {'name': 'found_else', 'src': 'action_state',  'dst': 'message_state'},
+                    {'name': 'found_others', 'src': 'action_state',  'dst': 'message_state'},
 
                     {'name': 'found_delay', 'src': 'target_state',  'dst': 'message_state'},
                     {'name': 'found_trigger', 'src': 'target_state',  'dst': 'message_state'},
                     {'name': 'found_action', 'src': 'target_state',  'dst': 'message_state'},
                     {'name': 'found_target', 'src': 'target_state',  'dst': 'message_state'},
-                    {'name': 'found_else', 'src': 'target_state',  'dst': 'message_state'},
+                    {'name': 'found_others', 'src': 'target_state',  'dst': 'message_state'},
 
                     {'name': 'found_delay', 'src': 'message_state',  'dst': 'message_state'},
                     {'name': 'found_trigger', 'src': 'message_state',  'dst': 'message_state'},
                     {'name': 'found_action', 'src': 'message_state',  'dst': 'message_state'},
                     {'name': 'found_target', 'src': 'message_state',  'dst': 'message_state'},
-                    {'name': 'found_else', 'src': 'message_state',  'dst': 'message_state'},
+                    {'name': 'found_others', 'src': 'message_state',  'dst': 'message_state'},
 
-                    {'name': 'found_delay', 'src': 'message_state',  'dst': 'message_state'},
-                    {'name': 'found_trigger', 'src': 'message_state',  'dst': 'message_state'},
-                    {'name': 'found_action', 'src': 'message_state',  'dst': 'message_state'},
-                    {'name': 'found_target', 'src': 'message_state',  'dst': 'message_state'},
-                    {'name': 'found_else', 'src': 'message_state',  'dst': 'message_state'},
-
-                    {'name': 'reset', 'src': 'error_state',  'dst': 'initial_state'},
+                    {'name': 'reset', 'src': ['error_state', 'initial_state'],  'dst': 'initial_state'},
                     {'name': 'found_stop_flag',
-                        'src': ['trigger_state', 'action_state', 'target_state', 'message_state', 'delay_state'], 
+                        'src': ['trigger_state', 'action_state', 'target_state', 'message_state', 'delay_state', 'if_state'], 
                         'dst': 'initial_state'},
                     {'name': 'found_finish_flag', 
                         'src': ['action_state', 'target_state', 'message_state'], 
@@ -169,42 +245,51 @@ class LE_Command_Parser:
                     {'name': 'found_then_flag', 
                         'src': ['action_state', 'target_state', 'message_state'], 
                         'dst': 'trigger_state'},
+                    {'name': 'found_if', 
+                        'src': ['action_state', 'target_state', 'message_state'], 
+                        'dst': 'message_state'},
+                    {'name': 'found_else', 
+                        'src': ['action_state', 'target_state', 'message_state'], 
+                        'dst': 'trigger_state'},
                     ],
         }
         )
 
-    def __init__(self, delay, trigger, action, target, stop, finish, then, DEBUG = False):
-        self.FLAG = [
-            ('delay' , delay),
-            ('trigger' , trigger),
-            ('stop' , stop),
-            ('finish' , finish),
-            ('action' , action),
-            ('target' , target),
-            ('then' , then),
-            ]
+    def __init__(self, coms):
+        self.FLAG = []
 
-        self.DEBUG = DEBUG
+        flags = ['ifs', 'elses', 'delay', 'trigger', 'stop', 'finish',
+                'action', 'target', 'then']
+        for flag in flags:
+            if flag in coms.keys():
+                self.FLAG.append((flag, coms[flag]))
+
+        self.DEBUG = False
 
         self._FSM.onfound_delay = self.onfound_delay
         self._FSM.onfound_trigger = self.onfound_trigger
-        self._FSM.onfound_else = self.onfound_else
+        self._FSM.onfound_others = self.onfound_others
         self._FSM.onfound_action = self.onfound_action
         self._FSM.onfound_target = self.onfound_target
         self._FSM.onfound_finish_flag = self.onfound_finish_flag
         self._FSM.onfound_stop_flag = self.onfound_stop_flag
         self._FSM.onfound_then_flag = self.onfound_then_flag
+        self._FSM.onfound_if = self.onfound_if
+        self._FSM.onfound_else = self.onfound_else
         self._FSM.onreset = self.onreset
+
+        self._FSM.ontrigger_state = self.ontrigger_state
+        self._FSM.oninitial_state = self.oninitial_state
+        self._FSM.onerror_state = self.onerror_state
 
         self._token_buf = []
         self._match_stack = []
 
         self.finish_callback = None
         self.stop_callback = None
-        self.then_callback = None
 
     def _reset(self):
-        self._reset_unit()
+        self._reset_element()
         self._FSM.current = "initial_state"
         del self._token_buf[:]
         del self._match_stack[:]
@@ -261,21 +346,29 @@ class LE_Command_Parser:
             _index += 1
 
         if _no_match:
-            return self._token_buf.pop(0), "else"
+            return self._token_buf.pop(0), "others"
 
         return None, None
                 
     def put_into_parse_stream(self, stream_term):
 
-        if self.DEBUG :
-            print "parse: %s" %(stream_term)
+        # if self.DEBUG :
+        #     print "parse: %s" %(stream_term)
 
         for item in list(stream_term):
             _token, _token_type = self._parse_token(item)
             if _token == None:
                 #print "continue"
                 continue
-            if _token_type == "delay":
+            if _token_type == "ifs":
+                self._FSM.found_if(self, _token)
+                self._message_buf = ''
+                self._delay_buf = ''
+            elif _token_type == "elses":
+                self._FSM.found_else(self, _token)
+                self._message_buf = ''
+                self._delay_buf = ''
+            elif _token_type == "delay":
                 self._FSM.found_delay(self, _token)
             elif _token_type == "trigger":
                 self._FSM.found_trigger(self, _token)
@@ -285,84 +378,21 @@ class LE_Command_Parser:
                 self._FSM.found_target(self, _token)
             elif _token_type == "stop":
                 self._FSM.found_stop_flag(self, _token)
-                if self._stop_succeed:
-                    if self._then_queue_id != -1:
-                        if self.then_callback:
-                            self.then_callback(
-                                    self._then_queue_id
-                                    , (self._unit_map['delay'], self._delay_buf)
-                                    , self._unit_map['trigger']
-                                    , self._unit_map['action']
-                                    , self._unit_map['target']
-                                    , self._message_buf
-                                    , self._unit_map['stop']
-                                    )
-                        self._then_queue_id = -1
-                    elif self.stop_callback:
-                        self.stop_callback(
-                                    self._unit_map['trigger']
-                                    , self._unit_map['action']
-                                    , self._unit_map['target']
-                                    , self._message_buf
-                                    , self._unit_map['stop']
-                                    )
-                    self._stop_succeed = False
-                    self._reset_unit()
 
                 self._message_buf = ''
                 self._delay_buf = ''
-                # self._reset()
             elif _token_type == "finish":
                 self._FSM.found_finish_flag(self, _token)
 
-                if self._finish_succeed :
-                    if self._then_queue_id != -1:
-                        if self.then_callback :
-                            self.then_callback(
-                                    self._then_queue_id
-                                    , (self._unit_map['delay'], self._delay_buf)
-                                    , self._unit_map['trigger']
-                                    , self._unit_map['action']
-                                    , self._unit_map['target']
-                                    , self._message_buf
-                                    , self._unit_map['finish']
-                                    )
-                        self._then_queue_id = -1
-                    elif self.finish_callback and self._unit_map['action'] :
-                        self.finish_callback(
-                                (self._unit_map['delay'], self._delay_buf)
-                                , self._unit_map['trigger']
-                                , self._unit_map['action']
-                                , self._unit_map['target']
-                                , self._message_buf
-                                , self._unit_map['finish']
-                                )
-                    self._finish_succeed = False
-                    self._reset_unit()
-
                 self._message_buf = ''
                 self._delay_buf = ''
-                # self._reset()
             elif _token_type == "then":
                 self._FSM.found_then_flag(self, _token)
 
-                if self._then_succeed:
-                    if self.then_callback :
-                        self.then_callback(
-                                self._then_queue_id
-                                , (self._unit_map['delay'], self._delay_buf)
-                                , self._unit_map['trigger']
-                                , self._unit_map['action']
-                                , self._unit_map['target']
-                                , self._message_buf
-                                , self._unit_map['then']
-                                )
-                    self._then_succeed = False
-                    self._reset_unit()
                 self._message_buf = ''
                 self._delay_buf = ''
-            elif _token_type == "else":
-                self._FSM.found_else(self, _token)
+            elif _token_type == "others":
+                self._FSM.found_others(self, _token)
                 if self._FSM.current == 'delay_state':  # put it into buf here
                     self._delay_buf += _token
 
@@ -370,55 +400,54 @@ class LE_Command_Parser:
                 self._message_buf += _token
 
             if self._error_occoured:
-                if self.DEBUG:
-                    print "error occoured."
-                if self._then_queue_id != -1:
-                    if self.then_callback :
-                            self.then_callback(
-                                    self._then_queue_id
-                                    , None
-                                    , "Error" 
-                                    , None 
-                                    , None
-                                    , None
-                                    , None
-                                    )
-                    self._then_queue_id = -1
                 self._FSM.reset()
-                self._reset_unit()
+                self._reset_element()
+                self._error_occoured = False
             # print self._FSM.current
 
-    def _reset_unit(self):
-        self._unit_map = {
-                'delay':"",
-                'finish':"",
-                'stop':"",
-                'then':"",
-                'trigger':"",
-                'action':"",
-                'target':"",
-                }
+    def _reset_element(self):
+        self._statement = Statement()
+        self._block_stack = [Block()]
 
     def reset(self):
         self._reset()
 
 if __name__ == '__main__':
-    def test_callback(trigger, action, target, message, finish):
-        print "* finished >> action: %s, target: %s, message: %s" %(action, target, message)
+    import sys
 
-    def stop_callback(trigger, action, target, message, finish):
-        print "* stop >> action: %s, target: %s, message: %s" %(action, target, message)
-    fsm = LE_Command_Parser(
-            trigger = ["启动"],
-            action = ["开", "关"],
-            target = ["灯", "门"],
-            stop = ["停止"],
-            finish = ["结束"],
-            then = ["然后", "接着"],
-            DEBUG = True)
+    def test_callback(block, index=1):
+        for statement in block.statements:
+            for attr in vars(statement):
+                sys.stdout.write("-"*index)
+                block = getattr(statement, attr)
+                print "obj.%s = %s" % (attr, block)
+                if isinstance(block, Block):
+                    test_callback(block, index + 1)
+
+    def stop_callback(block, index=1):
+        for statement in block.statements:
+            for attr in vars(statement):
+                sys.stdout.write("-"*index)
+                block = getattr(statement, attr)
+                print "obj.%s = %s" % (attr, block)
+                if isinstance(block, Block):
+                    test_callback(block, index + 1)
+
+    fsm = LE_Command_Parser({
+            "ifs":["如果"],
+            "elses":["那么"],
+            "delay":["定时"],
+            "trigger":["启动"],
+            "action":["开", "关"],
+            "target":["灯", "门"],
+            "stop":["停止"],
+            "finish":["结束"],
+            "then":["然后", "接着"],
+            })
+    fsm.DEBUG = True
     fsm.finish_callback = test_callback
     fsm.stop_callback = stop_callback
     #TODO - "不要停&停止"
-    parser_target = "启动台灯结束"
+    parser_target = "启动开灯1结束启动启动开灯2停止启动开启动开灯3停止结束启动开灯4然后开门5然后关门6结束启动定时5分钟开门6结束启动如果开门7那么开灯8结束"
     fsm.put_into_parse_stream(parser_target)
 
