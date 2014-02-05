@@ -3,12 +3,12 @@
         "if" : ["如果"],
         "then" : ["那么"],
         "else" : ["否则"],
-        "delay" : ["定时"],
+        "delay" : ["定时", "每小时", "每天", "每周"],
         "trigger" : ["hello"],
         "action" : ["开", "关", "播放", "停止播放", "天气预报", "记录",
                     "删除", "录音", "设置"],
-        "target" : ["灯", "门", "豆瓣电台", "留言", "提醒"],
-        "stop" : ["算了"],
+        "target" : ["灯", "门", "豆瓣电台", "留言", "提醒", "闹铃"],
+        "stop" : ["算了", "取消"],
         "finish" : ["好吗", "谢谢"],
         "next" : ["然后", "接着"]
     },
@@ -34,11 +34,13 @@
             "灯":"target.target_callback",
             "门":"target.target_callback",
             "提醒":"target.remind_callback",
+            "闹铃":"target.alarm_callback",
             "豆瓣电台":"target.douban_callback",
             "留言":"target.message_callback"
         },
         "stop":{
-            "算了":"stop.stop_callback"
+            "算了":"stop.stop_callback",
+            "取消":"stop.stop_callback"
         },
         "finish":{
             "好吗":"finish.finish_callback",

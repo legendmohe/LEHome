@@ -15,6 +15,52 @@ from util.LE_Res import LE_Res
 from lib.speech.LE_Speech import LE_Speech2Text
 from lib.sound import LE_Sound
 
+
+def minutes_msg2num(msg):
+    minutes = "2"
+    if msg.startswith(u"一分"):
+        minutes = "1"
+    elif msg.startswith(u"两分"):
+        minutes = "2"
+    elif msg.startswith(u"三分"):
+        minutes = "3"
+    elif msg.startswith(u"五分"):
+        minutes = "5"
+    elif msg.startswith(u"十分"):
+        minutes = "10"
+    elif msg.startswith(u"十五分"):
+        minutes = "15"
+    else:
+        m = re.match(r"(\d+)分.*", msg)
+        if m:
+            minutes = m.group(1)
+        else:
+            return None
+    return minutes
+
+
+def hours_msg2num(msg):
+    hours = "2"
+    if msg.startswith(u"一点"):
+        hours = "1"
+    elif msg.startswith(u"两点"):
+        hours = "2"
+    elif msg.startswith(u"三点"):
+        hours = "3"
+    elif msg.startswith(u"五点"):
+        hours = "5"
+    elif msg.startswith(u"十点"):
+        hours = "10"
+    elif msg.startswith(u"十五点"):
+        hours = "15"
+    else:
+        m = re.match(r"(\d+)点.*", msg)
+        if m:
+            hours = m.group(1)
+        else:
+            return None
+    return hours
+
 class target_callback:
     def callback(self,
             action=None,
@@ -117,27 +163,11 @@ class remind_callback:
             pre_value=None):
 
         if msg is None:
-            return False, "remind"
+            return False, None
 
-        minutes = "2"
-        if msg.startswith(u"一分"):
-            minutes = "1"
-        elif msg.startswith(u"两分"):
-            minutes = "2"
-        elif msg.startswith(u"三分"):
-            minutes = "3"
-        elif msg.startswith(u"五分"):
-            minutes = "5"
-        elif msg.startswith(u"十分"):
-            minutes = "10"
-        elif msg.startswith(u"十五分"):
-            minutes = "15"
-        else:
-            m = re.match(r"(\d+)分.*", msg)
-            if m:
-                minutes = m.group(1)
-            else:
-                return False, "remind"
+        minutes = minutes_msg2num(msg)
+        if minutes is None:
+            return False, None
 
         self._rec.pause()
         p = Popen(["at", "now", "+", minutes, "minutes"],
@@ -151,6 +181,40 @@ class remind_callback:
                         LE_Res.get_res_path("sound/com_stop")
                         )
         self._rec.resume()
-        self._speaker.speak(u"设置提醒" + minutes + u"分钟")
+        self._speaker.speak(action + target + minutes + u"分钟")
+
+        return True, "remind"
+
+class alarm_callback:
+    def callback(self,
+            action=None,
+            target=None,
+            msg=None, 
+            pre_value=None):
+
+        if msg is None:
+            return False, None
+
+        hours = hours_msg2num(msg)
+        if hours is None:
+            print "alarm action must set hours."
+            return False, None
+        mins = minutes_msg2num(msg)
+        if mins is None:
+            mins = "00"
+
+        self._rec.pause()
+        p = Popen(["at", hours + ":" + mins],
+                stdin=PIPE,
+                stdout=PIPE,
+                bufsize=1)
+        print >>p.stdin, "play " + LE_Res.get_res_path("sound/com_bell2") + " repeat 6"
+        print p.communicate("EOF")[0]
+
+        LE_Sound.playmp3(
+                        LE_Res.get_res_path("sound/com_stop")
+                        )
+        self._rec.resume()
+        self._speaker.speak(action + target + hours + u"点" + mins + u"分")
 
         return True, "remind"
