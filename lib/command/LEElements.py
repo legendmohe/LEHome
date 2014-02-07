@@ -15,6 +15,7 @@ class Statement:
         self.ifs = ""
         self.thens = ""
         self.elses = ""
+        self.whiles = ""
 
 
 class Block:
@@ -27,3 +28,9 @@ class IfStatement:
         self.if_block = Block()
         self.then_block = Block()
         self.else_block = Block()
+
+
+class WhileStatement:
+    def __init__(self):
+        self.if_block = Block()
+        self.then_block = Block()

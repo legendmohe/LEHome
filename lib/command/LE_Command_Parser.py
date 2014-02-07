@@ -3,7 +3,7 @@
 
 from fysom import Fysom
 from heapq import heappush, heapify
-from LEElements import Statement, IfStatement, Block
+from LEElements import Statement, IfStatement, WhileStatement, Block
 
 
 class LE_Command_Parser:
@@ -84,13 +84,11 @@ class LE_Command_Parser:
                         'action_state',
                         'target_state',
                         'message_state',
+                        'if_state',
                         'delay_state']:
-            block = self._block_stack[-1]
-            if isinstance(block, Block):
-                self._append_statement(block)
 
             if self.stop_callback:
-                self.stop_callback(self._block_stack[0])
+                self.stop_callback(self._statement.stop)
 
             self._reset_element()
 
@@ -105,6 +103,21 @@ class LE_Command_Parser:
 
         if e.dst == "error_state":
             self._error_occoured = True
+
+    def onfound_while(self, e):
+        if self.DEBUG:
+            print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+        self._statement.whiles = e.args[1]
+
+        if e.dst == "error_state":
+            self._error_occoured = True
+
+        block = self._block_stack[-1]
+        if isinstance(block, Block):
+            whiles = WhileStatement()
+            block.statements.append(whiles)
+            self._block_stack.append(whiles)
+            self._block_stack.append(whiles.if_block)
 
     def onfound_if(self, e):
         if self.DEBUG:
@@ -134,11 +147,13 @@ class LE_Command_Parser:
 
         block = self._block_stack.pop()
         ifs = self._block_stack[-1]
-        if isinstance(block, Block) and isinstance(ifs, IfStatement):
-            self._append_statement(block)
-            self._block_stack.append(ifs.then_block)
-        else:
-            print "single else error."
+        if isinstance(block, Block):
+            if isinstance(ifs, IfStatement) or isinstance(ifs, WhileStatement):
+                self._append_statement(block)
+                self._block_stack.append(ifs.then_block)
+                return
+        print "single else error."
+        self._error_occoured = True
 
     def onfound_else(self, e):
         if self.DEBUG:
@@ -192,6 +207,7 @@ class LE_Command_Parser:
         'initial': 'initial_state',
         #'final': 'initial_state',
         'events': [
+                    {'name': 'found_while', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_if', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_then', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_else', 'src': 'initial_state',  'dst': 'initial_state'},
@@ -204,6 +220,19 @@ class LE_Command_Parser:
                     {'name': 'found_finish_flag', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_nexts_flag', 'src': 'initial_state',  'dst': 'initial_state'},
 
+                    {'name': 'found_while', 'src': 'trigger_state',  'dst': 'if_state'},
+                    {'name': 'found_if', 'src': 'trigger_state',  'dst': 'if_state'},
+                    {'name': 'found_then', 'src': 'trigger_state',  'dst': 'error_state'},
+                    {'name': 'found_else', 'src': 'trigger_state',  'dst': 'error_state'},
+                    {'name': 'found_delay', 'src': 'trigger_state',  'dst': 'delay_state'},
+                    {'name': 'found_trigger', 'src': 'trigger_state',  'dst': 'trigger_state'},
+                    {'name': 'found_action', 'src': 'trigger_state',  'dst': 'action_state'},
+                    {'name': 'found_target', 'src': 'trigger_state',  'dst': 'error_state'},
+                    {'name': 'found_others', 'src': 'trigger_state',  'dst': 'error_state'},
+                    {'name': 'found_finish_flag', 'src': 'trigger_state',  'dst': 'initial_state'},
+                    {'name': 'found_nexts_flag', 'src': 'trigger_state',  'dst': 'error_state'},
+
+                    {'name': 'found_while', 'src': 'delay_state',  'dst': 'error_state'},
                     {'name': 'found_if', 'src': 'delay_state',  'dst': 'error_state'},
                     {'name': 'found_then', 'src': 'delay_state',  'dst': 'error_state'},
                     {'name': 'found_else', 'src': 'delay_state',  'dst': 'error_state'},
@@ -215,6 +244,7 @@ class LE_Command_Parser:
                     {'name': 'found_finish_flag', 'src': 'delay_state',  'dst': 'error_state'},
                     {'name': 'found_nexts_flag', 'src': 'delay_state',  'dst': 'error_state'},
 
+                    {'name': 'found_while', 'src': 'if_state',  'dst': 'error_state'},
                     {'name': 'found_if', 'src': 'if_state',  'dst': 'error_state'},
                     {'name': 'found_then', 'src': 'if_state',  'dst': 'error_state'},
                     {'name': 'found_else', 'src': 'if_state',  'dst': 'error_state'},
@@ -225,17 +255,6 @@ class LE_Command_Parser:
                     {'name': 'found_others', 'src': 'if_state',  'dst': 'error_state'},
                     {'name': 'found_finish_flag', 'src': 'if_state',  'dst': 'error_state'},
                     {'name': 'found_nexts_flag', 'src': 'if_state',  'dst': 'error_state'},
-
-                    {'name': 'found_if', 'src': 'trigger_state',  'dst': 'if_state'},
-                    {'name': 'found_then', 'src': 'trigger_state',  'dst': 'error_state'},
-                    {'name': 'found_else', 'src': 'trigger_state',  'dst': 'error_state'},
-                    {'name': 'found_delay', 'src': 'trigger_state',  'dst': 'delay_state'},
-                    {'name': 'found_trigger', 'src': 'trigger_state',  'dst': 'trigger_state'},
-                    {'name': 'found_action', 'src': 'trigger_state',  'dst': 'action_state'},
-                    {'name': 'found_target', 'src': 'trigger_state',  'dst': 'error_state'},
-                    {'name': 'found_others', 'src': 'trigger_state',  'dst': 'error_state'},
-                    {'name': 'found_finish_flag', 'src': 'trigger_state',  'dst': 'initial_state'},
-                    {'name': 'found_nexts_flag', 'src': 'trigger_state',  'dst': 'error_state'},
 
                     {'name': 'found_delay', 'src': 'action_state',  'dst': 'message_state'},
                     {'name': 'found_trigger', 'src': 'action_state',  'dst': 'message_state'},
@@ -268,6 +287,9 @@ class LE_Command_Parser:
                     {'name': 'found_if', 
                         'src': ['action_state', 'target_state', 'message_state'], 
                         'dst': 'message_state'},
+                    {'name': 'found_while', 
+                        'src': ['action_state', 'target_state', 'message_state'], 
+                        'dst': 'message_state'},
                     {'name': 'found_then', 
                         'src': ['action_state', 'target_state', 'message_state'], 
                         'dst': 'trigger_state'},
@@ -281,7 +303,7 @@ class LE_Command_Parser:
     def __init__(self, coms):
         self.FLAG = []
 
-        flags = ['ifs', 'thens', 'elses', 'delay', 'trigger', 'stop', 'finish',
+        flags = ['whiles', 'ifs', 'thens', 'elses', 'delay', 'trigger', 'stop', 'finish',
                 'action', 'target', 'nexts']
         for flag in flags:
             if flag in coms.keys():
@@ -297,6 +319,7 @@ class LE_Command_Parser:
         self._FSM.onfound_finish_flag = self.onfound_finish_flag
         self._FSM.onfound_stop_flag = self.onfound_stop_flag
         self._FSM.onfound_nexts_flag = self.onfound_nexts_flag
+        self._FSM.onfound_while = self.onfound_while
         self._FSM.onfound_if = self.onfound_if
         self._FSM.onfound_then = self.onfound_then
         self._FSM.onfound_else = self.onfound_else
@@ -384,7 +407,11 @@ class LE_Command_Parser:
             if _token == None:
                 #print "continue"
                 continue
-            if _token_type == "ifs":
+            if _token_type == "whiles":
+                self._FSM.found_while(self, _token)
+                self._message_buf = ''
+                self._delay_buf = ''
+            elif _token_type == "ifs":
                 self._FSM.found_if(self, _token)
                 self._message_buf = ''
                 self._delay_buf = ''
@@ -406,17 +433,14 @@ class LE_Command_Parser:
                 self._FSM.found_target(self, _token)
             elif _token_type == "stop":
                 self._FSM.found_stop_flag(self, _token)
-
                 self._message_buf = ''
                 self._delay_buf = ''
             elif _token_type == "finish":
                 self._FSM.found_finish_flag(self, _token)
-
                 self._message_buf = ''
                 self._delay_buf = ''
             elif _token_type == "nexts":
                 self._FSM.found_nexts_flag(self, _token)
-
                 self._message_buf = ''
                 self._delay_buf = ''
             elif _token_type == "others":
@@ -462,6 +486,7 @@ if __name__ == '__main__':
                     test_callback(block, index + 1)
 
     fsm = LE_Command_Parser({
+            "whiles":["循环", "重复"],
             "ifs":["如果"],
             "thens":["那么"],
             "elses":["否则"],
@@ -477,6 +502,6 @@ if __name__ == '__main__':
     fsm.finish_callback = test_callback
     fsm.stop_callback = stop_callback
     #TODO - "不要停&停止"
-    parser_target = "启动如果开门7那么开灯8否则关门9结束"
+    parser_target = "启动循环开门7那么开灯8结束"
     fsm.put_into_parse_stream(parser_target)
 

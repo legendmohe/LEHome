@@ -18,6 +18,13 @@ import threading
 import logging as log
 
 
+# urllib2.install_opener(
+#     urllib2.build_opener(
+#         urllib2.ProxyHandler({'http': 'http://112.65.171.122:8080'})
+#     )
+# )
+
+
 class LE_Speech2Text(object):
     _PAUSE = False
 

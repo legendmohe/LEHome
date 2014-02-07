@@ -7,59 +7,12 @@ import httplib
 import json
 import os
 import errno
-import re
 from datetime import datetime
 from subprocess import PIPE, Popen
-from lib.sound import LE_Sound
 from util.LE_Res import LE_Res
-from lib.speech.LE_Speech import LE_Speech2Text
+from util.LE_Util import parse_time
 from lib.sound import LE_Sound
 
-
-def minutes_msg2num(msg):
-    minutes = "2"
-    if msg.startswith(u"一分"):
-        minutes = "1"
-    elif msg.startswith(u"两分"):
-        minutes = "2"
-    elif msg.startswith(u"三分"):
-        minutes = "3"
-    elif msg.startswith(u"五分"):
-        minutes = "5"
-    elif msg.startswith(u"十分"):
-        minutes = "10"
-    elif msg.startswith(u"十五分"):
-        minutes = "15"
-    else:
-        m = re.match(r"(\d+)分.*", msg)
-        if m:
-            minutes = m.group(1)
-        else:
-            return None
-    return minutes
-
-
-def hours_msg2num(msg):
-    hours = "2"
-    if msg.startswith(u"一点"):
-        hours = "1"
-    elif msg.startswith(u"两点"):
-        hours = "2"
-    elif msg.startswith(u"三点"):
-        hours = "3"
-    elif msg.startswith(u"五点"):
-        hours = "5"
-    elif msg.startswith(u"十点"):
-        hours = "10"
-    elif msg.startswith(u"十五点"):
-        hours = "15"
-    else:
-        m = re.match(r"(\d+)点.*", msg)
-        if m:
-            hours = m.group(1)
-        else:
-            return None
-    return hours
 
 class target_callback:
     def callback(self,
@@ -165,12 +118,12 @@ class remind_callback:
         if msg is None:
             return False, None
 
-        minutes = minutes_msg2num(msg)
+        minutes = parse_time(msg)
         if minutes is None:
             return False, None
 
         self._rec.pause()
-        p = Popen(["at", "now", "+", minutes, "minutes"],
+        p = Popen(["at", "now", "+", minutes, "minutes", "-M"],
                 stdin=PIPE,
                 stdout=PIPE,
                 bufsize=1)
@@ -185,6 +138,7 @@ class remind_callback:
 
         return True, "remind"
 
+
 class alarm_callback:
     def callback(self,
             action=None,
@@ -194,17 +148,14 @@ class alarm_callback:
 
         if msg is None:
             return False, None
-
-        hours = hours_msg2num(msg)
-        if hours is None:
-            print "alarm action must set hours."
+        alarm_time = parse_time(msg)
+        print "alarm_time:", alarm_time
+        if alarm_time is None:
+            print "invalid alarm time:", msg
             return False, None
-        mins = minutes_msg2num(msg)
-        if mins is None:
-            mins = "00"
 
         self._rec.pause()
-        p = Popen(["at", hours + ":" + mins],
+        p = Popen(["at", alarm_time, "-M"],
                 stdin=PIPE,
                 stdout=PIPE,
                 bufsize=1)
@@ -215,6 +166,6 @@ class alarm_callback:
                         LE_Res.get_res_path("sound/com_stop")
                         )
         self._rec.resume()
-        self._speaker.speak(action + target + hours + u"点" + mins + u"分")
+        self._speaker.speak(action + target + alarm_time)
 
         return True, "remind"

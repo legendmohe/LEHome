@@ -24,7 +24,7 @@ class TracePrints(object):
 
 class LE_Home:
     def __init__(self):
-        self._confidence_threshold = 0.6
+        self._confidence_threshold = 0.5
         self._context = {}
         self._init_speaker()
         self._init_recognizer()
@@ -38,6 +38,7 @@ class LE_Home:
 
             com_json = settings['command']
             self._com = LE_Command({
+                        "whiles":com_json["while"],
                         "ifs":com_json["if"],
                         "thens":com_json["then"],
                         "elses":com_json["else"],
@@ -49,6 +50,7 @@ class LE_Home:
                         "finish":com_json["finish"],
                         "nexts":com_json["next"],
                         })
+            self._com.setDEBUG(False)
             
             cb_json = settings["callback"]
             for com_name in cb_json.keys():

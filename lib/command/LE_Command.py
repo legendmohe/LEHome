@@ -4,17 +4,22 @@
 from collections import OrderedDict
 from Queue import Queue, Empty
 from time import sleep
+import pickle
 import threading
 import sys
 
 from LE_Command_Parser import LE_Command_Parser
-from LEElements import Statement, Block, IfStatement
-from lib.sound import LE_Sound
-from util.LE_Res import LE_Res
+from LEElements import Statement, Block, IfStatement, WhileStatement
+# from lib.sound import LE_Sound
+# from util.LE_Res import LE_Res
 
 
 class LE_Command:
-    def __init__(self, coms):
+    def __init__(self, coms, backup_path="backup.dat"):
+        self._tasklist_path = backup_path
+        self._lock = threading.Lock()
+        self._tasklist = self._load_tasklist()
+
         self._registered_callbacks = {}
 
         self._fsm = LE_Command_Parser(coms)
@@ -24,6 +29,23 @@ class LE_Command:
         self._fsm.stop_callback = self._stop_callback
 
         self._keep_running = False
+
+    def _load_tasklist(self):
+        with self._lock:
+            try:
+                with open(self._tasklist_path, "rb") as f:
+                    return pickle.load(f)
+            except:
+                print "no unfinished task list."
+                return []
+
+    def _save_tasklist(self):
+        with self._lock:
+            try:
+                with open(self._tasklist_path, "wb") as f:
+                    pickle.dump(self._tasklist, f, True)
+            except:
+                print "invaild tasklist path:", self._tasklist_path
 
     def _finish_callback(self, block, debug_layer=1):
         if self.DEBUG:
@@ -35,31 +57,27 @@ class LE_Command:
                     if isinstance(value, Block):
                         self._finish_callback(value, debug_layer + 1)
 
-        LE_Sound.playmp3(LE_Res.get_res_path("sound/com_begin"))
+        # LE_Sound.playmp3(LE_Res.get_res_path("sound/com_begin"))
         t = threading.Thread(
-                            target=self._invoke_block,
+                            target=self._execute,
                             args=(block, )
                             )
         t.daemon = True
         t.start()
 
-    def _stop_callback(self, block, debug_layer=1):
-        if self.DEBUG:
-            for statement in block.statements:
-                for attr in vars(statement):
-                    sys.stdout.write("-"*debug_layer)
-                    value = getattr(statement, attr)
-                    print "obj.%s = %s" % (attr, value)
-                    if isinstance(value, Block):
-                        self._finish_callback(value, debug_layer + 1)
+    def _stop_callback(self, stop, debug_layer=1):
+        # LE_Sound.playmp3(LE_Res.get_res_path("sound/com_stop"))
+        if "stop" in self._registered_callbacks:
+            callbacks = self._registered_callbacks["stop"]
+            if stop in callbacks:
+                callbacks[stop](stop=stop)
 
-        LE_Sound.playmp3(LE_Res.get_res_path("sound/com_stop"))
-        t = threading.Thread(
-                            target=self._invoke_block,
-                            args=(block, )
-                            )
-        t.daemon = True
-        t.start()
+    def _execute(self, block, path="backup.pcl"):
+        self._tasklist.append(block)
+        self._save_tasklist()
+        self._invoke_block(block)
+        self._tasklist.remove(block)
+        self._save_tasklist()
 
     def _invoke_block(self, block):
         pass_value = None
@@ -70,7 +88,7 @@ class LE_Command:
                     ("trigger", statement.trigger),
                     ("action", statement.action),
                     ("target", statement.target),
-                    ("stop", statement.stop),
+                    ("nexts", statement.nexts),
                     ("finish", statement.finish)])
                 if pass_value is not None:
                     coms["pass_value"] = pass_value
@@ -82,6 +100,9 @@ class LE_Command:
                     self._invoke_block(statement.then_block)
                 else:
                     self._invoke_block(statement.else_block)
+            elif isinstance(statement, WhileStatement):
+                while self._invoke_block(statement.if_block):
+                    self._invoke_block(statement.then_block)
             elif isinstance(statement, Block):
                 pass_value = self._invoke_block(Block)
         return pass_value
@@ -104,7 +125,8 @@ class LE_Command:
                     callback = callbacks[coms[com_type]]
                     if com_type == "delay":
                         is_continue, return_value = callback(
-                                delay=delay,
+                                delay=coms["delay"],
+                                delay_time=delay,
                                 action=coms["action"],
                                 target=coms["target"],
                                 )
@@ -125,14 +147,6 @@ class LE_Command:
                         is_continue, return_value = callback(
                                 action=coms["action"],
                                 target=coms["target"],
-                                msg=msg,
-                                pre_value=return_value
-                                )
-                    elif com_type == "stop":
-                        is_continue, return_value = callback(
-                                action=coms["action"],
-                                target=coms["target"],
-                                stop=coms["stop"],
                                 msg=msg,
                                 pre_value=return_value
                                 )
@@ -232,7 +246,7 @@ class LE_Comfirmation:
             return False
 
 if __name__ == '__main__':
-    def delay_callback(delay=None, action = None, target = None):
+    def delay_callback(delay=None, delay_time = None, action = None, target = None):
         print "* delay callback: %s, action: %s, target: %s" % (delay, action, target)
         return True, "pass"
     def action_callback(action = None, target = None,
@@ -265,8 +279,9 @@ if __name__ == '__main__':
         print "* next callback: action: %s, target: %s, message: %s state: %s pre_value: %s pass_value %s" %(action, target, msg, state, pre_value, pass_value)
         return True, "pass"
 
-    parser_target = "你好启动如果定时5分钟开灯1那么关门2然后关灯3否则关灯4关门5结束"
+    parser_target = "你好启动重复定时5分钟开灯1那么关门2结束"
     commander = LE_Command({
+            "whiles":["循环", "重复"],
             "ifs":["如果"],
             "thens":["那么"],
             "elses":["否则"],
