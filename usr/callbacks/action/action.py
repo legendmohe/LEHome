@@ -7,6 +7,7 @@ import glob, os
 from lib.command.LE_Command import LE_Comfirmation
 from lib.sound import LE_Sound
 from util.LE_Res import LE_Res
+from util.LE_Util import parse_time
 
 
 class action_callback:
@@ -57,7 +58,7 @@ class weather_report_callback:
         
         self._speaker.speak(content.split('\n'), inqueue=True)
 
-        return True, "weather"
+        return True, pre_value
 
 class stop_play_callback:
     def callback(self, action = None, target = None,
@@ -72,7 +73,7 @@ class stop_play_callback:
                     player.kill()
             except Exception,ex:
                 print ex
-        return True, "kill"
+        return True, pre_value
 
 class play_callback:
     def callback(self, action = None, target = None,
@@ -102,7 +103,7 @@ class play_callback:
             
             return True, play
         else:
-            return True, "pass"
+            return True, pre_value
 
 class remove_callback:
     def callback(self,
@@ -126,7 +127,7 @@ class remove_callback:
         else:
             print u"cancel"
 
-        return True, "remove"
+        return True, pre_value
 
 class record_callback:
     def callback(self,
@@ -163,7 +164,7 @@ class record_callback:
             
             return True, record
         else:
-            return True, "pass"
+            return True, pre_value
 
 class cal_callback:
     def callback(self,
@@ -173,7 +174,23 @@ class cal_callback:
             pre_value=None):
         
 
-        return True, "cal"
+        return True, pre_value
+
+class every_callback:
+    def callback(self,
+            action=None,
+            target=None,
+            msg=None,  # 每*小时 每*分钟 每天*点*分
+            pre_value=None):
+        if pre_value != "while" or msg is None:       
+            return False, None
+
+        if msg.startswith(u"天"):
+            t = LE_Util.parse_time(msg[1:])
+        elif msg.endswith(u"分") or msg.endswith(u"分钟"):
+            t = LE_Util.parse_time(msg)
+        
+        return True, pre_value
 
 class memo_callback:
     def callback(self,
@@ -207,7 +224,7 @@ class memo_callback:
             except Exception, ex:
                 print " stop."
                 # print ex
-        return True, "memo"
+        return True, pre_value
 
 class set_callback:
     def callback(self,
@@ -215,4 +232,4 @@ class set_callback:
             target=None,
             msg=None, 
             pre_value=None):
-        return True, "set"
+        return True, pre_value

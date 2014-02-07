@@ -15,7 +15,7 @@ class time_callback:
             trigger=None, 
             ):
         print "* delay callback: %s, action: %s, target: %s" % (delay, action, target)
-        return True, "pass"
+        return True, pre_value
 
 
 class delay_callback:

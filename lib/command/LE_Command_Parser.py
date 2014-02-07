@@ -96,10 +96,11 @@ class LE_Command_Parser:
         if self.DEBUG:
             print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
 
-        self._statement.nexts = e.args[1]
         if e.dst == "trigger_state":
             block = self._block_stack[-1]
             self._append_statement(block)
+
+        self._statement.nexts = e.args[1]
 
         if e.dst == "error_state":
             self._error_occoured = True

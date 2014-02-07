@@ -7,6 +7,7 @@ class Statement:
         self.delay = ""
         self.delay_time = ""
         self.trigger = ""
+        self.nexts = ""
         self.action = ""
         self.target = ""
         self.msg = ""

@@ -7,13 +7,17 @@
         "delay" : ["定时"],
         "trigger" : ["hello"],
         "action" : ["开", "关", "播放", "停止播放", "天气预报", "记录",
-                    "删除", "录音", "设置"],
+                    "删除", "录音", "设置", "每"],
         "target" : ["灯", "门", "豆瓣电台", "留言", "提醒", "闹铃"],
         "stop" : ["算了", "取消"],
         "finish" : ["好吗", "谢谢"],
         "next" : ["然后", "接着"]
     },
     "callback":{
+        "whiles":{
+            "循环":"whiles.while_callback",
+            "重复":"whiles.while_callback"
+        },
         "delay":{
             "定时":"delay.delay_callback"
         },
@@ -21,6 +25,7 @@
             "hello":"trigger.trigger_callback"
         },
         "action":{
+            "每":"action.every_callback",
             "开":"action.action_callback",
             "关":"action.action_callback",
             "播放":"action.play_callback",

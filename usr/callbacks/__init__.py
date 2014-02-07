@@ -40,11 +40,5 @@ import target
 import finish
 import stop
 import next
+import whiles
 import trigger
-# from action import *
-# from target import *
-# from finish import *
-# from stop import *
-# from then import *
-# from trigger import *
-# import action, finish, stop, target, then, trigger
