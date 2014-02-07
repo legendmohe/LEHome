@@ -97,9 +97,9 @@ class LE_Command:
                 pass_value = self._invoke_callbacks(coms, msg, delay_time)
             elif isinstance(statement, IfStatement):
                 if self._invoke_block(statement.if_block):
-                    self._invoke_block(statement.then_block)
+                    pass_value = self._invoke_block(statement.then_block)
                 else:
-                    self._invoke_block(statement.else_block)
+                    pass_value = self._invoke_block(statement.else_block)
             elif isinstance(statement, WhileStatement):
                 while self._invoke_block(statement.if_block):
                     self._invoke_block(statement.then_block)
