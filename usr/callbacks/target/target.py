@@ -119,6 +119,7 @@ class remind_callback:
             return False, None
 
         minutes = parse_time(msg)
+        print 'msg', msg, "minutes", minutes
         if minutes is None:
             return False, None
 
@@ -127,7 +128,7 @@ class remind_callback:
                 stdin=PIPE,
                 stdout=PIPE,
                 bufsize=1)
-        print >>p.stdin, "play " + LE_Res.get_res_path("sound/com_bell") + " repeat 4"
+        print >>p.stdin, "sudo play " + LE_Res.get_res_path("sound/com_bell") + " repeat 4"
         print p.communicate("EOF")[0]
 
         LE_Sound.playmp3(
@@ -159,7 +160,7 @@ class alarm_callback:
                 stdin=PIPE,
                 stdout=PIPE,
                 bufsize=1)
-        print >>p.stdin, "play " + LE_Res.get_res_path("sound/com_bell2") + " repeat 6"
+        print >>p.stdin, "sudo play " + LE_Res.get_res_path("sound/com_bell2") + " repeat 6"
         print p.communicate("EOF")[0]
 
         LE_Sound.playmp3(

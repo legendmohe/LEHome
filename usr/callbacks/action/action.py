@@ -91,7 +91,7 @@ class play_callback:
 
                 import subprocess
                 try:
-                    player = subprocess.Popen(['play', path])
+                    player = subprocess.Popen(['sudo', 'play', path])
                     self._context["player"] = player
                     player.wait()
                     if not player.poll():
@@ -150,6 +150,7 @@ class record_callback:
                 import subprocess
                 try:
                     recorder = subprocess.Popen([
+                            "sudo",
                             "rec", path,
                             "rate", "16k",
                             "silence", "1", "0.1", "3%", "1", "3.0", "3%"])

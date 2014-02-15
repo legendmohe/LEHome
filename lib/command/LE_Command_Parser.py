@@ -404,6 +404,8 @@ class LE_Command_Parser:
         #     print "parse: %s" %(stream_term)
 
         for item in list(stream_term):
+            if item == " ":
+                continue
             _token, _token_type = self._parse_token(item)
             if _token == None:
                 #print "continue"

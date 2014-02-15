@@ -153,12 +153,13 @@ class LE_Speech2Text(object):
 
         self.FORMAT = pyaudio.paInt16
         self.CHANNELS = 1
-        self.RATE = 48000
+        self.RATE = 16000
         self.STT_RATE = 16000
-        self.CHUNK_SIZE = 512  # !!!!!
-        self.THRESHOLD = 1000.0
-        self.BEGIN_THRESHOLD = 10
-        self.TIMEOUT_THRESHOLD = self.BEGIN_THRESHOLD*3
+        self.CHUNK_SIZE = 256  # !!!!!
+        self.THRESHOLD = 800.0
+        self.BEGIN_THRESHOLD = 5
+        self.TIMEOUT_THRESHOLD = self.BEGIN_THRESHOLD*10
+        self.WIND_THRESHOLD = self.BEGIN_THRESHOLD*3
         self.SILENTADDED = 0.5
         self.callback = callback
 
@@ -210,7 +211,7 @@ class LE_Speech2Text(object):
         wf.close()
 
         subprocess.call(
-                ['sox', '--norm=-1', filename + '.wav',
+                ['sox', '--norm', filename + '.wav',
                     '-r', str(self.STT_RATE), filename + '.flac']
                 )
         # subprocess.call(
@@ -227,7 +228,7 @@ class LE_Speech2Text(object):
     def _processing(self):
         # sample_data = deque(maxlen=2*self.BEGIN_THRESHOLD)
         # sample_data_should_load = True
-        fil = self._filter(80.0, 4000.0, self.CHUNK_SIZE, self.RATE)
+        fil = self._filter(100.0, 3800.0, self.CHUNK_SIZE, self.RATE)
 
         while self.keep_running:
             record_begin = False
@@ -236,7 +237,7 @@ class LE_Speech2Text(object):
             num_silent = 0
             num_sound = 0
             sound_data = ""
-            wnd_data = deque(maxlen=2*self.BEGIN_THRESHOLD)
+            wnd_data = deque(maxlen=self.WIND_THRESHOLD)
             fil.reset()
 
             print "detecting:"
@@ -259,6 +260,7 @@ class LE_Speech2Text(object):
                     silent = self._is_silent(snd_data)
 
                 # print silent
+                # print num_silent
                 if silent:
                     num_silent += 1
                     if num_sound < self.BEGIN_THRESHOLD:
@@ -295,7 +297,7 @@ class LE_Speech2Text(object):
                     input=True,
                     frames_per_buffer=self.CHUNK_SIZE)
         self.SAMPLE_WIDTH = p.get_sample_size(self.FORMAT)
-        self.RATE = p.get_device_info_by_index(0)['defaultSampleRate']
+        # self.RATE = p.get_device_info_by_index(0)['defaultSampleRate']
         print "default rate:", self.RATE
 
         self.queue = self._queue(self.callback, rate=self.STT_RATE)
@@ -327,6 +329,8 @@ class LE_Speech2Text(object):
         self._recording_thread = threading.Thread(target=self._recording)
         self._recording_thread.daemon = True
         self._recording_thread.start()
+
+        sleep(1)
 
         self._processing_thread = threading.Thread(target=self._processing)
         self._processing_thread.daemon = True

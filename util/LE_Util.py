@@ -23,9 +23,11 @@ UTIL_CN_UNIT = {
 
 
 def cn2dig(src):
+    if src == "":
+        return ""
     m = re.match("\d+", src)
     if m:
-        return int(m.group(0))
+        return m.group(0)
     rsl = 0
     unit = 1
     for item in src[::-1]:
@@ -36,21 +38,34 @@ def cn2dig(src):
             rsl += num*unit
     if rsl < unit:
         rsl += unit
-    return int(rsl)
+    return str(rsl)
 
 
 def parse_time(msg):
-    m = re.match(ur"([0-9一二三四五六七八九十]*)[点\.]?([0-9一二三四五六七八九十]*)分?", msg)
-    if m:
-        m1 = cn2dig(m.group(1))
-        m2 = cn2dig(m.group(2))
-        if m1 == "" and m2 == "":
-            return None
-        elif m1 != "" and m2 == "":
-            return "%d:00" % (m1.zfill(2),)
-        elif m1 == "" and m2 != "":
-            return str(m2.zfill(2))
+    m = re.match(ur"(([0-9零一二三四五六七八九十百]+[点\.])?([0-9零一二三四五六七八九十百]+分)?)", msg)
+    if m.group(0):
+        m1 = None
+        m2 = None
+        if m.group(2):
+            m1 = m.group(2)
+        if m.group(3):
+            m2 = m.group(3)
+
+        if m1 is None:
+            m2 = cn2dig(m2[:-1])
+            return m2.zfill(2)
+        elif m2 is None:
+            m1 = cn2dig(m1[:-1])
+            return "%s:00" % (m1.zfill(2),)
         else:
-            return "%d:%d" % (m1.zfill(2), m2.zfill(2))
+            m1 = cn2dig(m1[:-1])
+            m2 = cn2dig(m2[:-1])
+            return "%s:%s" % (m1.zfill(2), m2.zfill(2))
     else:
         return None
+
+if __name__ == "__main__":
+    print parse_time(u"7点")
+    print parse_time(u"五分")
+    print parse_time(u"一百零五分")
+    print parse_time(u"七点五分")
