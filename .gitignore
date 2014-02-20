@@ -215,6 +215,8 @@ pip-log.txt
 .mr.developer.cfg
 
 output.flac
+output_nf.wav
 output.wav
 usr/message/
 backup.dat
+noise.*

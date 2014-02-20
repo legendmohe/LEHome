@@ -83,7 +83,7 @@ class LE_Home:
 
     def _init_recognizer(self):
         print 'initlizing recognize...'
-        # LE_Speech2Text.collect_noise()
+        LE_Speech2Text.collect_noise()
         self._rec = LE_Speech2Text(self._speech_callback)
 
     def _init_speaker(self):

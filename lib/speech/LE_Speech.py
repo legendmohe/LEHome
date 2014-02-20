@@ -5,6 +5,8 @@ from Queue import Queue, Empty
 from collections import deque
 from time import sleep
 import subprocess
+import math
+import audioop
 import numpy as np
 import scipy.signal as signal
 from array import array
@@ -38,17 +40,20 @@ class LE_Speech2Text(object):
         cls._PAUSE = False
         print "stt resume."
 
-    # @classmethod
-    # def collect_noise(cls):
-    #     print "preparing noise reduction."
-    #     rec = subprocess.Popen(['rec', '-r', '16000', '-b', '16', 'noise.wav'])
-    #     sleep(5)
-    #     rec.kill()
+    @classmethod
+    def collect_noise(cls):
+        print "preparing noise reduction."
+        rec = subprocess.Popen(['rec', '-r', '16000',
+                                '-b', '16',
+                                '-c', '1',
+                                'noise.wav'])
+        sleep(1)
+        rec.kill()
 
-    #     subprocess.call(
-    #             ['sox', 'noise.wav', '-n', 'noiseprof', 'noise.prof']
-    #             )
-    #     print "finish preparing."
+        subprocess.call(
+                ['sox', 'noise.wav', '-n', 'noiseprof', 'noise.prof']
+                )
+        print "finish preparing."
 
     class _queue(object):
 
@@ -156,10 +161,14 @@ class LE_Speech2Text(object):
         self.RATE = 16000
         self.STT_RATE = 16000
         self.CHUNK_SIZE = 256  # !!!!!
-        self.THRESHOLD = 800.0
+
+        self.SILENT_THRESHOLD = 1000
         self.BEGIN_THRESHOLD = 5
+        self.RMS_THRESHOLD = 200
+        self.CROSS_THRESHOLD = 500
+
         self.TIMEOUT_THRESHOLD = self.BEGIN_THRESHOLD*10
-        self.WIND_THRESHOLD = self.BEGIN_THRESHOLD*3
+        self.WIND_THRESHOLD = self.BEGIN_THRESHOLD*2
         self.SILENTADDED = 0.5
         self.callback = callback
 
@@ -180,20 +189,28 @@ class LE_Speech2Text(object):
         r.extend([0 for i in xrange(int(self.SILENTADDED*self.RATE))])
         return r
 
-    def _is_silent(self, snd_data):
-        snd_data = np.fromstring(snd_data, dtype=np.int16)
+    def _is_silent(self, wnd_data):
+        # snd_data = np.fromstring(snd_data, dtype=np.int16)
         # sample_data = list(sample_data)[0:self.BEGIN_THRESHOLD]
         # sample_data = [max(x) for x in sample_data]
-        snd_max = max(snd_data)
+        # snd_max = max(snd_data)
+        # print snd_data
         # print snd_max
-        return snd_max < self.THRESHOLD
-        # return snd_max < self.THRESHOLD or \
+        # return snd_max < self.SILENT_THRESHOLD
+        # return snd_max < self.SILENT_THRESHOLD or \
         #         snd_max < 2.0*sum(sample_data)/len(sample_data)
 
         # as_ints = array('h', snd_data)
         # max_value = max(as_ints)
         # print max_value
-        # return max_value < self.THRESHOLD
+        # return max_value < self.SILENT_THRESHOLD
+
+        wnd_data = ''.join(wnd_data)
+        cross = audioop.cross(wnd_data, 2)
+        rms = audioop.rms(wnd_data, 2)
+        print cross, rms
+        # return True
+        return (cross > self.CROSS_THRESHOLD) or (rms < self.RMS_THRESHOLD)
 
     def _wav_to_flac(self, wav_data):
 
@@ -211,13 +228,13 @@ class LE_Speech2Text(object):
         wf.close()
 
         subprocess.call(
-                ['sox', '--norm', filename + '.wav',
+                ['sox', filename + '.wav', filename + '_nf.wav',
+                    'noisered', 'noise.prof', '0.10']
+                )
+        subprocess.call(
+                ['sox', '--norm', filename + '_nf.wav',
                     '-r', str(self.STT_RATE), filename + '.flac']
                 )
-        # subprocess.call(
-        #         ['sox', filename + '.flac', filename + '2.flac',
-        #             'noisered', 'noise.prof']
-        #         )
         with open(filename + '.flac', 'rb') as ff:
             flac_data = ff.read()
 
@@ -226,9 +243,8 @@ class LE_Speech2Text(object):
         return flac_data
 
     def _processing(self):
-        # sample_data = deque(maxlen=2*self.BEGIN_THRESHOLD)
-        # sample_data_should_load = True
-        fil = self._filter(100.0, 3800.0, self.CHUNK_SIZE, self.RATE)
+        fil = self._filter(100.0, 3000.0, self.CHUNK_SIZE, self.RATE)
+        wnd_data = deque(maxlen=self.WIND_THRESHOLD)
 
         while self.keep_running:
             record_begin = False
@@ -237,7 +253,6 @@ class LE_Speech2Text(object):
             num_silent = 0
             num_sound = 0
             sound_data = ""
-            wnd_data = deque(maxlen=self.WIND_THRESHOLD)
             fil.reset()
 
             print "detecting:"
@@ -246,18 +261,14 @@ class LE_Speech2Text(object):
                     snd_data = self._processing_queue.get(block=True, timeout=2)
                 except:
                     continue
-                snd_data = fil.filter(snd_data)
 
+                snd_data = fil.filter(snd_data)
+                wnd_data.append(snd_data)
+                silent = self._is_silent(wnd_data)
+                # if silent:
+                #     snd_data = '\x00' * self.CHUNK_SIZE
                 if record_begin:
-                    silent = self._is_silent(snd_data)
                     sound_data += snd_data
-                else:
-                    wnd_data.append(snd_data)
-                    # if sample_data_should_load:
-                    #     sample_data.append(
-                    #                 np.fromstring(snd_data, dtype=np.int16)
-                    #             )
-                    silent = self._is_silent(snd_data)
 
                 # print silent
                 # print num_silent
@@ -268,11 +279,6 @@ class LE_Speech2Text(object):
                         snd_sound_finished = False
                     if num_silent > self.TIMEOUT_THRESHOLD:
                         snd_slient_finished = True
-                    # enough time-gap for threshold
-                    # if num_silent > 2*self.TIMEOUT_THRESHOLD:
-                    #     sample_data_should_load = True
-                    # else:
-                    #     sample_data_should_load = False
                 elif not silent:
                     num_sound += 1
                     if num_sound >= self.BEGIN_THRESHOLD and num_silent == 0:
