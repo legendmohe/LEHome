@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # encoding: utf-8
 from time import sleep
-from lib.sound import LE_Sound
-from util.LE_Res import LE_Res
+from lib.sound import Sound
+from util.Res import Res
 import re
-from util.LE_Util import parse_time
+from util.Util import parse_time
 
 
 class time_callback:
@@ -38,8 +38,8 @@ class delay_callback:
         sleep(int(minutes) * 60)
 
         self._rec.pause()
-        LE_Sound.playmp3(
-                        LE_Res.get_res_path("sound/com_stop")
+        Sound.playmp3(
+                        Res.get_res_path("sound/com_stop")
                         )
         self._rec.resume()
 

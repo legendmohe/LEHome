@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from lib.command.LE_Command import LE_Command
-from lib.speech.LE_Speech import LE_Speech2Text, LE_Text2Speech
+from lib.command.Command import Command
+from lib.speech.Speech import Speech2Text, Text2Speech
 from time import sleep
 import importlib
 import logging as log
 import sys
 import traceback
 from pprint import pprint
-from util.LE_Res import LE_Res
-from lib.sound import LE_Sound
+from util.Res import Res
+from lib.sound import Sound
 
 
 class TracePrints(object):
@@ -23,7 +23,7 @@ class TracePrints(object):
 # sys.stdout = TracePrints()
 
 
-class LE_Home:
+class Home:
     def __init__(self):
         self._confidence_threshold = 0.5
         self._context = {}
@@ -34,11 +34,11 @@ class LE_Home:
     def _init_command(self):
         print 'initlizing command...'
 
-        settings = LE_Res.init("init.json")
+        settings = Res.init("init.json")
         if settings:
 
             com_json = settings['command']
-            self._com = LE_Command({
+            self._com = Command({
                         "whiles":com_json["while"],
                         "ifs":com_json["if"],
                         "thens":com_json["then"],
@@ -83,13 +83,13 @@ class LE_Home:
 
     def _init_recognizer(self):
         print 'initlizing recognize...'
-        LE_Speech2Text.collect_noise()
-        self._rec = LE_Speech2Text(self._speech_callback)
+        Speech2Text.collect_noise()
+        self._rec = Speech2Text(self._speech_callback)
 
     def _init_speaker(self):
         print "initlizing speaker..."
 
-        self._spk = LE_Text2Speech()
+        self._spk = Text2Speech()
 
     def _speech_callback(self, result, confidence):
         print "result: " + result + " | " + str(confidence)
@@ -98,8 +98,8 @@ class LE_Home:
 
     def activate(self):
         print "==========================Activate============================"
-        LE_Sound.playmp3(
-                        LE_Res.get_res_path("sound/com_begin")
+        Sound.playmp3(
+                        Res.get_res_path("sound/com_begin")
                         )
         self._spk.start()
         self._com.start()
@@ -112,7 +112,7 @@ class LE_Home:
 
 
 if __name__ == '__main__':
-    home = LE_Home()
+    home = Home()
     home.activate()
     sleep(1000)
     

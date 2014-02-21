@@ -9,9 +9,9 @@ import os
 import errno
 from datetime import datetime
 from subprocess import PIPE, Popen
-from util.LE_Res import LE_Res
-from util.LE_Util import parse_time
-from lib.sound import LE_Sound
+from util.Res import Res
+from util.Util import parse_time
+from lib.sound import Sound
 
 
 class target_callback:
@@ -87,8 +87,8 @@ class message_callback:
                 filepath = path + datetime.now().strftime("%m-%d_%H:%M") + ".mp3"
                 record = pre_value
                 record(filepath)
-                LE_Sound.playmp3(
-                                LE_Res.get_res_path("sound/com_stop")
+                Sound.playmp3(
+                                Res.get_res_path("sound/com_stop")
                                 )
                 self._rec.resume()
         elif action == u"播放":
@@ -100,8 +100,8 @@ class message_callback:
                     self._speaker.speak(u'第%d条留言' % (idx + 1))
                     play(filepath)
 
-            LE_Sound.playmp3(
-                            LE_Res.get_res_path("sound/com_stop")
+            Sound.playmp3(
+                            Res.get_res_path("sound/com_stop")
                             )
 
             self._rec.resume()
@@ -128,11 +128,11 @@ class remind_callback:
                 stdin=PIPE,
                 stdout=PIPE,
                 bufsize=1)
-        print >>p.stdin, "sudo play " + LE_Res.get_res_path("sound/com_bell") + " repeat 4"
+        print >>p.stdin, "sudo play " + Res.get_res_path("sound/com_bell") + " repeat 4"
         print p.communicate("EOF")[0]
 
-        LE_Sound.playmp3(
-                        LE_Res.get_res_path("sound/com_stop")
+        Sound.playmp3(
+                        Res.get_res_path("sound/com_stop")
                         )
         self._rec.resume()
         self._speaker.speak(action + target + minutes + u"分钟")
@@ -160,11 +160,11 @@ class alarm_callback:
                 stdin=PIPE,
                 stdout=PIPE,
                 bufsize=1)
-        print >>p.stdin, "sudo play " + LE_Res.get_res_path("sound/com_bell2") + " repeat 6"
+        print >>p.stdin, "sudo play " + Res.get_res_path("sound/com_bell2") + " repeat 6"
         print p.communicate("EOF")[0]
 
-        LE_Sound.playmp3(
-                        LE_Res.get_res_path("sound/com_stop")
+        Sound.playmp3(
+                        Res.get_res_path("sound/com_stop")
                         )
         self._rec.resume()
         self._speaker.speak(action + target + alarm_time)

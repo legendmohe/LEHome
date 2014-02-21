@@ -4,10 +4,10 @@ import urllib2
 import json
 import subprocess
 import glob, os
-from lib.command.LE_Command import LE_Comfirmation
-from lib.sound import LE_Sound
-from util.LE_Res import LE_Res
-from util.LE_Util import parse_time
+from lib.command.Command import Comfirmation
+from lib.sound import Sound
+from util.Res import Res
+from util.Util import parse_time
 
 
 class action_callback:
@@ -113,7 +113,7 @@ class remove_callback:
             pre_value=None):
         
         self._speaker.speak(u'确认删除' + msg + u'?')
-        cfm = LE_Comfirmation(self._rec)
+        cfm = Comfirmation(self._rec)
         is_cfm = cfm.confirm()
         if is_cfm:
             if target == u"留言":
@@ -121,8 +121,8 @@ class remove_callback:
                 for f in filelist:
                     os.remove(f)
                     print "remove:%s" % (f)
-            LE_Sound.playmp3(
-                            LE_Res.get_res_path("sound/com_trash")
+            Sound.playmp3(
+                            Res.get_res_path("sound/com_trash")
                             )
         else:
             print u"cancel"
@@ -187,9 +187,9 @@ class every_callback:
             return False, None
 
         if msg.startswith(u"天"):
-            t = LE_Util.parse_time(msg[1:])
+            t = Util.parse_time(msg[1:])
         elif msg.endswith(u"分") or msg.endswith(u"分钟"):
-            t = LE_Util.parse_time(msg)
+            t = Util.parse_time(msg)
         
         return True, pre_value
 
@@ -218,8 +218,8 @@ class memo_callback:
                         "rec", path,
                         "rate", "16k",
                         "silence", "1", "0.1", "3%", "1", "5.0", "3%"])
-                LE_Sound.playmp3(
-                                LE_Res.get_res_path("sound/com_stop")
+                Sound.playmp3(
+                                Res.get_res_path("sound/com_stop")
                                 )
                 self._rec.resume()
             except Exception, ex:

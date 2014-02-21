@@ -3,10 +3,10 @@
 
 from fysom import Fysom
 from heapq import heappush, heapify
-from LEElements import Statement, IfStatement, WhileStatement, Block
+from Elements import Statement, IfStatement, WhileStatement, Block
 
 
-class LE_Command_Parser:
+class CommandParser:
 
     _error_occoured = False
     _message_buf = ''
@@ -488,7 +488,7 @@ if __name__ == '__main__':
                 if isinstance(block, Block):
                     test_callback(block, index + 1)
 
-    fsm = LE_Command_Parser({
+    fsm = CommandParser({
             "whiles":["循环", "重复"],
             "ifs":["如果"],
             "thens":["那么"],

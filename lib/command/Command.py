@@ -8,13 +8,13 @@ import pickle
 import threading
 import sys
 
-from LE_Command_Parser import LE_Command_Parser
-from LEElements import Statement, Block, IfStatement, WhileStatement
-from lib.sound import LE_Sound
-from util.LE_Res import LE_Res
+from CommandParser import CommandParser
+from Elements import Statement, Block, IfStatement, WhileStatement
+from lib.sound import Sound
+from util.Res import Res
 
 
-class LE_Command:
+class Command:
     def __init__(self, coms, backup_path="backup.dat"):
         self._tasklist_path = backup_path
         self._lock = threading.Lock()
@@ -22,7 +22,7 @@ class LE_Command:
 
         self._registered_callbacks = {}
 
-        self._fsm = LE_Command_Parser(coms)
+        self._fsm = CommandParser(coms)
         self.setDEBUG(False)
 
         self._fsm.finish_callback = self._finish_callback
@@ -57,7 +57,7 @@ class LE_Command:
                     if isinstance(value, Block):
                         self._finish_callback(value, debug_layer + 1)
 
-        LE_Sound.playmp3(LE_Res.get_res_path("sound/com_begin"))
+        Sound.playmp3(Res.get_res_path("sound/com_begin"))
         t = threading.Thread(
                             target=self._execute,
                             args=(block, )
@@ -66,7 +66,7 @@ class LE_Command:
         t.start()
 
     def _stop_callback(self, stop, debug_layer=1):
-        LE_Sound.playmp3(LE_Res.get_res_path("sound/com_stop"))
+        Sound.playmp3(Res.get_res_path("sound/com_stop"))
         if "stop" in self._registered_callbacks:
             callbacks = self._registered_callbacks["stop"]
             if stop in callbacks:
@@ -220,7 +220,7 @@ class LE_Command:
         self.DEBUG = debug
 
 
-class LE_Comfirmation:
+class Comfirmation:
     def __init__(self, rec):
         self._rec = rec
 
@@ -306,7 +306,7 @@ if __name__ == '__main__':
         return True, "while"
 
     parser_target = "你好启动重复定时5分钟开灯1那么关门2结束"
-    commander = LE_Command({
+    commander = Command({
             "whiles":["循环", "重复"],
             "ifs":["如果"],
             "thens":["那么"],
