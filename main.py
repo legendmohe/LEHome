@@ -5,12 +5,12 @@ from lib.command.Command import Command
 from lib.speech.Speech import Speech2Text, Text2Speech
 from time import sleep
 import importlib
-import logging as log
 import sys
 import traceback
 from pprint import pprint
 from util.Res import Res
 from lib.sound import Sound
+from util.log import *
 
 
 class TracePrints(object):
@@ -79,7 +79,7 @@ class Home:
                                     cb_token,
                                     cb_object.callback)
                     except Exception, e:
-                        log.exception("init commands faild.")
+                        ERROR("init commands faild.")
 
     def _init_recognizer(self):
         print 'initlizing recognize...'
