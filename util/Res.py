@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 import os
+from util.log import *
 
 class Res:
     settings = {}
@@ -14,6 +15,7 @@ class Res:
             for x in name.strip("/").split("/"):
                 elem = elem.get(x)
         except:
+            ERROR("invaild get method params : " + name)
             pass
         return elem
 
@@ -29,7 +31,7 @@ class Res:
         with open(path) as init_file:
             init_json = json.load(init_file)
             if not init_json:
-                print "error: invaild init.json."
+                ERROR("error: invaild init.json.")
                 return
             else:
                 Res.settings = init_json

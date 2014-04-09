@@ -32,7 +32,7 @@ class Home:
         self._init_command()
 
     def _init_command(self):
-        print 'initlizing command...'
+        INFO('initlizing command...')
 
         settings = Res.init("init.json")
         if settings:
@@ -60,7 +60,7 @@ class Home:
                     try:
                         token = cbs[cb_token].encode("utf-8")
                         if token == "" or token is None:
-                            print "token ", token, " no callbacks."
+                            WARN("token ", token, " no callbacks.")
                             continue
                         dpos = token.rindex('.')
                         module_name = token[:dpos]
@@ -73,7 +73,7 @@ class Home:
                         cb_object._speaker = self._spk
                         cb_object._rec = self._rec
                         
-                        print "load callback: " + cb_module_name + " for command token:" + cb_token
+                        INFO("load callback: " + cb_module_name + " for command token:" + cb_token)
                         self._com.register_callback(
                                     com_name,
                                     cb_token,
@@ -82,22 +82,22 @@ class Home:
                         ERROR("init commands faild.")
 
     def _init_recognizer(self):
-        print 'initlizing recognize...'
+        INFO('initlizing recognize...')
         Speech2Text.collect_noise()
         self._rec = Speech2Text(self._speech_callback)
 
     def _init_speaker(self):
-        print "initlizing speaker..."
+        INFO("initlizing speaker...")
 
         self._spk = Text2Speech()
 
     def _speech_callback(self, result, confidence):
-        print "result: " + result + " | " + str(confidence)
+        INFO("result: " + result + " | " + str(confidence))
         if confidence > self._confidence_threshold:
             self._com.parse(result)
 
     def activate(self):
-        print "==========================Activate============================"
+        INFO("==========================Activate============================")
         Sound.playmp3(
                         Res.get_res_path("sound/com_begin")
                         )

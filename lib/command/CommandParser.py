@@ -4,6 +4,7 @@
 from fysom import Fysom
 from heapq import heappush, heapify
 from Elements import Statement, IfStatement, WhileStatement, Block
+from util.log import *
 
 
 class CommandParser:
@@ -15,48 +16,42 @@ class CommandParser:
     _block_stack = [Block()]
 
     def onfound_delay(self, e):
-        if self.DEBUG:
-            print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+        DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
         self._statement.delay = e.args[1]
 
         if e.dst == "error_state":
             self._error_occoured = True
 
     def onfound_trigger(self, e):
-        if self.DEBUG:
-            print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+        DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
         self._statement.trigger = e.args[1]
 
         if e.dst == "error_state":
             self._error_occoured = True
 
     def onfound_target(self, e):
-        if self.DEBUG:
-            print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+        DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
         self._statement.target = e.args[1]
 
         if e.dst == "error_state":
             self._error_occoured = True
 
     def onfound_action(self, e):
-        if self.DEBUG:
-            print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+        DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
         self._statement.action = e.args[1]
 
         if e.dst == "error_state":
             self._error_occoured = True
 
     def onfound_others(self, e):
-        if self.DEBUG:
-            print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+        DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
 
         if e.dst == "error_state":
             self._error_occoured = True
 
     def onfound_finish_flag(self, e):
-        if self.DEBUG:
-            print 'finish ! = event: %s, src: %s, dst: %s' \
-                                % (e.event, e.src, e.dst)
+        DEBUG('finish ! = event: %s, src: %s, dst: %s' \
+                                % (e.event, e.src, e.dst))
 
         self._statement.finish = e.args[1]
 
@@ -73,8 +68,7 @@ class CommandParser:
             self._reset_element()
 
     def onfound_stop_flag(self, e):
-        if self.DEBUG:
-            print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+        DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
 
         self._statement.stop = e.args[1]
 
@@ -93,8 +87,7 @@ class CommandParser:
             self._reset_element()
 
     def onfound_nexts_flag(self, e):
-        if self.DEBUG:
-            print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+        DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
 
         if e.dst == "trigger_state":
             block = self._block_stack[-1]
@@ -106,8 +99,7 @@ class CommandParser:
             self._error_occoured = True
 
     def onfound_while(self, e):
-        if self.DEBUG:
-            print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+        DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
         self._statement.whiles = e.args[1]
 
         if e.dst == "error_state":
@@ -121,8 +113,7 @@ class CommandParser:
             self._block_stack.append(whiles.if_block)
 
     def onfound_if(self, e):
-        if self.DEBUG:
-            print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+        DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
         self._statement.ifs = e.args[1]
 
         if e.dst == "error_state":
@@ -135,12 +126,11 @@ class CommandParser:
             self._block_stack.append(ifs)
             self._block_stack.append(ifs.if_block)
         # elif isinstance(block, IfStatement):
-        #     print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
-        #     print "if statement can't be nasted."
+        #     DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+        #     DEBUG("if statement can't be nasted."
 
     def onfound_then(self, e):
-        if self.DEBUG:
-            print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+        DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
         self._statement.thens = e.args[1]
 
         if e.dst == "error_state":
@@ -153,12 +143,11 @@ class CommandParser:
                 self._append_statement(block)
                 self._block_stack.append(ifs.then_block)
                 return
-        print "single else error."
+        ERROR("single else error.")
         self._error_occoured = True
 
     def onfound_else(self, e):
-        if self.DEBUG:
-            print 'event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst)
+        DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
         self._statement.elses = e.args[1]
 
         if e.dst == "error_state":
@@ -170,33 +159,27 @@ class CommandParser:
             self._append_statement(block)
             self._block_stack.append(ifs.else_block)
         else:
-            print "single else error."
+            ERROR("single else error.")
 
     def onreset(self, e):
-        if self.DEBUG:
-            print 'reset ! = event: %s, src: %s, dst: %s' \
-                    % (e.event, e.src, e.dst)
+        DEBUG('reset ! = event: %s, src: %s, dst: %s' \
+                    % (e.event, e.src, e.dst))
 
         if e.dst == "error_state":
             self._error_occoured = True
 
     def onerror_state(self, e):
-        if self.DEBUG:
-            print 'onerror_state event: %s, src: %s, dst: %s' \
-                    % (e.event, e.src, e.dst)
-
-        if self.DEBUG:
-            print "error occoured."
+        DEBUG('onerror_state event: %s, src: %s, dst: %s' \
+                    % (e.event, e.src, e.dst))
+        DEBUG("error occoured.")
 
     def ontrigger_state(self, e):
-        if self.DEBUG:
-            print 'ontrigger_state event: %s, src: %s, dst: %s' \
-                    % (e.event, e.src, e.dst)
+        DEBUG('ontrigger_state event: %s, src: %s, dst: %s' \
+                    % (e.event, e.src, e.dst))
 
     def oninitial_state(self, e):
-        if self.DEBUG:
-            print 'oninitial_state event: %s, src: %s, dst: %s' \
-                    % (e.event, e.src, e.dst)
+        DEBUG('oninitial_state event: %s, src: %s, dst: %s' \
+                    % (e.event, e.src, e.dst))
 
     def _append_statement(self, block):
         self._statement.delay_time = self._delay_buf
@@ -344,7 +327,7 @@ class CommandParser:
 
     def _parse_token(self, word):
         # word = word.encode("utf-8")
-        # print word, type(word)
+        # DEBUG(word, type(word)
         self._token_buf.append(word)
         _temp_str = "".join(self._token_buf)
         _no_match = True
@@ -401,14 +384,14 @@ class CommandParser:
     def put_into_parse_stream(self, stream_term):
 
         # if self.DEBUG :
-        #     print "parse: %s" %(stream_term)
+        #     DEBUG("parse: %s" %(stream_term)
 
         for item in list(stream_term):
             if item == " ":
                 continue
             _token, _token_type = self._parse_token(item)
             if _token == None:
-                #print "continue"
+                #DEBUG("continue"
                 continue
             if _token_type == "whiles":
                 self._FSM.found_while(self, _token)
@@ -458,7 +441,7 @@ class CommandParser:
                 self._FSM.reset()
                 self._reset_element()
                 self._error_occoured = False
-            # print self._FSM.current
+            # DEBUG(self._FSM.current
 
     def _reset_element(self):
         self._statement = Statement()

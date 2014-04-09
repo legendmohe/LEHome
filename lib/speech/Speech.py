@@ -17,7 +17,7 @@ import urllib2
 import urllib
 import json
 import threading
-import logging as log
+from util.log import *
 
 
 # urllib2.install_opener(
@@ -49,7 +49,7 @@ def wav_to_flac(wav_data, channels, width, rate, stt_rate):
     with open(filename + '.flac', 'rb') as ff:
         flac_data = ff.read()
 
-    print "data len: " + str(len(flac_data))
+    INFO("data len: " + str(len(flac_data)))
     # map(os.remove, (filename + '.flac', filename + '.wav'))
     return flac_data
 
@@ -74,16 +74,16 @@ class Speech2Text(object):
     @classmethod
     def PAUSE(cls):
         cls._PAUSE = True
-        print "stt pause."
+        INFO("stt pause.")
 
     @classmethod
     def RESUME(cls):
         cls._PAUSE = False
-        print "stt resume."
+        INFO("stt resume.")
 
     @classmethod
     def collect_noise(cls):
-        print "preparing noise reduction."
+        INFO("preparing noise reduction.")
         rec = subprocess.Popen(['rec', '-r', '16000',
                                 '-b', '16',
                                 '-c', '1',
@@ -94,7 +94,7 @@ class Speech2Text(object):
         subprocess.call(
                 ['sox', 'noise.wav', '-n', 'noiseprof', 'noise.prof']
                 )
-        print "finish preparing."
+        INFO("finish preparing.")
 
     class _queue(object):
 
@@ -111,10 +111,10 @@ class Speech2Text(object):
             self.process_thread.start()
 
         def stop(self):
-            print "Waiting write_queue to write all data"
+            DEBUG("Waiting write_queue to write all data")
             self.keep_streaming = False
             self.write_queue.join()
-            print "Queue stop"
+            DEBUG("Queue stop")
 
         def write_data(self, data):
             self.write_queue.put(data)
@@ -137,10 +137,10 @@ class Speech2Text(object):
 
                 result = response.read().decode('utf-8')
             except Exception, ex:
-                print "request error:", ex
+                ERROR("request error:", ex)
                 return None, None
 
-            print "stt result: " + result
+            DEBUG("stt result: " + result)
 
             list_data = json.loads(result)["hypotheses"]
 
@@ -164,9 +164,9 @@ class Speech2Text(object):
                 except Empty:
                     pass
                 except Exception, e:
-                    print e
+                    ERROR(e)
 
-            print "end"
+            DEBUG("end")
 
     class _filter:
         def _spectinvert(self, taps):
@@ -174,9 +174,9 @@ class Speech2Text(object):
             return ([0]*(l/2) + [1] + [0]*(l/2)) - taps
 
         def __init__(self, low, high, chunk, rate):
-            print "init filter:\
+            INFO("init filter:\
                     low:%s high:%s chunk:%s rate:%s" \
-                    % (low, high, chunk, rate)
+                    % (low, high, chunk, rate))
             taps = chunk + 1
             fil_lowpass = signal.firwin(taps, low/(rate/2))
             fil_highpass = self._spectinvert(
@@ -227,7 +227,7 @@ class Speech2Text(object):
             sound_data = ""
             fil.reset()
 
-            print "detecting:"
+            INFO("detecting:")
             while self.keep_running:
                 try:
                     snd_data = self._processing_queue.get(block=True, timeout=2)
@@ -275,12 +275,12 @@ class Speech2Text(object):
                     frames_per_buffer=Speech2Text.CHUNK_SIZE)
         Speech2Text.SAMPLE_WIDTH = p.get_sample_size(Speech2Text.FORMAT)
         # Speech2Text.RATE = p.get_device_info_by_index(0)['defaultSampleRate']
-        print "default rate:", Speech2Text.RATE
+        INFO("default rate:", Speech2Text.RATE)
 
         self.queue = self._queue(self.callback, rate=Speech2Text.STT_RATE)
         self.queue.start()
 
-        print "* recording"
+        INFO("* recording")
 
         while self.keep_running:
             try:
@@ -293,7 +293,7 @@ class Speech2Text(object):
             if Speech2Text._PAUSE is False and self._pause is False:
                 self._processing_queue.put(snd_data)
         
-        print "* done recording"
+        INFO("* done recording")
 
         stream.stop_stream()
         stream.close()
@@ -319,11 +319,11 @@ class Speech2Text(object):
 
     def pause(self):
         self._pause = True
-        print "stt pause."
+        INFO("stt pause.")
 
     def resume(self):
         self._pause = False
-        print "stt resume."
+        INFO("stt resume.")
 
 class Text2Speech:
 
@@ -352,7 +352,7 @@ class Text2Speech:
             except Empty:
                 pass
             except Exception, ex:
-                print ex
+                ERROR(ex)
 
     def __speakSpeechFromText(self, phrase):
         Speech2Text.PAUSE()
@@ -388,7 +388,7 @@ class Text2Speech:
                     else:
                         self.__speakSpeechFromText(item)
                 else:
-                    print "phrase must be unicode"
+                    ERROR("phrase must be unicode")
         else:
             if isinstance(phrase, unicode):
                 if inqueue is True:
@@ -396,7 +396,7 @@ class Text2Speech:
                 else:
                     self.__speakSpeechFromText(phrase)
             else:
-                print "phrase must be unicode"
+                ERROR("phrase must be unicode")
 
 if __name__ == '__main__':
     def callback(result, confidence):

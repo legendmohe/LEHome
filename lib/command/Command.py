@@ -12,6 +12,7 @@ from CommandParser import CommandParser
 from Elements import Statement, Block, IfStatement, WhileStatement
 from lib.sound import Sound
 from util.Res import Res
+from util.log import *
 
 
 class Command:
@@ -36,7 +37,7 @@ class Command:
                 with open(self._tasklist_path, "rb") as f:
                     return pickle.load(f)
             except:
-                print "no unfinished task list."
+                INFO("no unfinished task list.")
                 return []
 
     def _save_tasklist(self):
@@ -45,17 +46,17 @@ class Command:
                 with open(self._tasklist_path, "wb") as f:
                     pickle.dump(self._tasklist, f, True)
             except:
-                print "invaild tasklist path:", self._tasklist_path
+                ERROR("invaild tasklist path:%s", self._tasklist_path)
 
     def _finish_callback(self, block, debug_layer=1):
-        if self.DEBUG:
-            for statement in block.statements:
-                for attr in vars(statement):
-                    sys.stdout.write("-"*debug_layer)
-                    value = getattr(statement, attr)
-                    print "obj.%s = %s" % (attr, value)
-                    if isinstance(value, Block):
-                        self._finish_callback(value, debug_layer + 1)
+        # if self.DEBUG:
+        #     for statement in block.statements:
+        #         for attr in vars(statement):
+        #             sys.stdout.write("-"*debug_layer)
+        #             value = getattr(statement, attr)
+        #             INFO("obj.%s = %s" % (attr, value))
+        #             if isinstance(value, Block):
+        #                 self._finish_callback(value, debug_layer + 1)
 
         Sound.playmp3(Res.get_res_path("sound/com_begin"))
         t = threading.Thread(
@@ -196,15 +197,15 @@ class Command:
                 self._registered_callbacks[com_type] = {}
             type_coms = self._registered_callbacks[com_type]
             if com_item in type_coms:
-                print "warning: " + com_item + ' has registered.'
+                WARN("warning: " + com_item + ' has registered.')
             type_coms[com_item] = callback
         else:
-            print "register_callback: empty args."
+            ERROR("register_callback: empty args.")
             return
 
     def parse(self, word_stream):
         if not self._keep_running:
-            print "invoke start() first."
+            ERROR("invoke start() first.")
             return
         for word in list(word_stream):
             self._fsm.put_into_parse_stream(word)
@@ -225,12 +226,12 @@ class Comfirmation:
         self._rec = rec
 
     def confirm(self, ok="ok", cancel="cancel", cfd=0.5):
-        print "begin confirmation:ok=%s, cancel=%s, cfd=%f" % (ok, cancel, cfd)
+        INFO("begin confirmation:ok=%s, cancel=%s, cfd=%f" % (ok, cancel, cfd))
 
         queue = Queue(1)
 
         def callback(result, confidence):
-            print "confirm: " + result
+            INFO("confirm: " + result)
             if confidence < cfd:
                 return
             else:

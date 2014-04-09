@@ -1,6 +1,7 @@
 #!usr/bin/env python  
 #coding=utf-8  
 import subprocess
+from util.log import *
 
 def playwav(path):
     import pyaudio  
@@ -26,5 +27,5 @@ def playmp3(path):
         with open(path):
             subprocess.Popen(["mpg123", "-q", path])
     except IOError:
-        print "can't play mp3: " + path
+        WARN("can't play mp3: " + path)
         pass
