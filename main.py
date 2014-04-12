@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from lib.command.Command import Command
-from lib.speech.Speech import Speech2Text, Text2Speech
 from time import sleep
 import importlib
 import sys
 import traceback
 from pprint import pprint
+from lib.command.Command import Command
+from lib.speech.Speech import Speech2Text, Text2Speech
 from util.Res import Res
 from lib.sound import Sound
 from util.log import *
