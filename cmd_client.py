@@ -28,6 +28,7 @@ class Home:
         self._context = {}
         self._init_speaker()
         self._init_command()
+        self._resume = False
 
     def _init_command(self):
         INFO('initlizing command...')
@@ -68,7 +69,8 @@ class Home:
                         cb_object = getattr(cb_module, class_name)()
                         cb_object._context = self._context
                         cb_object._speaker = self._spk
-                        # TODO - rec
+                        cb_object._home = self
+                                   
                         INFO("load callback: " + cb_module_name + " for command token:" + cb_token)
                         self._com.register_callback(
                                     com_name,
@@ -83,20 +85,24 @@ class Home:
         self._spk = Text2Speech()
 
     def parse_cmd(self, cmd):
-        INFO("command: " + cmd)
-        self._com.parse(result)
+        if not self._resume:
+            INFO("command: " + cmd)
+            self._com.parse(result)
 
     def activate(self):
         INFO("==========================Activate============================")
         Sound.playmp3(
-                        Res.get_res_path("sound/com_begin")
-                        )
+                      Res.get_res_path("sound/com_begin")
+                      )
         self._spk.start()
         self._com.start()
 
     def deactivate(self):
         self._spk.stop()
         self._com.stop()
+
+    def setResume(self, resume):
+        self._resume = resume
 
 
 if __name__ == '__main__':
@@ -109,6 +115,7 @@ if __name__ == '__main__':
     context = zmq.Context()
     sock = context.socket(zmq.SUB)
     sock.bind(connect_to)
+    sock.setsockopt(zmq.SUBSCRIBE, '')
 
     home = Home()
     home.activate()
@@ -117,4 +124,3 @@ if __name__ == '__main__':
         INFO("waiting for command...")
         cmd = sock.recv()
         home.parse_cmd(cmd)
-    sleep(1000)

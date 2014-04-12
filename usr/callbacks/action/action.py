@@ -113,7 +113,7 @@ class remove_callback:
             pre_value=None):
         
         self._speaker.speak(u'确认删除' + msg + u'?')
-        cfm = Comfirmation(self._rec)
+        cfm = Comfirmation(self._home)
         is_cfm = cfm.confirm()
         if is_cfm:
             if target == u"留言":
@@ -212,7 +212,7 @@ class memo_callback:
                         print exc
                         return True, "pass"
 
-                self._rec.pause()
+                self._home.setResume(True)
                 filepath = path + datetime.now().strftime("%y-%m-%d_%H:%M:%S") + ".mp3"
                 subprocess.call([
                         "rec", path,
@@ -221,7 +221,7 @@ class memo_callback:
                 Sound.playmp3(
                                 Res.get_res_path("sound/com_stop")
                                 )
-                self._rec.resume()
+                self._home.setResume(False)
             except Exception, ex:
                 print " stop."
                 # print ex

@@ -222,26 +222,25 @@ class Command:
 
 
 class Comfirmation:
-    def __init__(self, rec):
-        self._rec = rec
+    def __init__(self, home):
+        self._home = home
 
-    def confirm(self, ok="ok", cancel="cancel", cfd=0.5):
-        INFO("begin confirmation:ok=%s, cancel=%s, cfd=%f" % (ok, cancel, cfd))
+    def confirm(self, ok="ok", cancel="cancel"):
+        INFO("begin confirmation:ok=%s, cancel=%s" % (ok, cancel))
 
         queue = Queue(1)
 
-        def callback(result, confidence):
-            INFO("confirm: " + result)
-            if confidence < cfd:
-                return
-            else:
+        # 替换callback
+        def callback(self, result):
+            if not self._resume:
+                INFO("confirm: " + result)
                 try:
                     queue.put(result, timeout=2)
                 except Empty:
                     pass
 
-        old_callback = self._rec.queue.callback
-        self._rec.queue.callback = callback
+        old_callback = self._home.parse_cmd
+        self._home.parse_cmd = callback
 
         confirmed = False
         for idx in range(5):
@@ -258,7 +257,7 @@ class Comfirmation:
             except Empty:
                 pass
 
-        self._rec.queue.callback = old_callback
+        self._home.parse_cmd = old_callback
         if confirmed:
             return True
         else:

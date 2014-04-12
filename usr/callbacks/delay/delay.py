@@ -37,10 +37,10 @@ class delay_callback:
         self._speaker.speak(minutes + u"分钟后执行。")
         sleep(int(minutes) * 60)
 
-        self._rec.pause()
+        self._home.setResume(True)
         Sound.playmp3(
                         Res.get_res_path("sound/com_stop")
                         )
-        self._rec.resume()
+        self._home.setResume(False)
 
         return True, "delay"

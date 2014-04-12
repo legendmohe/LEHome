@@ -83,16 +83,16 @@ class message_callback:
                         print exc
                         return True, "pass"
 
-                self._rec.pause()
+                self._home.setResume(True)
                 filepath = path + datetime.now().strftime("%m-%d_%H:%M") + ".mp3"
                 record = pre_value
                 record(filepath)
                 Sound.playmp3(
                                 Res.get_res_path("sound/com_stop")
                                 )
-                self._rec.resume()
+                self._home.setResume(False)
         elif action == u"播放":
-            self._rec.pause()
+            self._home.setResume(True)
 
             if isinstance(pre_value, types.FunctionType):
                 play = pre_value
@@ -104,7 +104,7 @@ class message_callback:
                             Res.get_res_path("sound/com_stop")
                             )
 
-            self._rec.resume()
+            self._home.setResume(False)
         return True, "pass"
 
 
@@ -123,7 +123,7 @@ class remind_callback:
         if minutes is None:
             return False, None
 
-        self._rec.pause()
+        self._home.setResume(True)
         p = Popen(["at", "now", "+", minutes, "minutes", "-M"],
                 stdin=PIPE,
                 stdout=PIPE,
@@ -134,7 +134,7 @@ class remind_callback:
         Sound.playmp3(
                         Res.get_res_path("sound/com_stop")
                         )
-        self._rec.resume()
+        self._home.setResume(False)
         self._speaker.speak(action + target + minutes + u"分钟")
 
         return True, "remind"
@@ -155,7 +155,7 @@ class alarm_callback:
             print "invalid alarm time:", msg
             return False, None
 
-        self._rec.pause()
+        self._home.setResume(True)
         p = Popen(["at", alarm_time, "-M"],
                 stdin=PIPE,
                 stdout=PIPE,
@@ -166,7 +166,7 @@ class alarm_callback:
         Sound.playmp3(
                         Res.get_res_path("sound/com_stop")
                         )
-        self._rec.resume()
+        self._home.setResume(False)
         self._speaker.speak(action + target + alarm_time)
 
         return True, "remind"
