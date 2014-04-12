@@ -8,6 +8,7 @@ import importlib
 import traceback
 import zmq
 from lib.command.Command import Command
+from lib.speech.Speech import Text2Speech
 from util.Res import Res
 from lib.sound import Sound
 from util.log import *

@@ -361,7 +361,7 @@ class Text2Speech:
         Speech2Text.RESUME()
 
     def start(self):
-        log.info("speaker start.")
+        INFO("speaker start.")
         self.__keep_speaking = True
         self.__speak_thread = threading.Thread(target=self.__speak_worker)
         self.__speak_thread.daemon = True
@@ -373,12 +373,12 @@ class Text2Speech:
             self.__speak_queue.queue.clear()
         # self.__speak_queue.join()
         self.__speak_thread.join()
-        log.info("speaker stop.")
+        INFO("speaker stop.")
 
 
     def speak(self, phrase, inqueue=False):
         if not self.__keep_speaking:
-            log.warning("__keep_speaking is False.")
+            WARN("__keep_speaking is False.")
             return
         if isinstance(phrase, (list, tuple)):
             for item in phrase:
