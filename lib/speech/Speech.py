@@ -355,10 +355,9 @@ class Text2Speech:
                 ERROR(ex)
 
     def __speakSpeechFromText(self, phrase):
-        Speech2Text.PAUSE()
         googleSpeechURL = self.__getGoogleSpeechURL(phrase)
+        INFO("text2speech retrive from: " + googleSpeechURL)
         subprocess.call(["mpg123", "-q", googleSpeechURL])
-        Speech2Text.RESUME()
 
     def start(self):
         INFO("speaker start.")

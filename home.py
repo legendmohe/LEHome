@@ -3,9 +3,9 @@
 
 
 import sys
-from time import sleep
 import importlib
 import traceback
+import argparse
 import zmq
 from lib.command.Command import Command
 from lib.speech.Speech import Text2Speech
@@ -25,10 +25,11 @@ class TracePrints(object):
 
 
 class Home:
-    def __init__(self):
+    def __init__(self, connect_to):
         self._context = {}
         self._init_speaker()
         self._init_command()
+        self._init_s2t(connect_to)
         self._resume = False
 
     def _init_command(self):
@@ -85,18 +86,30 @@ class Home:
 
         self._spk = Text2Speech()
 
+    def _init_s2t(self, connect_to):
+        if not connect_to is None:
+            INFO("connect to s2t server: %s " % (connect_to))
+            context = zmq.Context()
+            _sock = context.socket(zmq.SUB)
+            _sock.bind(connect_to)
+            _sock.setsockopt(zmq.SUBSCRIBE, '')
+            self._sock = _sock
+
     def parse_cmd(self, cmd):
         if not self._resume:
             INFO("command: " + cmd)
             self._com.parse(result)
 
     def activate(self):
-        INFO("==========================Activate============================")
-        Sound.playmp3(
-                      Res.get_res_path("sound/com_begin")
-                      )
+        INFO("home activate!")
+        Sound.playmp3(Res.get_res_path("sound/com_begin"))
         self._spk.start()
         self._com.start()
+
+        while True:
+            INFO("waiting for command...")
+            cmd = self._sock.recv()
+            home.parse_cmd(cmd)
 
     def deactivate(self):
         self._spk.stop()
@@ -107,21 +120,17 @@ class Home:
 
 
 if __name__ == '__main__':
-    if len (sys.argv) < 2:
-        print 'usage: client <connect-to>'
-        sys.exit (1)
+    parser = argparse.ArgumentParser(
+                    description='home.py -s tcp://address:port')
+    parser.add_argument('-s',
+                        action="store",
+                        dest="connect_to",
+                        default="tcp://192.168.1.100:8000",
+                        help="s2t server address and port")
+    args = parser.parse_args()
 
-    connect_to = sys.argv[1]
-    INFO("connect to %s " % (connect_to))
-    context = zmq.Context()
-    sock = context.socket(zmq.SUB)
-    sock.bind(connect_to)
-    sock.setsockopt(zmq.SUBSCRIBE, '')
+    connect_to = args.connect_to
+    INFO("connect to s2t server: %s " % (connect_to))
 
-    home = Home()
+    home = Home(connect_to)
     home.activate()
-    
-    while True:
-        INFO("waiting for command...")
-        cmd = sock.recv()
-        home.parse_cmd(cmd)
