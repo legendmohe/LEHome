@@ -8,15 +8,19 @@ from lib.speech.Speech import Speech2Text
 import zmq
 
 
-if len (sys.argv) < 2:
-    print 'usage: server <bind-to>'
-    sys.exit (1)
-
-bind_to = sys.argv[1]
+parser = argparse.ArgumentParser(
+                description='server.py -b <port>')
+parser.add_argument('-p',
+                    action="store",
+                    dest="bind_to",
+                    default="8000",
+                    help="server port")
+args = parser.parse_args()
+bind_to = args.bind_to
 INFO("host:%s " % (bind_to, ))
 context = zmq.Context()
 sock = context.socket(zmq.PUB)
-sock.bind(bind_to)
+sock.bind("tcp://*:" + bind_to)
 
 def speech_callback(result, confidence):
     global sock
@@ -24,7 +28,7 @@ def speech_callback(result, confidence):
 
     INFO("result: " + result + " | " + str(confidence))
     if confidence > threshold:
-        sock.send(result)
+        sock.send_string(result)
 
 
 INFO('initlizing recognize...')

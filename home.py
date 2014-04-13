@@ -91,14 +91,14 @@ class Home:
             INFO("connect to s2t server: %s " % (connect_to))
             context = zmq.Context()
             _sock = context.socket(zmq.SUB)
-            _sock.bind(connect_to)
+            _sock.connect(connect_to)
             _sock.setsockopt(zmq.SUBSCRIBE, '')
             self._sock = _sock
 
     def parse_cmd(self, cmd):
         if not self._resume:
             INFO("command: " + cmd)
-            self._com.parse(result)
+            self._com.parse(cmd)
 
     def activate(self):
         INFO("home activate!")
@@ -108,7 +108,7 @@ class Home:
 
         while True:
             INFO("waiting for command...")
-            cmd = self._sock.recv()
+            cmd = self._sock.recv_string()
             home.parse_cmd(cmd)
 
     def deactivate(self):
@@ -125,7 +125,7 @@ if __name__ == '__main__':
     parser.add_argument('-s',
                         action="store",
                         dest="connect_to",
-                        default="tcp://192.168.1.100:8000",
+                        default="tcp://localhost:8000",
                         help="s2t server address and port")
     args = parser.parse_args()
 

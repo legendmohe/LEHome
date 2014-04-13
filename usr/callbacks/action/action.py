@@ -8,6 +8,7 @@ from lib.command.Command import Comfirmation
 from lib.sound import Sound
 from util.Res import Res
 from util.Util import parse_time
+from util.log import *
 
 
 class action_callback:
@@ -64,6 +65,7 @@ class stop_play_callback:
     def callback(self, action = None, target = None,
             msg = None, 
             pre_value = None):
+        INFO("action:stop_play_callback invoke")
         if "player" in self._context.keys():
             try:
                 print "stop playing misic."
