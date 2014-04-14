@@ -2,19 +2,17 @@
 # encoding: utf-8
 
 
-import sys
 import threading
 import signal
 from Queue import Queue
+from time import sleep
 import argparse
 import tornado.ioloop
 import tornado.web
-from lib.speech.Speech import Text2Speech
 from util.log import *
-from vender.mplayer import MPlayer
+from mplayer import Player
 
-
-#--- http://stackoverflow.com/questions/17101502/how-to-stop-the-tornado-web-server-with-ctrlc
+# http://stackoverflow.com/questions/17101502/how-to-stop-the-tornado-web-server-with-ctrlc
 
 is_closing = False
 
@@ -34,18 +32,6 @@ def try_exit():
 
 #----
 
-MPlayer.populate()
-mp_context = {}
-mp_queue = Queue()
-
-application = tornado.web.Application([
-    (r"/play/([^/]+)", PlayHandler),
-    (r"/clean", CleanQeueuHandler),
-    (r"/stop/([^/]+)", StopHandler),
-    (r"/resume", ResumeHandler),
-    (r"/pause", PauseHandler),
-])
-
 
 class RETURNCODE:
     SUCCESS = 1
@@ -57,42 +43,39 @@ class RETURNCODE:
 
 class StopHandler(tornado.web.RequestHandler):
     def get(self, url):
-        global mp_context
-        if not url in mp_context:
-            WARN("%s is not playing" % (url, ))
+        url = self.get_argument("url", None)
+        if url is None or url == "":
+            INFO("url is empty")
+            self.write(str(RETURNCODE.EMPTY))
+            return
+        if stop_audio(url):
             self.write(RETURNCODE.FAIL)
         else:
-            mp = mp_context[url]
-            mp.stop()
             self.write(RETURNCODE.SUCCESS)
 
 
 class CleanQeueuHandler(tornado.web.RequestHandler):
     def get(self):
-        global mp_context
-        global mp_queue
-
-        with mp_queue.mutex:
-            mp_queue.queue.clear()
-        mp = mp_context["queue"]
-        mp.stop()
-
+        clean_audio_queue()
         self.write(RETURNCODE.SUCCESS)
 
 
 class PlayHandler(tornado.web.RequestHandler):
-    def get(self, url):
+    def get(self):
+        url = self.get_argument("url", None)
         if url is None or url == "":
             INFO("url is empty")
             self.write(str(RETURNCODE.EMPTY))
             return
-        INFO("%s is playing." % (url,))
-        self.write(str(RETURNCODE.SUCCESS))
+
         is_inqueue = self.get_argument("inqueue", None)
         if is_inqueue is None:
+            INFO("%s is playing." % (url,))
             play_audio(url)
         else:
+            INFO("%s is playing inqueue." % (url,))
             play_audio_inqueue(url)
+        self.write(str(RETURNCODE.SUCCESS))
 
 
 class PauseHandler(tornado.web.RequestHandler):
@@ -105,25 +88,62 @@ class ResumeHandler(tornado.web.RequestHandler):
         self.write("True")
 
 
+def wait_util_player_finished(mp):
+    while mp.time_pos < mp.length or mp.paused:
+        print mp.time_pos
+        sleep(0.5)
+
+
 def play_audio(url):
     global mp_context
-    if url in mp_context:
-        INFO("%s is already playing" % (url, ))
-        return
 
-    def worker(url):
-        mp = MPlayer()
-        mp_context[url] = mp
+    def worker():
         mp.loadfile(url)
-        del mp_context[url]
-    t = threading.Thread(target=worker)
-    t.setDaemon(True)
-    t.start()
+        wait_util_player_finished(mp)
+        if url in mp_context:
+            del mp_context[url]
+
+    if url in mp_context:
+        mp = mp_context[url]
+        mp.loadfile(url)
+        if url in mp_context:
+            del mp_context[url]
+    else:
+        mp = Player()
+        mp_context[url] = mp
+        t = threading.Thread(target=worker)
+        t.setDaemon(True)
+        t.start()
+
+    return True
 
 
 def play_audio_inqueue(url):
     global mp_queue
     mp_queue.put(url)
+
+
+def stop_audio(url):
+    global mp_context
+    if not url in mp_context:
+        WARN("%s is not playing" % (url, ))
+        return False
+    else:
+        mp = mp_context[url]
+        mp.stop()
+        if mp in mp_context:
+            del mp_context[url]
+        return True
+
+
+def clean_audio_queue():
+    global mp_context
+    global mp_queue
+
+    with mp_queue.mutex:
+        mp_queue.queue.clear()
+    mp = mp_context["queue"]
+    mp.stop()
 
 
 def queue_worker():
@@ -134,15 +154,27 @@ def queue_worker():
     while True:
         url = mp_queue.get()
         mp.loadfile(url)
+        wait_util_player_finished(mp)
         mp_queue.task_done()
 
 
-def init_player():
-    mp_context["queue"] = MPlayer()
+def init_queue_player():
+    mp_context["queue"] = Player()
     t = threading.Thread(target=queue_worker)
     t.setDaemon(True)
     t.start()
 
+
+mp_context = {}
+mp_queue = Queue()
+
+application = tornado.web.Application([
+    (r"/play", PlayHandler),
+    (r"/clean", CleanQeueuHandler),
+    (r"/stop", StopHandler),
+    (r"/resume", ResumeHandler),
+    (r"/pause", PauseHandler),
+])
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -160,7 +192,7 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     application.listen(port)
 
-    init_player()
+    init_queue_player()
 
     tornado.ioloop.PeriodicCallback(try_exit, 100).start()
     tornado.ioloop.IOLoop.instance().start()
