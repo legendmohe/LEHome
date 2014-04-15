@@ -18,6 +18,7 @@ import urllib
 import json
 import threading
 from util.log import *
+from lib.sound import Sound
 
 
 # urllib2.install_opener(
@@ -357,7 +358,8 @@ class Text2Speech:
     def __speakSpeechFromText(self, phrase):
         googleSpeechURL = self.__getGoogleSpeechURL(phrase)
         INFO("text2speech retrive from: " + googleSpeechURL)
-        subprocess.call(["mpg123", "-q", googleSpeechURL])
+        Sound.play(googleSpeechURL, inqueue=True)
+        # subprocess.call(["mpg123", "-q", googleSpeechURL])
 
     def start(self):
         INFO("speaker start.")
@@ -373,7 +375,6 @@ class Text2Speech:
         # self.__speak_queue.join()
         self.__speak_thread.join()
         INFO("speaker stop.")
-
 
     def speak(self, phrase, inqueue=False):
         if not self.__keep_speaking:

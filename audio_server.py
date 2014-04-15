@@ -43,7 +43,7 @@ class RETURNCODE:
 
 
 class StopHandler(tornado.web.RequestHandler):
-    def get(self, url):
+    def get(self):
         url = self.get_argument("url", None)
         if url is None or url == "":
             INFO("url is empty")
@@ -55,9 +55,9 @@ class StopHandler(tornado.web.RequestHandler):
             self.write(RETURNCODE.SUCCESS)
 
 
-class CleanQeueuHandler(tornado.web.RequestHandler):
+class ClearQeueuHandler(tornado.web.RequestHandler):
     def get(self):
-        clean_audio_queue()
+        clear_audio_queue()
         self.write(RETURNCODE.SUCCESS)
 
 
@@ -70,10 +70,17 @@ class PlayHandler(tornado.web.RequestHandler):
             return
 
         is_inqueue = self.get_argument("inqueue", None)
+        loop = self.get_argument("loop", None)
         if is_inqueue is None:
-            play_audio(url)
+            if loop is None:
+                play_audio(url)
+            else:
+                play_audio(url, int(loop))
         else:
-            play_audio_inqueue(url)
+            if loop is None:
+                play_audio_inqueue(url)
+            else:
+                play_audio_inqueue(url, int(loop))
         self.write(str(RETURNCODE.SUCCESS))
 
 
@@ -101,22 +108,26 @@ def wait_util_player_finished(mp):
         sleep(0.5)
 
 
-def play_audio(url):
+def play_audio(url, loop=-1):
     global mp_context
 
     def worker():
         mp.loadfile(url)
         INFO("%s is playing." % (url,))
         wait_util_player_finished(mp)
+        mp.loop = -1
         if url in mp_context:
             del mp_context[url]
 
     if url in mp_context:
         mp = mp_context[url]
-        mp.loadfile(url)
-        INFO("%s is playing." % (url,))
+        if not mp is None:  # for thread-safe
+            mp.loop = loop
+            mp.loadfile(url)
+            INFO("%s is playing." % (url,))
     else:
         mp = Player()
+        mp.loop = loop
         mp_context[url] = mp
         t = threading.Thread(target=worker)
         t.setDaemon(True)
@@ -125,9 +136,9 @@ def play_audio(url):
     return True
 
 
-def play_audio_inqueue(url):
+def play_audio_inqueue(url, loop=-1):
     global mp_queue
-    mp_queue.put(url)
+    mp_queue.put((url, loop))
     INFO("%s was added to queue." % (url,))
 
 
@@ -164,7 +175,7 @@ def pause_audio_queue():
     return True
 
 
-def clean_audio_queue():
+def clear_audio_queue():
     global mp_context
     global mp_queue
 
@@ -180,9 +191,11 @@ def queue_worker():
 
     mp = mp_context["queue"]
     while True:
-        url = mp_queue.get()
+        url, loop = mp_queue.get()
+        mp.loop = loop
         mp.loadfile(url)
         wait_util_player_finished(mp)
+        mp.loop = -1
         mp_queue.task_done()
 
 
@@ -198,7 +211,7 @@ mp_queue = Queue()
 
 application = tornado.web.Application([
     (r"/play", PlayHandler),
-    (r"/clean", CleanQeueuHandler),
+    (r"/clear", ClearQeueuHandler),
     (r"/stop", StopHandler),
     (r"/pause", PauseHandler),
 ])

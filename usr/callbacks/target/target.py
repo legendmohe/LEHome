@@ -128,7 +128,8 @@ class remind_callback:
                 stdin=PIPE,
                 stdout=PIPE,
                 bufsize=1)
-        print >>p.stdin, "sudo play " + Res.get_res_path("sound/com_bell") + " repeat 4"
+        url = Sound.get_request_url(Res.get_res_path("sound/com_bell"), 4)
+        print >>p.stdin, "curl \"" + url + "\""
         print p.communicate("EOF")[0]
 
         Sound.play(
@@ -160,7 +161,8 @@ class alarm_callback:
                 stdin=PIPE,
                 stdout=PIPE,
                 bufsize=1)
-        print >>p.stdin, "sudo play " + Res.get_res_path("sound/com_bell2") + " repeat 6"
+        url = Sound.get_request_url(Res.get_res_path("sound/com_bell2"), 6)
+        print >>p.stdin, "curl \"" + url + "\""
         print p.communicate("EOF")[0]
 
         Sound.play(

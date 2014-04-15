@@ -30,17 +30,24 @@ def playwav(path):
 AUDIO_SERVER_ADDRESS = None
 
 
-def play(path, inqueue=False):
+def get_play_request_url(path, loop=-1):
     global AUDIO_SERVER_ADDRESS
     if AUDIO_SERVER_ADDRESS is None:
         WARN("audio server address is empty.")
-        return
-
+        return None
     values = {'url': path}
     if inqueue:
         values["inqueue"] = True
+    if not loop == -1:
+        values["loop"] = loop
     data = urllib.urlencode(values)
-    url = AUDIO_SERVER_ADDRESS + '/play?' + data
+    return AUDIO_SERVER_ADDRESS + '/play?' + data
+
+
+def play(path, inqueue=False):
+    url = get_request_url(path)
+    if url is None:
+        return
     INFO("sending audio url: " + url)
     try:
         response = urllib2.urlopen(url).read()
