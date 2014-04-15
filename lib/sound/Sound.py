@@ -44,11 +44,40 @@ def get_play_request_url(path, loop=-1):
     return AUDIO_SERVER_ADDRESS + '/play?' + data
 
 
+def get_clear_request_url():
+    global AUDIO_SERVER_ADDRESS
+    if AUDIO_SERVER_ADDRESS is None:
+        WARN("audio server address is empty.")
+        return None
+    return AUDIO_SERVER_ADDRESS + '/clear'
+
+
 def play(path, inqueue=False):
     url = get_request_url(path)
     if url is None:
         return
     INFO("sending audio url: " + url)
+    try:
+        response = urllib2.urlopen(url).read()
+    except urllib2.HTTPError, e:
+        INFO(e)
+        WARN("audio server address is invaild")
+    except urllib2.URLError, e:
+        INFO(e)
+        WARN("audio server unavailable.")
+    else:
+        INFO("audio response: " + response)
+
+
+def stop(path):
+    pass
+
+
+def clear_queue():
+    url = get_clear_request_url()
+    if url is None:
+        return
+    INFO("cleaning audio queue")
     try:
         response = urllib2.urlopen(url).read()
     except urllib2.HTTPError, e:

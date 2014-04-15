@@ -3,7 +3,8 @@
 import urllib2
 import json
 import subprocess
-import glob, os
+import glob
+import os
 from lib.command.Command import Comfirmation
 from lib.sound import Sound
 from util.Res import Res
@@ -17,7 +18,7 @@ class action_callback:
             target=None,
             msg=None, 
             pre_value=None):
-        print "* action callback: %s, target: %s, message: %s pre_value: %s" %(action, target, msg, pre_value)
+        DEBUG("* action callback: %s, target: %s, message: %s pre_value: %s" %(action, target, msg, pre_value))
         return True, "pass"
 
 class weather_report_callback:
@@ -66,16 +67,11 @@ class stop_play_callback:
             msg = None, 
             pre_value = None):
         INFO("action:stop_play_callback invoke")
-        if "player" in self._context.keys():
-            try:
-                print "stop playing misic."
-                player = self._context["player"]
-                print "killing: " + str(player)
-                if not player.poll():
-                    player.kill()
-            except Exception,ex:
-                print ex
+        if "playlist" in self._context.keys():
+            INFO("clear audio queue.")
+            Sound.clear_queue()
         return True, pre_value
+
 
 class play_callback:
     def callback(self, action = None, target = None,
@@ -84,28 +80,20 @@ class play_callback:
             def play(path = None):
                 if not path:
                     return
-                print "play music: " + path
 
-                if "player" in self._context:
-                    player = self._context["player"]
-                    if not player.poll():
-                        player.kill()
+                if not "playlist" in self._context:
+                    self._context["playlist"] = []
 
-                import subprocess
-                try:
-                    player = subprocess.Popen(['sudo', 'play', path])
-                    self._context["player"] = player
-                    player.wait()
-                    if not player.poll():
-                        player.kill()
-                except Exception, ex:
-                    print "music stop."
-                    # print ex
-                del self._context["player"]
-            
+                playlist = self._context["playlist"]
+                if not path in playlist:
+                    Sound.play(path, inqueue=True)
+                else:
+                    INFO("%s was already in audio queue." % (path, ))
+
             return True, play
         else:
             return True, pre_value
+
 
 class remove_callback:
     def callback(self,
@@ -130,6 +118,7 @@ class remove_callback:
             print u"cancel"
 
         return True, pre_value
+
 
 class record_callback:
     def callback(self,
