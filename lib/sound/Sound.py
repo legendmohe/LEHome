@@ -47,5 +47,8 @@ def play(path, inqueue=False):
     except urllib2.HTTPError, e:
         INFO(e)
         WARN("audio server address is invaild")
+    except urllib2.URLError, e:
+        INFO(e)
+        WARN("audio server unavailable.")
     else:
         INFO("audio response: " + response)
