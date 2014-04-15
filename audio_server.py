@@ -12,8 +12,8 @@ import tornado.web
 from util.log import *
 from mplayer import Player
 
-# http://stackoverflow.com/questions/17101502/how-to-stop-the-tornado-web-server-with-ctrlc
 
+# http://stackoverflow.com/questions/17101502/how-to-stop-the-tornado-web-server-with-ctrlc
 is_closing = False
 
 
@@ -30,7 +30,8 @@ def try_exit():
         tornado.ioloop.IOLoop.instance().stop()
         logging.info('exit success')
 
-#----
+
+# handlers
 
 
 class RETURNCODE:
@@ -70,22 +71,28 @@ class PlayHandler(tornado.web.RequestHandler):
 
         is_inqueue = self.get_argument("inqueue", None)
         if is_inqueue is None:
-            INFO("%s is playing." % (url,))
             play_audio(url)
         else:
-            INFO("%s is playing inqueue." % (url,))
             play_audio_inqueue(url)
         self.write(str(RETURNCODE.SUCCESS))
 
 
 class PauseHandler(tornado.web.RequestHandler):
     def get(self):
-        self.write("True")
+        url = self.get_argument("url", None)
+        if url is None or url == "":
+            if pause_audio(url):
+                self.write(str(RETURNCODE.SUCCESS))
+            else:
+                self.write(str(RETURNCODE.ERROR))
+        else:
+            if pause_audio_queue():
+                self.write(str(RETURNCODE.SUCCESS))
+            else:
+                self.write(str(RETURNCODE.ERROR))
 
 
-class ResumeHandler(tornado.web.RequestHandler):
-    def get(self):
-        self.write("True")
+# functions
 
 
 def wait_util_player_finished(mp):
@@ -99,6 +106,7 @@ def play_audio(url):
 
     def worker():
         mp.loadfile(url)
+        INFO("%s is playing." % (url,))
         wait_util_player_finished(mp)
         if url in mp_context:
             del mp_context[url]
@@ -106,8 +114,7 @@ def play_audio(url):
     if url in mp_context:
         mp = mp_context[url]
         mp.loadfile(url)
-        if url in mp_context:
-            del mp_context[url]
+        INFO("%s is playing." % (url,))
     else:
         mp = Player()
         mp_context[url] = mp
@@ -121,6 +128,7 @@ def play_audio(url):
 def play_audio_inqueue(url):
     global mp_queue
     mp_queue.put(url)
+    INFO("%s was added to queue." % (url,))
 
 
 def stop_audio(url):
@@ -134,6 +142,26 @@ def stop_audio(url):
         if mp in mp_context:
             del mp_context[url]
         return True
+
+
+def pause_audio(url):
+    global mp_context
+    if not url in mp_context:
+        WARN("%s is not playing" % (url, ))
+        return False
+    else:
+        INFO("pause: " + url)
+        mp = mp_context[url]
+        mp.pause()
+        return True
+
+
+def pause_audio_queue():
+    global mp_context
+    INFO("pause audio queue.")
+    mp = mp_context["queue"]
+    mp.pause()
+    return True
 
 
 def clean_audio_queue():
@@ -172,7 +200,6 @@ application = tornado.web.Application([
     (r"/play", PlayHandler),
     (r"/clean", CleanQeueuHandler),
     (r"/stop", StopHandler),
-    (r"/resume", ResumeHandler),
     (r"/pause", PauseHandler),
 ])
 
@@ -184,15 +211,11 @@ if __name__ == "__main__":
                         dest="port",
                         default="8001",
                         )
-    args = parser.parse_args()
-
-    INFO("initlizing...")
-    port = args.port
+    port = parser.parse_args().port
     INFO("bind to %s " % (port))
+
     signal.signal(signal.SIGINT, signal_handler)
     application.listen(port)
-
     init_queue_player()
-
     tornado.ioloop.PeriodicCallback(try_exit, 100).start()
     tornado.ioloop.IOLoop.instance().start()

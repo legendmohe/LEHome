@@ -58,7 +58,7 @@ class Command:
         #             if isinstance(value, Block):
         #                 self._finish_callback(value, debug_layer + 1)
 
-        Sound.playmp3(Res.get_res_path("sound/com_begin"))
+        Sound.play(Res.get_res_path("sound/com_begin"))
         t = threading.Thread(
                             target=self._execute,
                             args=(block, )
@@ -67,7 +67,7 @@ class Command:
         t.start()
 
     def _stop_callback(self, stop, debug_layer=1):
-        Sound.playmp3(Res.get_res_path("sound/com_stop"))
+        Sound.play(Res.get_res_path("sound/com_stop"))
         if "stop" in self._registered_callbacks:
             callbacks = self._registered_callbacks["stop"]
             if stop in callbacks:

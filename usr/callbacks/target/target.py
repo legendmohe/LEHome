@@ -87,9 +87,9 @@ class message_callback:
                 filepath = path + datetime.now().strftime("%m-%d_%H:%M") + ".mp3"
                 record = pre_value
                 record(filepath)
-                Sound.playmp3(
-                                Res.get_res_path("sound/com_stop")
-                                )
+                Sound.play(
+                            Res.get_res_path("sound/com_stop")
+                            )
                 self._home.setResume(False)
         elif action == u"播放":
             self._home.setResume(True)
@@ -100,9 +100,9 @@ class message_callback:
                     self._speaker.speak(u'第%d条留言' % (idx + 1))
                     play(filepath)
 
-            Sound.playmp3(
-                            Res.get_res_path("sound/com_stop")
-                            )
+            Sound.play(
+                        Res.get_res_path("sound/com_stop")
+                        )
 
             self._home.setResume(False)
         return True, "pass"
@@ -131,9 +131,9 @@ class remind_callback:
         print >>p.stdin, "sudo play " + Res.get_res_path("sound/com_bell") + " repeat 4"
         print p.communicate("EOF")[0]
 
-        Sound.playmp3(
-                        Res.get_res_path("sound/com_stop")
-                        )
+        Sound.play(
+                    Res.get_res_path("sound/com_stop")
+                    )
         self._home.setResume(False)
         self._speaker.speak(action + target + minutes + u"分钟")
 
@@ -163,9 +163,9 @@ class alarm_callback:
         print >>p.stdin, "sudo play " + Res.get_res_path("sound/com_bell2") + " repeat 6"
         print p.communicate("EOF")[0]
 
-        Sound.playmp3(
-                        Res.get_res_path("sound/com_stop")
-                        )
+        Sound.play(
+                    Res.get_res_path("sound/com_stop")
+                    )
         self._home.setResume(False)
         self._speaker.speak(action + target + alarm_time)
 

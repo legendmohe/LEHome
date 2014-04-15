@@ -1,7 +1,11 @@
-#!usr/bin/env python  
-#coding=utf-8  
-import subprocess
+#!usr/bin/env python
+#coding=utf-8
+
+
+import urllib
+import urllib2
 from util.log import *
+
 
 def playwav(path):
     import pyaudio  
@@ -22,10 +26,26 @@ def playwav(path):
     stream.close()  
     p.terminate() 
 
-def playmp3(path):
+
+AUDIO_SERVER_ADDRESS = None
+
+
+def play(path, inqueue=False):
+    global AUDIO_SERVER_ADDRESS
+    if AUDIO_SERVER_ADDRESS is None:
+        WARN("audio server address is empty.")
+        return
+
+    values = {'url': path}
+    if inqueue:
+        values["inqueue"] = True
+    data = urllib.urlencode(values)
+    url = AUDIO_SERVER_ADDRESS + '/play?' + data
+    INFO("sending audio url: " + url)
     try:
-        with open(path):
-            subprocess.Popen(["mpg123", "-q", path])
-    except IOError:
-        WARN("can't play mp3: " + path)
-        pass
+        response = urllib2.urlopen(url).read()
+    except urllib2.HTTPError, e:
+        INFO(e)
+        WARN("audio server address is invaild")
+    else:
+        INFO("audio response: " + response)

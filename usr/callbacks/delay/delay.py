@@ -38,9 +38,9 @@ class delay_callback:
         sleep(int(minutes) * 60)
 
         self._home.setResume(True)
-        Sound.playmp3(
-                        Res.get_res_path("sound/com_stop")
-                        )
+        Sound.play(
+                    Res.get_res_path("sound/com_stop")
+                    )
         self._home.setResume(False)
 
         return True, "delay"

@@ -123,9 +123,9 @@ class remove_callback:
                 for f in filelist:
                     os.remove(f)
                     print "remove:%s" % (f)
-            Sound.playmp3(
-                            Res.get_res_path("sound/com_trash")
-                            )
+            Sound.play(
+                        Res.get_res_path("sound/com_trash")
+                        )
         else:
             print u"cancel"
 
@@ -220,9 +220,9 @@ class memo_callback:
                         "rec", path,
                         "rate", "16k",
                         "silence", "1", "0.1", "3%", "1", "5.0", "3%"])
-                Sound.playmp3(
-                                Res.get_res_path("sound/com_stop")
-                                )
+                Sound.play(
+                            Res.get_res_path("sound/com_stop")
+                            )
                 self._home.setResume(False)
             except Exception, ex:
                 print " stop."

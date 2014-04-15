@@ -98,9 +98,9 @@ class Home:
 
     def activate(self):
         INFO("==========================Activate============================")
-        Sound.playmp3(
-                        Res.get_res_path("sound/com_begin")
-                        )
+        Sound.play(
+                    Res.get_res_path("sound/com_begin")
+                    )
         self._spk.start()
         self._com.start()
         self._rec.start_recognizing()
