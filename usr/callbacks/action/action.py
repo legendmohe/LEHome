@@ -5,6 +5,7 @@ import json
 import subprocess
 import glob
 import os
+import time
 from lib.command.Command import Comfirmation
 from lib.sound import Sound
 from util.Res import Res
@@ -168,12 +169,14 @@ class cal_callback:
 
         return True, pre_value
 
+EVERY_CALLBACK_FIRSTFLAG = False
 class every_callback:
     def callback(self,
             action=None,
             target=None,
             msg=None,  # 每*小时 每*分钟 每天*点*分
             pre_value=None):
+        global EVERY_CALLBACK_FIRSTFLAG
         if pre_value != "while" or msg is None:       
             return False, None
 
@@ -181,6 +184,8 @@ class every_callback:
             t = Util.parse_time(msg[1:])
         elif msg.endswith(u"分") or msg.endswith(u"分钟"):
             t = Util.parse_time(msg)
+
+        cur_time = time.time()
         
         return True, pre_value
 
