@@ -6,10 +6,12 @@ import subprocess
 import glob
 import os
 import time
+import datetime
+import threading
 from lib.command.Command import Comfirmation
 from lib.sound import Sound
 from util.Res import Res
-from util.Util import parse_time
+from util.Util import parse_time, cn2dig
 from util.log import *
 
 
@@ -169,25 +171,91 @@ class cal_callback:
 
         return True, pre_value
 
-EVERY_CALLBACK_FIRSTFLAG = False
+
+threadlocal = threading.local()
 class every_callback:
     def callback(self,
             action=None,
             target=None,
-            msg=None,  # 每*小时 每*分钟 每天*点*分
+            msg=None,  # 每天 每*小时 每*分钟 每天*点*分
             pre_value=None):
-        global EVERY_CALLBACK_FIRSTFLAG
         if pre_value != "while" or msg is None:       
             return False, None
 
-        if msg.startswith(u"天"):
-            t = Util.parse_time(msg[1:])
-        elif msg.endswith(u"分") or msg.endswith(u"分钟"):
-            t = Util.parse_time(msg)
+        first_every_invoke = getattr(threadlocal, 'first_every_invoke', None)
+        if first_every_invoke is None:
+            threadlocal.first_every_invoke = True
 
-        cur_time = time.time()
-        
-        return True, pre_value
+        INFO("every_callback invoke:%s" % (msg, ))
+
+        if msg.endswith(u"天"):
+            if msg.startswith(u"天"):
+                t = 24*60*60
+            else:
+                t = int(cn2dig(msg[:-1]))*24*60*60
+        elif msg.endswith(u"小时"):
+            if msg.startswith(u"小时"):
+                t = 60*60
+            else:
+                t = int(cn2dig(msg[:-2]))*60*60
+        elif msg.endswith(u"分钟"):
+            if msg.startswith(u"分钟"):
+                t = 60
+            else:
+                t = int(cn2dig(msg[:-2]))*60
+        elif msg.startswith(u'天') \
+                            and (msg.endswith(u'点') or msg.endswith(u'分')):
+            INFO("sleep util %s" % (msg, ))
+            t_list = parse_time(msg[1:]).split(":")
+            target_hour = int(t_list[0])
+            target_min = int(t_list[1])
+            now = datetime.now()
+            cur_hour = now.hour
+            cur_min = now.minute
+            if cur_hour <= target_hour:
+                time.sleep(
+                    (target_hour - cur_hour)*60*60 + (target_min - cur_min)*60
+                    )
+            else:
+                time.sleep(
+                24*60*60 -
+                ((cur_hour - target_hour)*60*60 + (cur_min - target_min)*60)
+                )
+            t = 24*60*60
+
+
+        if threadlocal.first_every_invoke is False:
+            time.sleep(t)
+            return True, True
+        else:
+            threadlocal.first_every_invoke = False
+            return True, True
+
+
+class loop_callback:
+    def callback(self,
+            action=None,
+            target=None,
+            msg=None,  # 执行*次
+            pre_value=None):
+        if pre_value != "while" or msg is None:       
+            return False, None
+
+        if not msg.endswith(u'次'):
+            INFO(u"loop must ends with 次")
+            return False, None
+
+        invoke_time = getattr(threadlocal, 'invoke_time', None)
+        if invoke_time is None:
+            threadlocal.invoke_time = 0
+
+        times = int(cn2dig(msg[:-1]))
+        if threadlocal.invoke_time < times:
+            threadlocal.invoke_time += 1    
+            return True, True
+        else:
+            return True, False
+
 
 class memo_callback:
     def callback(self,

@@ -7,7 +7,7 @@
         "delay" : ["定时"],
         "trigger" : ["hello"],
         "action" : ["开", "关", "播放", "停止播放", "天气预报", "记录",
-                    "删除", "录音", "设置", "每"],
+                    "删除", "录音", "设置", "每", "执行"],
         "target" : ["灯", "门", "豆瓣电台", "留言", "提醒", "闹铃"],
         "stop" : ["算了", "取消"],
         "finish" : ["好吗", "谢谢"],
@@ -26,6 +26,7 @@
         },
         "action":{
             "每":"action.every_callback",
+            "执行":"action.loop_callback",
             "开":"action.action_callback",
             "关":"action.action_callback",
             "播放":"action.play_callback",
