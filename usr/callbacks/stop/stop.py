@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+from util.log import *
+
+
 class stop_callback:
     def callback(self, stop = None):
-        print "stop command:", stop
+        DEBUG("stop command:", stop)
         return True, "stop"

@@ -4,6 +4,7 @@
 
 class while_callback:
     def callback(
+            self,
             whiles=None,
             msg=None,
             action=None,

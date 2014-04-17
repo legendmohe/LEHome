@@ -7,7 +7,6 @@ from time import sleep
 import pickle
 import threading
 import sys
-
 from CommandParser import CommandParser
 from Elements import Statement, Block, IfStatement, WhileStatement
 from lib.sound import Sound
@@ -87,7 +86,7 @@ class Command:
                 coms = OrderedDict([
                     ("trigger", statement.trigger),
                     ("nexts", statement.nexts),
-                    ("while", statement.whiles),
+                    ("whiles", statement.whiles),
                     ("if", statement.ifs),
                     ("delay", statement.delay),
                     ("action", statement.action),
@@ -140,9 +139,9 @@ class Command:
                                 pre_value=return_value,
                                 pass_value=coms["pass_value"]
                                 )
-                    elif com_type == "while":
+                    elif com_type == "whiles":
                         is_continue, return_value = callback(
-                                whiles=coms["while"],
+                                whiles=coms["whiles"],
                                 msg=msg,
                                 action=coms["action"],
                                 target=coms["target"],

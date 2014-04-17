@@ -12,6 +12,7 @@ from subprocess import PIPE, Popen
 from util.Res import Res
 from util.Util import parse_time
 from lib.sound import Sound
+from util.log import *
 
 
 class target_callback:
@@ -20,7 +21,7 @@ class target_callback:
             target=None,
             msg=None, 
             pre_value=None):
-        print "* target callback: %s, message: %s pre_value: %s" %(target, msg, pre_value)
+        DEBUG("* target callback: %s, message: %s pre_value: %s" %(target, msg, pre_value))
         return True, "pass"
 
 class douban_callback:

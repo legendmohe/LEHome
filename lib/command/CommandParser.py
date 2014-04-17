@@ -137,13 +137,17 @@ class CommandParser:
             self._error_occoured = True
 
         block = self._block_stack.pop()
+        if len(self._block_stack) < 1:
+            ERROR("single then error.")
+            self._error_occoured = True
+            return
         ifs = self._block_stack[-1]
         if isinstance(block, Block):
             if isinstance(ifs, IfStatement) or isinstance(ifs, WhileStatement):
                 self._append_statement(block)
                 self._block_stack.append(ifs.then_block)
                 return
-        ERROR("single else error.")
+        ERROR("single then error.")
         self._error_occoured = True
 
     def onfound_else(self, e):
@@ -258,7 +262,7 @@ class CommandParser:
                     {'name': 'found_target', 'src': 'message_state',  'dst': 'message_state'},
                     {'name': 'found_others', 'src': 'message_state',  'dst': 'message_state'},
 
-                    {'name': 'reset', 'src': ['error_state', 'initial_state'],  'dst': 'initial_state'},
+                    {'name': 'reset', 'src': ['error_state', 'initial_state', 'trigger_state'],  'dst': 'initial_state'},
                     {'name': 'found_stop_flag',
                         'src': ['trigger_state', 'action_state', 'target_state', 'message_state', 'delay_state', 'if_state'], 
                         'dst': 'initial_state'},
@@ -454,6 +458,7 @@ if __name__ == '__main__':
     import sys
 
     def test_callback(block, index=1):
+        print block.statements
         for statement in block.statements:
             for attr in vars(statement):
                 sys.stdout.write("-"*index)
@@ -478,7 +483,7 @@ if __name__ == '__main__':
             "elses":["否则"],
             "delay":["定时"],
             "trigger":["启动"],
-            "action":["开", "关"],
+            "action":["开", "关", "执行"],
             "target":["灯", "门"],
             "stop":["停止"],
             "finish":["结束"],
@@ -488,6 +493,6 @@ if __name__ == '__main__':
     fsm.finish_callback = test_callback
     fsm.stop_callback = stop_callback
     #TODO - "不要停&停止"
-    parser_target = "启动循环开门7那么开灯8结束"
+    parser_target = "启动循环执行5次那么开灯8结束"
     fsm.put_into_parse_stream(parser_target)
 

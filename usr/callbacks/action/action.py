@@ -180,6 +180,7 @@ class every_callback:
             msg=None,  # 每天 每*小时 每*分钟 每天*点*分
             pre_value=None):
         if pre_value != "while" or msg is None:       
+            INFO(pre_value + msg)
             return False, None
 
         first_every_invoke = getattr(threadlocal, 'first_every_invoke', None)
@@ -239,6 +240,7 @@ class loop_callback:
             msg=None,  # 执行*次
             pre_value=None):
         if pre_value != "while" or msg is None:       
+            INFO("invaild loop statement.")
             return False, None
 
         if not msg.endswith(u'次'):
@@ -250,6 +252,8 @@ class loop_callback:
             threadlocal.invoke_time = 0
 
         times = int(cn2dig(msg[:-1]))
+        INFO('invoke %s for %d times, current is %d'
+                % (action, times, threadlocal.invoke_time))
         if threadlocal.invoke_time < times:
             threadlocal.invoke_time += 1    
             return True, True

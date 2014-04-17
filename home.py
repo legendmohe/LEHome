@@ -81,6 +81,7 @@ class Home:
                                     cb_object.callback)
                     except Exception, e:
                         ERROR("init commands faild.")
+                        ERROR(e)
 
     def _init_speaker(self):
         INFO("initlizing speaker...")

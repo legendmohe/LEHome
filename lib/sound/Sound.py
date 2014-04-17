@@ -30,7 +30,7 @@ def playwav(path):
 AUDIO_SERVER_ADDRESS = None
 
 
-def get_play_request_url(path, loop=-1):
+def get_play_request_url(path, inqueue=False, loop=-1):
     global AUDIO_SERVER_ADDRESS
     if AUDIO_SERVER_ADDRESS is None:
         WARN("audio server address is empty.")
@@ -53,7 +53,7 @@ def get_clear_request_url():
 
 
 def play(path, inqueue=False):
-    url = get_request_url(path)
+    url = get_play_request_url(path)
     if url is None:
         return
     INFO("sending audio url: " + url)
