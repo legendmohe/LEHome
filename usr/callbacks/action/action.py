@@ -31,24 +31,24 @@ class weather_report_callback:
             msg=None, 
             pre_value=None):
         
-        url = 'http://m.weather.com.cn/data/101280101.html'
+        url = 'http://m.weather.com.cn/data/101280101.html'  # GUangzhou
 
         re = urllib2.urlopen(url).read()
         re = re.decode('UTF-8')
         we = json.loads(re)['weatherinfo']
 
-        print u'城市：' + we['city']
-        print u'日期：' + we['date_y']
-        print u'week：' + we['week']
-        print u'未来6天天气：'
-        print '\t' + we['temp1'] + '\t' + we['weather1'] + '\t' + we['wind1']
-        print '\t' + we['temp2'] + '\t' + we['weather2'] + '\t' + we['wind2']
-        print '\t' + we['temp3'] + '\t' + we['weather3'] + '\t' + we['wind3']
-        print '\t' + we['temp4'] + '\t' + we['weather4'] + '\t' + we['wind4']
-        print '\t' + we['temp5'] + '\t' + we['weather5'] + '\t' + we['wind5']
-        print '\t' + we['temp6'] + '\t' + we['weather6'] + '\t' + we['wind6']
-        print u'穿衣指数: '+ we['index_d'] 
-        print u'紫外线: ' + we['index_uv']
+        INFO(u'城市：' + we['city'])
+        INFO(u'日期：' + we['date_y'])
+        INFO(u'week：' + we['week'])
+        INFO(u'未来6天天气：')
+        INFO('\t' + we['temp1'] + '\t' + we['weather1'] + '\t' + we['wind1'])
+        INFO('\t' + we['temp2'] + '\t' + we['weather2'] + '\t' + we['wind2'])
+        INFO('\t' + we['temp3'] + '\t' + we['weather3'] + '\t' + we['wind3'])
+        INFO('\t' + we['temp4'] + '\t' + we['weather4'] + '\t' + we['wind4'])
+        INFO('\t' + we['temp5'] + '\t' + we['weather5'] + '\t' + we['wind5'])
+        INFO('\t' + we['temp6'] + '\t' + we['weather6'] + '\t' + we['wind6'])
+        INFO(u'穿衣指数: '+ we['index_d'])
+        INFO(u'紫外线: ' + we['index_uv'])
         
         content = ""
         if msg == u"明天":
@@ -113,12 +113,12 @@ class remove_callback:
                 filelist = glob.glob("usr/message/*.mp3")
                 for f in filelist:
                     os.remove(f)
-                    print "remove:%s" % (f)
+                    INFO("remove:%s" % (f, ))
             Sound.play(
                         Res.get_res_path("sound/com_trash")
                         )
         else:
-            print u"cancel"
+            INFO("cancel")
 
         return True, pre_value
 
@@ -134,7 +134,7 @@ class record_callback:
             def record(path=None):
                 if not path:
                     return
-                print "record : " + path
+                INFO("record : " + path)
 
                 if "recorder" in self._context:
                     recorder = self._context["recorder"]
@@ -153,8 +153,7 @@ class record_callback:
                     if not recorder.poll():
                         recorder.kill()
                 except Exception, ex:
-                    print " stop."
-                    # print ex
+                    ERROR(ex)
                 del self._context["recorder"]
             
             return True, record
@@ -277,7 +276,7 @@ class memo_callback:
                     if exc.errno == errno.EEXIST and os.path.isdir(path):
                         pass
                     else:
-                        print exc
+                        ERROR(exc)
                         return True, "pass"
 
                 self._home.setResume(True)
@@ -291,8 +290,7 @@ class memo_callback:
                             )
                 self._home.setResume(False)
             except Exception, ex:
-                print " stop."
-                # print ex
+                ERROR(ex)
         return True, pre_value
 
 class set_callback:
