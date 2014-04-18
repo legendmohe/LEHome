@@ -81,7 +81,7 @@ class message_callback:
                     if exc.errno == errno.EEXIST and os.path.isdir(path):
                         pass
                     else:
-                        print exc
+                        ERROR(exc)
                         return True, "pass"
 
                 self._home.setResume(True)
@@ -120,7 +120,6 @@ class remind_callback:
             return False, None
 
         minutes = parse_time(msg)
-        print 'msg', msg, "minutes", minutes
         if minutes is None:
             return False, None
 
@@ -152,9 +151,9 @@ class alarm_callback:
         if msg is None:
             return False, None
         alarm_time = parse_time(msg)
-        print "alarm_time:", alarm_time
+        INFO("alarm_time:" + alarm_time)
         if alarm_time is None:
-            print "invalid alarm time:", msg
+            WARN("invalid alarm time:", msg)
             return False, None
 
         self._home.setResume(True)

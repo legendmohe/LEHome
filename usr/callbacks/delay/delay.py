@@ -14,7 +14,7 @@ class time_callback:
             action=None,
             trigger=None, 
             ):
-        print "* delay callback: %s, action: %s, target: %s" % (delay, action, target)
+        DEBUG("* delay callback: %s, action: %s, target: %s" % (delay, action, target))
         return True, pre_value
 
 
@@ -25,7 +25,7 @@ class delay_callback:
             action=None,
             target=None, 
             ):
-        print "* delay callback: %s, action: %s, target: %s" % (delay, action, target)
+        DEBUG("* delay callback: %s, action: %s, target: %s" % (delay, action, target))
 
         if delay_time is None:
             return False, None
@@ -35,6 +35,7 @@ class delay_callback:
             return False, None
 
         self._speaker.speak(minutes + u"分钟后执行。")
+        INFO(minutes + u"分钟后执行。")
         sleep(int(minutes) * 60)
 
         self._home.setResume(True)

@@ -54,7 +54,7 @@ class Home:
                         "nexts":com_json["next"],
                         })
             self._com.setDEBUG(False)
-            
+ 
             cb_json = settings["callback"]
             for com_name in cb_json.keys():
                 cbs = cb_json[com_name]
@@ -67,7 +67,7 @@ class Home:
                         dpos = token.rindex('.')
                         module_name = token[:dpos]
                         class_name = token[dpos + 1:]
-                        cb_module_name = "usr.callbacks.%s.%s" %(com_name, module_name)
+                        cb_module_name = "usr.callbacks.%s.%s" % (com_name, module_name)
                         cb_module = importlib.import_module(cb_module_name)
                         cb_object = getattr(cb_module, class_name)()
                         cb_object._context = self._context
