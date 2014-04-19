@@ -3,7 +3,7 @@
 
 from fysom import Fysom
 from heapq import heappush, heapify
-from Elements import Statement, IfStatement, WhileStatement, Block
+from lib.model.Elements import Statement, IfStatement, WhileStatement, Block
 from util.log import *
 
 

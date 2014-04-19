@@ -8,7 +8,7 @@ import pickle
 import threading
 import sys
 from CommandParser import CommandParser
-from Elements import Statement, Block, IfStatement, WhileStatement
+from lib.model.Elements import Statement, Block, IfStatement, WhileStatement
 from lib.sound import Sound
 from util.Res import Res
 from util.log import *
