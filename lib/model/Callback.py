@@ -8,10 +8,12 @@ from util.log import *
 
 class Callback:
     def __init__(self):
-        if not callable(getattr(object, "callback")):
+        if not callable(getattr(self, "callback")):
             ERROR("callback method not found.")
             return
         self.callback_param_names = inspect.getargspec(self.callback)[0]
+        if "self" in self.callback_param_names:
+            self.callback_param_names.remove("self")
 
     def internal_callback(self, **kwargs):
         call_dict = {}

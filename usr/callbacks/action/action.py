@@ -13,7 +13,7 @@ from lib.sound import Sound
 from util.Res import Res
 from util.Util import parse_time, cn2dig
 from util.log import *
-from lob.model import Callback
+from lib.model import Callback
 
 
 class action_callback(Callback.Callback):
