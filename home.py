@@ -54,14 +54,9 @@ class Home:
                         "nexts":com_json["next"],
                         })
             self._com.setDEBUG(False)
-<<<<<<< HEAD
- 
-=======
-
 
             import traceback
             
->>>>>>> 2ff1392a36b3282af46eac0cb94b425d62878341
             cb_json = settings["callback"]
             for com_name in cb_json.keys():
                 cbs = cb_json[com_name]
