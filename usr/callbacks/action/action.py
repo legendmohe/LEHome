@@ -13,9 +13,10 @@ from lib.sound import Sound
 from util.Res import Res
 from util.Util import parse_time, cn2dig
 from util.log import *
+from lob.model import Callback
 
 
-class action_callback:
+class action_callback(Callback.Callback):
     def callback(self,
             action=None,
             target=None,
@@ -24,7 +25,7 @@ class action_callback:
         DEBUG("* action callback: %s, target: %s, message: %s pre_value: %s" %(action, target, msg, pre_value))
         return True, "pass"
 
-class weather_report_callback:
+class weather_report_callback(Callback.Callback):
     def callback(self,
             action=None,
             target=None,
@@ -65,7 +66,7 @@ class weather_report_callback:
 
         return True, pre_value
 
-class stop_play_callback:
+class stop_play_callback(Callback.Callback):
     def callback(self, action = None, target = None,
             msg = None, 
             pre_value = None):
@@ -76,7 +77,7 @@ class stop_play_callback:
         return True, pre_value
 
 
-class play_callback:
+class play_callback(Callback.Callback):
     def callback(self, action = None, target = None,
             msg = None, pre_value = None):
         if action == u"播放" and target != None:
@@ -98,7 +99,7 @@ class play_callback:
             return True, pre_value
 
 
-class remove_callback:
+class remove_callback(Callback.Callback):
     def callback(self,
             action=None,
             target=None,
@@ -123,7 +124,7 @@ class remove_callback:
         return True, pre_value
 
 
-class record_callback:
+class record_callback(Callback.Callback):
     def callback(self,
             action=None,
             target=None,
@@ -160,7 +161,7 @@ class record_callback:
         else:
             return True, pre_value
 
-class cal_callback:
+class cal_callback(Callback.Callback):
     def callback(self,
             action=None,
             target=None,
@@ -172,7 +173,7 @@ class cal_callback:
 
 
 threadlocal = threading.local()
-class every_callback:
+class every_callback(Callback.Callback):
     def callback(self,
             action=None,
             target=None,
@@ -232,7 +233,7 @@ class every_callback:
             return True, True
 
 
-class loop_callback:
+class loop_callback(Callback.Callback):
     def callback(self,
             action=None,
             target=None,
@@ -260,7 +261,7 @@ class loop_callback:
             return True, False
 
 
-class memo_callback:
+class memo_callback(Callback.Callback):
     def callback(self,
             action=None,
             target=None,
@@ -293,7 +294,7 @@ class memo_callback:
                 ERROR(ex)
         return True, pre_value
 
-class set_callback:
+class set_callback(Callback.Callback):
     def callback(self,
             action=None,
             target=None,

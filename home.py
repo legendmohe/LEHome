@@ -78,7 +78,7 @@ class Home:
                         self._com.register_callback(
                                     com_name,
                                     cb_token,
-                                    cb_object.callback)
+                                    cb_object.internal_callback)
                     except Exception, e:
                         ERROR("init commands faild.")
                         ERROR(e)
