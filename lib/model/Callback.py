@@ -12,6 +12,7 @@ class Callback:
             ERROR("callback method not found.")
             return
         self.callback_param_names = inspect.getargspec(self.callback)[0]
+        DEBUG(self.callback_param_names)
         if "self" in self.callback_param_names:
             self.callback_param_names.remove("self")
 
@@ -23,4 +24,4 @@ class Callback:
             else:
                 call_dict[key] = None
         DEBUG("callback: %s" % (kwargs, ))
-        self.callback(**call_dict)
+        return self.callback(**call_dict)
