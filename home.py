@@ -54,7 +54,14 @@ class Home:
                         "nexts":com_json["next"],
                         })
             self._com.setDEBUG(False)
+<<<<<<< HEAD
  
+=======
+
+
+            import traceback
+            
+>>>>>>> 2ff1392a36b3282af46eac0cb94b425d62878341
             cb_json = settings["callback"]
             for com_name in cb_json.keys():
                 cbs = cb_json[com_name]
@@ -78,10 +85,10 @@ class Home:
                         self._com.register_callback(
                                     com_name,
                                     cb_token,
-                                    cb_object.callback)
+                                    cb_object.internal_callback)
                     except Exception, e:
                         ERROR("init commands faild.")
-                        ERROR(e)
+                        print traceback.format_exc()
 
     def _init_speaker(self):
         INFO("initlizing speaker...")

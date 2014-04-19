@@ -5,9 +5,10 @@ from lib.sound import Sound
 from util.Res import Res
 import re
 from util.Util import parse_time
+from lib.model import Callback
 
 
-class time_callback:
+class time_callback(Callback.Callback):
     def callback(self,
             delay=None,
             delay_time=None,
@@ -18,7 +19,7 @@ class time_callback:
         return True, pre_value
 
 
-class delay_callback:
+class delay_callback(Callback.Callback):
     def callback(self,
             delay=None,
             delay_time=None,

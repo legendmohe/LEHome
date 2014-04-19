@@ -13,9 +13,10 @@ from util.Res import Res
 from util.Util import parse_time
 from lib.sound import Sound
 from util.log import *
+from lib.model import Callback
 
 
-class target_callback:
+class target_callback(Callback.Callback):
     def callback(self,
             action=None,
             target=None,
@@ -24,7 +25,7 @@ class target_callback:
         DEBUG("* target callback: %s, message: %s pre_value: %s" %(target, msg, pre_value))
         return True, "pass"
 
-class douban_callback:
+class douban_callback(Callback.Callback):
 
     __music_table = {
         "华语":"1",
@@ -65,7 +66,7 @@ class douban_callback:
             play(song[0]['url'])
         return True, "pass"
 
-class message_callback:
+class message_callback(Callback.Callback):
     def callback(
             self,
             action=None,
@@ -109,7 +110,7 @@ class message_callback:
         return True, "pass"
 
 
-class remind_callback:
+class remind_callback(Callback.Callback):
     def callback(self,
             action=None,
             target=None,
@@ -141,7 +142,7 @@ class remind_callback:
         return True, "remind"
 
 
-class alarm_callback:
+class alarm_callback(Callback.Callback):
     def callback(self,
             action=None,
             target=None,

@@ -2,7 +2,10 @@
 # encoding: utf-8
 
 
-class while_callback:
+from lib.model import Callback
+
+
+class while_callback(Callback.Callback):
     def callback(
             self,
             whiles=None,

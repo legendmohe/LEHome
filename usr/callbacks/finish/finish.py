@@ -2,9 +2,10 @@
 # encoding: utf-8
 
 from util.log import *   
+from lib.model import Callback
 
 
-class finish_callback:
+class finish_callback(Callback.Callback):
     def callback(self, action = None, target = None,
             msg = None, finish = None, 
             pre_value = None):

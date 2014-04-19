@@ -2,8 +2,9 @@
 # encoding: utf-8
 
 from util.log import *
+from lib.model import Callback
 
-class trigger_callback:
+class trigger_callback(Callback.Callback):
     def callback(self, action = None,
             trigger  = None, 
             pre_value = None):

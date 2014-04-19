@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-class next_callback:
+
+from lib.model import Callback
+
+
+class next_callback(Callback.Callback):
     def callback(self, action = None, target = None,
             msg = None, state = None, 
             pre_value = None, pass_value = None):
