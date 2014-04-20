@@ -25,11 +25,11 @@ class TracePrints(object):
 
 
 class Home:
-    def __init__(self, cmd_source, audio_server):
+    def __init__(self, cmd_source, audio_server, http_source):
         self._context = {}
         self._init_speaker()
         self._init_command()
-        self._init_cmd_source(cmd_source)
+        self._init_cmd_source(cmd_source, http_source)
         self._init_audio_server(audio_server)
         self._resume = False
 
@@ -76,7 +76,7 @@ class Home:
                         cb_object._speaker = self._spk
                         cb_object._home = self
                                    
-                        INFO("load callback: " + cb_module_name + " for command token:" + cb_token)
+                        DEBUG("load callback: " + cb_module_name + " for command token:" + cb_token)
                         self._com.register_callback(
                                     com_name,
                                     cb_token,
@@ -92,12 +92,12 @@ class Home:
     def _init_audio_server(self, audio_server):
         Sound.AUDIO_SERVER_ADDRESS = audio_server
 
-    def _init_cmd_source(self, cmd_source):
-        if not cmd_source is None:
-            INFO("connect to s2t server: %s " % (cmd_source))
+    def _init_cmd_source(self, cmd_source, http_source):
+        if not cmd_source is None and not http_source is None:
             context = zmq.Context()
             _sock = context.socket(zmq.SUB)
             _sock.connect(cmd_source)
+            _sock.connect(http_source)
             _sock.setsockopt(zmq.SUBSCRIBE, '')
             self._sock = _sock
 
@@ -127,7 +127,7 @@ class Home:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-            description='home.py -s tcp://address:port -a http://address:port')
+            description='home.py --http http://http_address:port -s tcp://cmd_address:port -a http://audio_address:port')
     parser.add_argument('-s',
                         action="store",
                         dest="cmd_source",
@@ -138,12 +138,19 @@ if __name__ == '__main__':
                         dest="audio_server",
                         default="http://localhost:8001",
                         help="audio server address and port")
+    parser.add_argument("--http",
+                        action="store",
+                        dest="http_source",
+                        default="tcp://localhost:7999",
+                        help="http server address and port")
     args = parser.parse_args()
 
     cmd_source = args.cmd_source
     audio_server = args.audio_server
+    http_source = args.http_source
     INFO("connect to s2t server: %s " % (cmd_source))
     INFO("connect to audio server: %s " % (audio_server))
+    INFO("connect to http command server: %s " % (http_source))
 
-    home = Home(cmd_source, audio_server)
+    home = Home(cmd_source, audio_server, http_source)
     home.activate()
