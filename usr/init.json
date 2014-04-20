@@ -1,4 +1,8 @@
 {
+    "connection":{
+        "cmd_source" : ["tcp://localhost:8000", "tcp://localhost:7999"],
+        "audio_source" : "http://localhost:8001"
+    },
     "command":{
         "while" : ["循环", "重复"],
         "if" : ["如果"],

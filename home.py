@@ -5,7 +5,6 @@
 import sys
 import importlib
 import traceback
-import argparse
 import zmq
 from lib.command.Command import Command
 from lib.speech.Speech import Text2Speech
@@ -25,20 +24,20 @@ class TracePrints(object):
 
 
 class Home:
-    def __init__(self, cmd_source, audio_server, http_source):
+    def __init__(self):
         self._context = {}
+        self._init_res = Res.init("init.json")
         self._init_speaker()
         self._init_command()
-        self._init_cmd_source(cmd_source, http_source)
-        self._init_audio_server(audio_server)
+        self._init_cmd_source()
+        self._init_audio_server()
         self._resume = False
 
     def _init_command(self):
         INFO('initlizing command...')
-
-        settings = Res.init("init.json")
+        
+        settings = self._init_res
         if settings:
-
             com_json = settings['command']
             self._com = Command({
                         "whiles":com_json["while"],
@@ -89,17 +88,23 @@ class Home:
         INFO("initlizing speaker...")
         self._spk = Text2Speech()
 
-    def _init_audio_server(self, audio_server):
-        Sound.AUDIO_SERVER_ADDRESS = audio_server
+    def _init_audio_server(self):
+        Sound.AUDIO_SERVER_ADDRESS = self._init_res["connection"]["audio_source"]
+        INFO("connect to audio server: %s " % (Sound.AUDIO_SERVER_ADDRESS))
 
-    def _init_cmd_source(self, cmd_source, http_source):
-        if not cmd_source is None and not http_source is None:
-            context = zmq.Context()
-            _sock = context.socket(zmq.SUB)
-            _sock.connect(cmd_source)
-            _sock.connect(http_source)
-            _sock.setsockopt(zmq.SUBSCRIBE, '')
-            self._sock = _sock
+    def _init_cmd_source(self):
+        context = zmq.Context()
+        _sock = context.socket(zmq.SUB)
+        sources = self._init_res["connection"]["cmd_source"]
+        for source in sources:
+            try:
+                _sock.connect(source)
+                INFO("connect to command source: %s " % (source))
+            except Exception, e:
+                ERROR("connection faild: %s" % (source, ))
+                ERROR(e)
+        _sock.setsockopt(zmq.SUBSCRIBE, '')
+        self._sock = _sock
 
     def parse_cmd(self, cmd):
         if not self._resume:
@@ -126,31 +131,5 @@ class Home:
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-            description='home.py --http http://http_address:port -s tcp://cmd_address:port -a http://audio_address:port')
-    parser.add_argument('-s',
-                        action="store",
-                        dest="cmd_source",
-                        default="tcp://localhost:8000",
-                        help="s2t server address and port")
-    parser.add_argument('-a',
-                        action="store",
-                        dest="audio_server",
-                        default="http://localhost:8001",
-                        help="audio server address and port")
-    parser.add_argument("--http",
-                        action="store",
-                        dest="http_source",
-                        default="tcp://localhost:7999",
-                        help="http server address and port")
-    args = parser.parse_args()
-
-    cmd_source = args.cmd_source
-    audio_server = args.audio_server
-    http_source = args.http_source
-    INFO("connect to s2t server: %s " % (cmd_source))
-    INFO("connect to audio server: %s " % (audio_server))
-    INFO("connect to http command server: %s " % (http_source))
-
-    home = Home(cmd_source, audio_server, http_source)
+    home = Home()
     home.activate()
