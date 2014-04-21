@@ -18,6 +18,7 @@ from lib.model import Callback
 
 class action_callback(Callback.Callback):
     def callback(self,
+            cmd=None,
             action=None,
             target=None,
             msg=None, 

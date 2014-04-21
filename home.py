@@ -29,7 +29,8 @@ class Home:
         self._init_res = Res.init("init.json")
         self._init_speaker()
         self._init_command()
-        self._init_cmd_source()
+        self._init_subscribable()
+        self._init_publisher()
         self._init_audio_server()
         self._resume = False
 
@@ -53,6 +54,8 @@ class Home:
                         "nexts":com_json["next"],
                         })
             self._com.setDEBUG(False)
+            self._com.cmd_begin_callback = self._cmd_begin_callback
+            self._com.cmd_end_callback = self._cmd_end_callback
 
             import traceback
             
@@ -92,19 +95,38 @@ class Home:
         Sound.AUDIO_SERVER_ADDRESS = self._init_res["connection"]["audio_source"]
         INFO("connect to audio server: %s " % (Sound.AUDIO_SERVER_ADDRESS))
 
-    def _init_cmd_source(self):
+    def _init_subscribable(self):
         context = zmq.Context()
-        _sock = context.socket(zmq.SUB)
-        sources = self._init_res["connection"]["cmd_source"]
-        for source in sources:
+        _sub_sock = context.socket(zmq.SUB)
+        subscribables = self._init_res["connection"]["subscribable"]
+        for subscribable in subscribables:
             try:
-                _sock.connect(source)
-                INFO("connect to command source: %s " % (source))
+                _sub_sock.connect(subscribable)
+                INFO("connect to command subscribable: %s " % (subscribable))
             except Exception, e:
-                ERROR("connection faild: %s" % (source, ))
+                ERROR("connection faild: %s" % (subscribable, ))
                 ERROR(e)
-        _sock.setsockopt(zmq.SUBSCRIBE, '')
-        self._sock = _sock
+        _sub_sock.setsockopt(zmq.SUBSCRIBE, '')
+        self._sub_sock = _sub_sock
+
+    def _init_publisher(self):
+        context = zmq.Context()
+        publisher = self._init_res["connection"]["publisher"]
+        _pub_sock = context.socket(zmq.PUB)
+        _pub_sock.bind(publisher)
+        self._pub_sock = _pub_sock
+
+    def _cmd_begin_callback(self, command):
+        INFO("command begin: %s" % (command))
+        self.publish_info(command, "begin")
+
+    def _cmd_end_callback(self, command):
+        INFO("command end: %s" % (command))
+        self.publish_info(command, "end")
+
+    def publish_info(self, sub_id, info):
+        INFO("publish %s to %s" % (info, sub_id))
+        self._pub_sock.send_string("%s %s" % (sub_id, info))
 
     def parse_cmd(self, cmd):
         if not self._resume:
@@ -119,7 +141,7 @@ class Home:
 
         while True:
             INFO("waiting for command...")
-            cmd = self._sock.recv_string()
+            cmd = self._sub_sock.recv_string()
             home.parse_cmd(cmd)
 
     def deactivate(self):

@@ -14,6 +14,8 @@ class CommandParser:
     _delay_buf = ''
     _statement = Statement()
     _block_stack = [Block()]
+    _is_cmd_triggered = False
+    _last_cmd = ''
 
     def onfound_delay(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
@@ -28,6 +30,12 @@ class CommandParser:
 
         if e.dst == "error_state":
             self._error_occoured = True
+            return
+
+    def onafterfound_trigger(self, e):
+        if e.src == "initial_state":
+            self._last_cmd = ''
+            self._is_cmd_triggered = True
 
     def onfound_target(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
@@ -63,8 +71,9 @@ class CommandParser:
                 self._append_statement(block)
 
             if self.finish_callback:
-                self.finish_callback(self._block_stack[0])
+                self.finish_callback(self._last_cmd, self._block_stack[0])
 
+            self._is_cmd_triggered = False
             self._reset_element()
 
     def onfound_stop_flag(self, e):
@@ -82,12 +91,17 @@ class CommandParser:
                         'delay_state']:
 
             if self.stop_callback:
-                self.stop_callback(self._statement.stop)
+                self.stop_callback(self._last_cmd, self._statement.stop)
 
+            self._is_cmd_triggered = False
             self._reset_element()
 
     def onfound_nexts_flag(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
+
+        if e.dst == "error_state":
+            self._error_occoured = True
+            return
 
         if e.dst == "trigger_state":
             block = self._block_stack[-1]
@@ -95,15 +109,13 @@ class CommandParser:
 
         self._statement.nexts = e.args[1]
 
-        if e.dst == "error_state":
-            self._error_occoured = True
-
     def onfound_while(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
         self._statement.whiles = e.args[1]
 
         if e.dst == "error_state":
             self._error_occoured = True
+            return
 
         block = self._block_stack[-1]
         if isinstance(block, Block):
@@ -118,6 +130,7 @@ class CommandParser:
 
         if e.dst == "error_state":
             self._error_occoured = True
+            return
 
         block = self._block_stack[-1]
         if isinstance(block, Block):
@@ -135,6 +148,7 @@ class CommandParser:
 
         if e.dst == "error_state":
             self._error_occoured = True
+            return
 
         block = self._block_stack.pop()
         if len(self._block_stack) < 1:
@@ -156,6 +170,7 @@ class CommandParser:
 
         if e.dst == "error_state":
             self._error_occoured = True
+            return
 
         block = self._block_stack.pop()
         ifs = self._block_stack[-1]
@@ -169,8 +184,8 @@ class CommandParser:
         DEBUG('reset ! = event: %s, src: %s, dst: %s' \
                     % (e.event, e.src, e.dst))
 
-        if e.dst == "error_state":
-            self._error_occoured = True
+        self._last_cmd = ''
+        self._is_cmd_triggered = False
 
     def onerror_state(self, e):
         DEBUG('onerror_state event: %s, src: %s, dst: %s' \
@@ -301,6 +316,7 @@ class CommandParser:
 
         self._FSM.onfound_delay = self.onfound_delay
         self._FSM.onfound_trigger = self.onfound_trigger
+        self._FSM.onafterfound_trigger = self.onafterfound_trigger
         self._FSM.onfound_others = self.onfound_others
         self._FSM.onfound_action = self.onfound_action
         self._FSM.onfound_target = self.onfound_target
@@ -440,12 +456,17 @@ class CommandParser:
 
             if self._FSM.current == 'message_state':
                 self._message_buf += _token
+            if self._is_cmd_triggered and not _token_type == "trigger":
+                self._last_cmd += _token
 
             if self._error_occoured:
                 self._FSM.reset()
                 self._reset_element()
                 self._error_occoured = False
             # DEBUG(self._FSM.current
+
+    def last_command(self):
+        return self._last_cmd
 
     def _reset_element(self):
         self._statement = Statement()
@@ -457,7 +478,7 @@ class CommandParser:
 if __name__ == '__main__':
     import sys
 
-    def test_callback(block, index=1):
+    def test_callback(command, block, index=1):
         print block.statements
         for statement in block.statements:
             for attr in vars(statement):
@@ -465,16 +486,10 @@ if __name__ == '__main__':
                 block = getattr(statement, attr)
                 print "obj.%s = %s" % (attr, block)
                 if isinstance(block, Block):
-                    test_callback(block, index + 1)
+                    test_callback(command, block, index + 1)
 
-    def stop_callback(block, index=1):
-        for statement in block.statements:
-            for attr in vars(statement):
-                sys.stdout.write("-"*index)
-                block = getattr(statement, attr)
-                print "obj.%s = %s" % (attr, block)
-                if isinstance(block, Block):
-                    test_callback(block, index + 1)
+    def stop_callback(command, stop):
+        print command, stop
 
     fsm = CommandParser({
             "whiles":["循环", "重复"],
@@ -493,6 +508,10 @@ if __name__ == '__main__':
     fsm.finish_callback = test_callback
     fsm.stop_callback = stop_callback
     #TODO - "不要停&停止"
+    parser_target = "启动开灯结束"
+    fsm.put_into_parse_stream(parser_target)
+    print fsm.last_command()
     parser_target = "启动循环执行5次那么开灯8结束"
     fsm.put_into_parse_stream(parser_target)
+    print fsm.last_command()
 

@@ -4,8 +4,8 @@
 from collections import OrderedDict
 from Queue import Queue, Empty
 from time import sleep
-import pickle
 import threading
+import pickle
 import sys
 from CommandParser import CommandParser
 from lib.model.Elements import Statement, Block, IfStatement, WhileStatement
@@ -18,6 +18,7 @@ class Command:
     def __init__(self, coms, backup_path="backup.dat"):
         self._tasklist_path = backup_path
         self._lock = threading.Lock()
+        self._local = threading.local()
         self._tasklist = self._load_tasklist()
 
         self._registered_callbacks = {}
@@ -47,35 +48,37 @@ class Command:
             except:
                 ERROR("invaild tasklist path:%s", self._tasklist_path)
 
-    def _finish_callback(self, block, debug_layer=1):
-        # if self.DEBUG:
-        #     for statement in block.statements:
-        #         for attr in vars(statement):
-        #             sys.stdout.write("-"*debug_layer)
-        #             value = getattr(statement, attr)
-        #             INFO("obj.%s = %s" % (attr, value))
-        #             if isinstance(value, Block):
-        #                 self._finish_callback(value, debug_layer + 1)
-
+    def _finish_callback(self, command, block):
         Sound.play(Res.get_res_path("sound/com_begin"))
         t = threading.Thread(
                             target=self._execute,
-                            args=(block, )
+                            args=(block, command)
                             )
         t.daemon = True
         t.start()
 
-    def _stop_callback(self, stop, debug_layer=1):
+    def _stop_callback(self, command, stop):
         Sound.play(Res.get_res_path("sound/com_stop"))
         if "stop" in self._registered_callbacks:
             callbacks = self._registered_callbacks["stop"]
             if stop in callbacks:
                 callbacks[stop](stop=stop)
 
-    def _execute(self, block, path="backup.pcl"):
+    def _execute(self, block, command, path="backup.pcl"):
         self._tasklist.append(block)
         self._save_tasklist()
+
+        try:
+            self.cmd_begin_callback(command)
+        except AttributeError:
+            DEBUG("no cmd_begin_callback")
+        self._local.cmd = command
         self._invoke_block(block)
+        try:
+            self.cmd_end_callback(command)
+        except AttributeError:
+            DEBUG("no cmd_end_callback")
+
         self._tasklist.remove(block)
         self._save_tasklist()
 
@@ -110,6 +113,7 @@ class Command:
         return pass_value
 
     def _invoke_callbacks(self, coms, msg, delay):
+        cmd = self._local.cmd
         return_value = None
         is_continue = True
         for com_type in coms.keys():
@@ -127,11 +131,13 @@ class Command:
                     callback = callbacks[coms[com_type]]
                     if com_type == "trigger":
                         is_continue, return_value = callback(
+                                cmd=cmd,
                                 trigger=coms["trigger"],
                                 action=coms["action"],
                                 )
                     elif com_type == "nexts":
                         is_continue, return_value = callback(
+                                cmd=cmd,
                                 action=coms["action"],
                                 target=coms["target"],
                                 state=coms["nexts"],
@@ -141,6 +147,7 @@ class Command:
                                 )
                     elif com_type == "whiles":
                         is_continue, return_value = callback(
+                                cmd=cmd,
                                 whiles=coms["whiles"],
                                 msg=msg,
                                 action=coms["action"],
@@ -149,6 +156,7 @@ class Command:
                                 )
                     elif com_type == "if":
                         is_continue, return_value = callback(
+                                cmd=cmd,
                                 ifs=coms["if"],
                                 msg=msg,
                                 action=coms["action"],
@@ -157,6 +165,7 @@ class Command:
                                 )
                     elif com_type == "delay":
                         is_continue, return_value = callback(
+                                cmd=cmd,
                                 delay=coms["delay"],
                                 delay_time=delay,
                                 action=coms["action"],
@@ -165,6 +174,7 @@ class Command:
                                 )
                     elif com_type == "action":
                         is_continue, return_value = callback(
+                                cmd=cmd,
                                 action=coms["action"],
                                 target=coms["target"],
                                 msg=msg,
@@ -172,6 +182,7 @@ class Command:
                                 )
                     elif com_type == "target":
                         is_continue, return_value = callback(
+                                cmd=cmd,
                                 action=coms["action"],
                                 target=coms["target"],
                                 msg=msg,
@@ -179,6 +190,7 @@ class Command:
                                 )
                     elif com_type == "finish":
                         is_continue, return_value = callback(
+                                cmd=cmd,
                                 action=coms["action"],
                                 target=coms["target"],
                                 finish=coms["finish"],
