@@ -8,6 +8,7 @@ UTIL_CN_NUM = {
                 u'零': 0,
                 u'一': 1,
                 u'二': 2,
+                u'两': 2,
                 u'三': 3,
                 u'四': 4,
                 u'五': 5,
@@ -42,7 +43,7 @@ def cn2dig(src):
 
 
 def parse_time(msg):
-    m = re.match(ur"(([0-9零一二三四五六七八九十百]+[点\.])?([0-9零一二三四五六七八九十百]+分)?)", msg)
+    m = re.match(ur"(([0-9零一二两三四五六七八九十百]+[点:\.])?([0-9零一二三四五六七八九十百]+分)?)", msg)
     if m.group(0):
         m1 = None
         m2 = None
@@ -65,6 +66,8 @@ def parse_time(msg):
         return None
 
 if __name__ == "__main__":
+    print parse_time(u"7:30")
+    print parse_time(u"两点30分")
     print parse_time(u"7点")
     print parse_time(u"五分")
     print parse_time(u"一百零五分")
