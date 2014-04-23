@@ -121,16 +121,17 @@ class remind_callback(Callback.Callback):
             return False, None
 
         minutes = parse_time(msg)
+        print msg, " to ", minutes
         if minutes is None:
             return False, None
 
         self._home.setResume(True)
-        p = Popen(["at", "now", "+", minutes, "minutes", "-M"],
+        p = Popen(["at", "now", "+", minutes, "minutes"],
                 stdin=PIPE,
                 stdout=PIPE,
                 bufsize=1)
-        url = Sound.get_request_url(Res.get_res_path("sound/com_bell"), 4)
-        print >>p.stdin, "curl \"" + url + "\""
+        url = Sound.get_play_request_url(Res.get_res_path("sound/com_bell"), 4)
+        print >>p.stdin, "mpg123 \"" + url + "\""
         print p.communicate("EOF")[0]
 
         Sound.play(
@@ -158,12 +159,12 @@ class alarm_callback(Callback.Callback):
             return False, None
 
         self._home.setResume(True)
-        p = Popen(["at", alarm_time, "-M"],
+        p = Popen(["at", alarm_time],
                 stdin=PIPE,
                 stdout=PIPE,
                 bufsize=1)
-        url = Sound.get_request_url(Res.get_res_path("sound/com_bell2"), 6)
-        print >>p.stdin, "curl \"" + url + "\""
+        url = Sound.get_play_request_url(Res.get_res_path("sound/com_bell2"), 6)
+        print >>p.stdin, "mpg123 \"" + url + "\""
         print p.communicate("EOF")[0]
 
         Sound.play(

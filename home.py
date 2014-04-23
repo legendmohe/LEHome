@@ -113,20 +113,22 @@ class Home:
         context = zmq.Context()
         publisher = self._init_res["connection"]["publisher"]
         _pub_sock = context.socket(zmq.PUB)
+        INFO("bind to : %s " % (publisher))
         _pub_sock.bind(publisher)
         self._pub_sock = _pub_sock
 
     def _cmd_begin_callback(self, command):
         INFO("command begin: %s" % (command))
-        self.publish_info(command, "begin")
+        self.publish_info(command, "begin:" + command)
 
     def _cmd_end_callback(self, command):
         INFO("command end: %s" % (command))
-        self.publish_info(command, "end")
+        self.publish_info(command, "end: " + command)
 
     def publish_info(self, sub_id, info):
         INFO("publish %s to %s" % (info, sub_id))
-        self._pub_sock.send_string("%s %s" % (sub_id, info))
+        self._pub_sock.send_string(info)
+        # self._pub_sock.send_string("%s %s" % (sub_id, info))
 
     def parse_cmd(self, cmd):
         if not self._resume:

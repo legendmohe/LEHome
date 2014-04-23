@@ -1,6 +1,6 @@
 {
     "connection":{
-        "subscribable" : ["tcp://localhost:8000", "tcp://localhost:7999"],
+        "subscribable" : ["tcp://192.168.1.193:8000", "tcp://localhost:8000", "tcp://localhost:7999"],
         "publisher" : "tcp://*:9000",
         "audio_source" : "http://localhost:8001"
     },
