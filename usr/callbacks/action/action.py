@@ -264,22 +264,12 @@ class loop_callback(Callback.Callback):
 
 
 class break_callback(Callback.Callback):
-    def callback(self, msg):
-        if not msg.startswith(u'循环'):
-            INFO(u'break command must starts with 循环')
-            return True, None
-        thread_index = cn2dig(msg[2:])
-        if thread_index is None:
-            WARN("invaild thread index %d" % (thread_index, ))
-            return False, None
-        else:
-            thread_index = int(thread_index)
-        import pdb
-        pdb.set_trace()
-        if thread_index in self._home._cmd.threads:
-            cmd, thread = self._home._cmd.threads[thread_index]
-            thread.stop()
-            INFO("stop thread: %d with cmd: %s" % (thread_index, cmd))
+    def callback(self):
+        return True, True
+
+
+class show_callback(Callback.Callback):
+    def callback(self, action, msg, target):
         return True, True
 
 

@@ -119,14 +119,14 @@ class Home:
 
     def _cmd_begin_callback(self, command):
         INFO("command begin: %s" % (command))
-        self.publish_info(command, u"执行: " + command)
+        # self.publish_info(command, u"执行: " + command)
 
     def _cmd_end_callback(self, command):
         INFO("command end: %s" % (command))
         # self.publish_info(command, "end: " + command)
 
     def publish_info(self, sub_id, info):
-        INFO("publish %s to %s" % (info, sub_id))
+        # INFO("publish %s to %s" % (info, sub_id))
         self._pub_sock.send_string(info)
         # self._pub_sock.send_string("%s %s" % (sub_id, info))
 

@@ -303,13 +303,13 @@ class CommandParser:
         )
 
     def __init__(self, coms):
-        self.FLAG = []
+        self.flag = []
 
         flags = ['whiles', 'ifs', 'thens', 'elses', 'delay', 'trigger', 'stop', 'finish',
                 'action', 'target', 'nexts']
         for flag in flags:
             if flag in coms.keys():
-                self.FLAG.append((flag, coms[flag]))
+                self.flag.append((flag, coms[flag]))
 
         self.DEBUG = False
 
@@ -333,7 +333,7 @@ class CommandParser:
         self._FSM.onerror_state = self.onerror_state
 
         self._token_buf = []
-        self._match_stack = []
+        self._match_heap = []
 
         self.finish_callback = None
         self.stop_callback = None
@@ -342,7 +342,7 @@ class CommandParser:
         self._reset_element()
         self._FSM.current = "initial_state"
         del self._token_buf[:]
-        del self._match_stack[:]
+        del self._match_heap[:]
 
     def _parse_token(self, word):
         # word = word.encode("utf-8")
@@ -351,7 +351,7 @@ class CommandParser:
         _temp_str = "".join(self._token_buf)
         _no_match = True
         _index = 1
-        for token_tuple in self.FLAG: 
+        for token_tuple in self.flag: 
             _found_match_in_token_flag_array = False # a flag that indicate if all mis-match or not
             _token_type = (_index, token_tuple[0]) #item in heap is tuple (index, item)
 
@@ -359,42 +359,42 @@ class CommandParser:
                 if match_str.startswith(_temp_str):
                     _found_match_in_token_flag_array = True #found match
                     _no_match = False #for no match in each match token
-                    if _token_type not in self._match_stack:
-                        heappush(self._match_stack, _token_type) # use heap
+                    if _token_type not in self._match_heap:
+                        heappush(self._match_heap, _token_type) # use heap
                         
                     if len(match_str) == len(_temp_str):
                         # if current match type is on top of heap, that means it has the
                         # highest priority. now it totally match the buf, so we get the 
                         # token type
-                        if self._match_stack[0] == _token_type: 
-                            del self._match_stack[:]
+                        if self._match_heap[0] == _token_type: 
+                            del self._match_heap[:]
                             del self._token_buf[:]
                             return _temp_str, _token_type[1] #that we found the final type
 
                     # we found the current buf's token type, so we clean the scene
-                    break
-
+                    # don't use break here, in case longer mismatch token has same 
+                    # prefix with lower weight token 
+                    # break
                 # in case that token has shorter token length then the buf
                 elif _temp_str.startswith(match_str):
                     _found_match_in_token_flag_array = True
                     _no_match = False
-                    if _token_type not in self._match_stack:
-                        heappush(self._match_stack, _token_type)
+                    if _token_type not in self._match_heap:
+                        heappush(self._match_heap, _token_type)
 
                     # in case that lower token has short lengh, and it match
-                    if self._match_stack[0] == _token_type:
-                        del self._match_stack[:]
+                    if self._match_heap[0] == _token_type:
+                        del self._match_heap[:]
                         del self._token_buf[0:len(match_str)] #r
                         return _temp_str, _token_type[1]
-                    break
+                    # break
+
+                _index += 1
 
             #buf will never match the current token type, so we pop it
-            if not _found_match_in_token_flag_array and _token_type in self._match_stack:
-                self._match_stack.remove(_token_type)
-                heapify(self._match_stack)
-
-            _index += 1
-
+            if not _found_match_in_token_flag_array and _token_type in self._match_heap:
+                self._match_heap.remove(_token_type)
+                heapify(self._match_heap)
         if _no_match:
             return self._token_buf.pop(0), "others"
 
@@ -435,8 +435,6 @@ class CommandParser:
             elif _token_type == "trigger":
                 self._FSM.found_trigger(self, _token)
             elif _token_type == "action":
-                import pdb
-                pdb.set_trace()
                 self._FSM.found_action(self, _token)
             elif _token_type == "target":
                 self._FSM.found_target(self, _token)

@@ -10,7 +10,7 @@ import errno
 from datetime import datetime
 from subprocess import PIPE, Popen
 from util.Res import Res
-from util.Util import parse_time
+from util.Util import parse_time, cn2dig
 from lib.sound import Sound
 from util.log import *
 from lib.model import Callback
@@ -22,7 +22,7 @@ class target_callback(Callback.Callback):
             target=None,
             msg=None, 
             pre_value=None):
-        DEBUG("* target callback: %s, message: %s pre_value: %s" %(target, msg, pre_value))
+        INFO("* target callback: %s, message: %s pre_value: %s" %(target, msg, pre_value))
         return True, "pass"
 
 class douban_callback(Callback.Callback):
@@ -174,3 +174,37 @@ class alarm_callback(Callback.Callback):
         self._speaker.speak(action + target + alarm_time)
 
         return True, "remind"
+
+
+class task_callback(Callback.Callback):
+    def callback(self, cmd, action, msg):
+        if action == u"显示" and msg == u"列表":
+            threads = self._home._cmd.threads
+            info = u"==========\n"
+            if len(threads) <= 1: #  当前任务不计入
+                info += u"当前无任务"
+                info += u"\n=========="
+                INFO(info)
+                self._home.publish_info(cmd, info)
+            else:
+                info += u"任务列表:"
+                for thread_index in threads:
+                    if threads[thread_index][0] == cmd:
+                        continue
+                    info += u"\n序号：%d 内容：%s" % (thread_index, threads[thread_index][0])
+                info += u"\n=========="
+                INFO(info)
+                self._home.publish_info(cmd, info)
+        elif action == u'停止':
+            thread_index = cn2dig(msg)
+            if thread_index is None or thread_index == '':
+                WARN("invaild thread index %s" % (thread_index, ))
+                return False, None
+            else:
+                thread_index = int(thread_index)
+            if thread_index in self._home._cmd.threads:
+                cmd, thread = self._home._cmd.threads[thread_index]
+                thread.stop()
+                self._home.publish_info(cmd, u"停止执行任务%d" % (thread_index, ))
+                INFO("stop thread: %d with cmd: %s" % (thread_index, cmd))
+        return True, True
