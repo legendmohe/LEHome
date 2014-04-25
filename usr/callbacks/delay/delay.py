@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # encoding: utf-8
-from time import sleep
+import threading
 from lib.sound import Sound
 from util.Res import Res
-import re
 from util.Util import parse_time
 from lib.model import Callback
+from util.log import *
 
 
 class time_callback(Callback.Callback):
@@ -37,7 +37,9 @@ class delay_callback(Callback.Callback):
 
         self._speaker.speak(minutes + u"分钟后执行。")
         INFO(minutes + u"分钟后执行。")
-        sleep(int(minutes) * 60)
+        threading.current_thread().waitUtil(int(minutes) * 60)
+        if threading.current_thread().stopped():
+            return False, "delay"
 
         self._home.setResume(True)
         Sound.play(

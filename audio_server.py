@@ -19,7 +19,6 @@ is_closing = False
 
 def signal_handler(signum, frame):
     global is_closing
-    logging.info('exiting...')
     is_closing = True
 
 
@@ -112,12 +111,14 @@ def play_audio(url, loop=-1):
     global mp_context
 
     def worker():
-        mp.loadfile(url)
-        INFO("%s is playing." % (url,))
+        # turl = "-http-header-fields 'Cookie: pgv_pvid=9151698519; qqmusic_uin=12345678; qqmusic_key=12345678; qqmusic_fromtag=0;\' " + url
+        aUrl = url
+        mp.loadfile(aUrl)
+        INFO("%s is playing." % (aUrl,))
         wait_util_player_finished(mp)
         mp.loop = -1
-        if url in mp_context:
-            del mp_context[url]
+        if aUrl in mp_context:
+            del mp_context[aUrl]
 
     if url in mp_context:
         mp = mp_context[url]

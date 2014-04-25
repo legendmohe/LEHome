@@ -207,7 +207,7 @@ class every_callback(Callback.Callback):
                 t = int(cn2dig(msg[:-2]))*60
         elif msg.startswith(u'天') \
                             and (msg.endswith(u'点') or msg.endswith(u'分')):
-            INFO("sleep util %s" % (msg, ))
+            INFO("thread wait util %s" % (msg, ))
             t_list = parse_time(msg[1:]).split(":")
             target_hour = int(t_list[0])
             target_min = int(t_list[1])
@@ -215,19 +215,20 @@ class every_callback(Callback.Callback):
             cur_hour = now.hour
             cur_min = now.minute
             if cur_hour <= target_hour:
-                time.sleep(
+                threading.current_thread().waitUtil(
                     (target_hour - cur_hour)*60*60 + (target_min - cur_min)*60
                     )
             else:
-                time.sleep(
+                threading.current_thread().waitUtil(
                 24*60*60 -
                 ((cur_hour - target_hour)*60*60 + (cur_min - target_min)*60)
                 )
             t = 24*60*60
 
-
         if threadlocal.first_every_invoke is False:
-            time.sleep(t)
+            threading.current_thread().waitUtil(t)
+            if threading.current_thread().stopped():
+                return False, False
             return True, True
         else:
             threadlocal.first_every_invoke = False
@@ -256,10 +257,30 @@ class loop_callback(Callback.Callback):
         INFO('invoke %s for %d times, current is %d'
                 % (action, times, threadlocal.invoke_time))
         if threadlocal.invoke_time < times:
-            threadlocal.invoke_time += 1    
+            threadlocal.invoke_time += 1
             return True, True
         else:
             return True, False
+
+
+class break_callback(Callback.Callback):
+    def callback(self, msg):
+        if not msg.startswith(u'循环'):
+            INFO(u'break command must starts with 循环')
+            return True, None
+        thread_index = cn2dig(msg[2:])
+        if thread_index is None:
+            WARN("invaild thread index %d" % (thread_index, ))
+            return False, None
+        else:
+            thread_index = int(thread_index)
+        import pdb
+        pdb.set_trace()
+        if thread_index in self._home._cmd.threads:
+            cmd, thread = self._home._cmd.threads[thread_index]
+            thread.stop()
+            INFO("stop thread: %d with cmd: %s" % (thread_index, cmd))
+        return True, True
 
 
 class memo_callback(Callback.Callback):

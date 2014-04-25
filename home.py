@@ -40,7 +40,7 @@ class Home:
         settings = self._init_res
         if settings:
             com_json = settings['command']
-            self._com = Command({
+            self._cmd = Command({
                         "whiles":com_json["while"],
                         "ifs":com_json["if"],
                         "thens":com_json["then"],
@@ -53,9 +53,9 @@ class Home:
                         "finish":com_json["finish"],
                         "nexts":com_json["next"],
                         })
-            self._com.setDEBUG(False)
-            self._com.cmd_begin_callback = self._cmd_begin_callback
-            self._com.cmd_end_callback = self._cmd_end_callback
+            self._cmd.setDEBUG(False)
+            self._cmd.cmd_begin_callback = self._cmd_begin_callback
+            self._cmd.cmd_end_callback = self._cmd_end_callback
 
             import traceback
             
@@ -79,10 +79,10 @@ class Home:
                         cb_object._home = self
                                    
                         DEBUG("load callback: " + cb_module_name + " for command token:" + cb_token)
-                        self._com.register_callback(
+                        self._cmd.register_callback(
                                     com_name,
                                     cb_token,
-                                    cb_object.internal_callback)
+                                    cb_object)
                     except Exception, e:
                         ERROR("init commands faild.")
                         print traceback.format_exc()
@@ -133,13 +133,13 @@ class Home:
     def parse_cmd(self, cmd):
         if not self._resume:
             INFO("command: " + cmd)
-            self._com.parse(cmd)
+            self._cmd.parse(cmd)
 
     def activate(self):
         INFO("home activate!")
         Sound.play(Res.get_res_path("sound/com_begin"))
         self._spk.start()
-        self._com.start()
+        self._cmd.start()
 
         while True:
             INFO("waiting for command...")
@@ -148,7 +148,7 @@ class Home:
 
     def deactivate(self):
         self._spk.stop()
-        self._com.stop()
+        self._cmd.stop()
 
     def setResume(self, resume):
         self._resume = resume

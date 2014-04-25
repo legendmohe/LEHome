@@ -19,18 +19,17 @@ class CommandParser:
 
     def onfound_delay(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
-        self._statement.delay = e.args[1]
-
-        if e.dst == "error_state":
-            self._error_occoured = True
-
-    def onfound_trigger(self, e):
-        DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
-        self._statement.trigger = e.args[1]
-
         if e.dst == "error_state":
             self._error_occoured = True
             return
+        self._statement.delay = e.args[1]
+
+    def onfound_trigger(self, e):
+        DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
+        if e.dst == "error_state":
+            self._error_occoured = True
+            return
+        self._statement.trigger = e.args[1]
 
     def onafterfound_trigger(self, e):
         if e.src == "initial_state":
@@ -39,17 +38,17 @@ class CommandParser:
 
     def onfound_target(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
-        self._statement.target = e.args[1]
-
         if e.dst == "error_state":
             self._error_occoured = True
+            return
+        self._statement.target = e.args[1]
 
     def onfound_action(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
-        self._statement.action = e.args[1]
-
         if e.dst == "error_state":
             self._error_occoured = True
+            return
+        self._statement.action = e.args[1]
 
     def onfound_others(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
@@ -61,11 +60,10 @@ class CommandParser:
         DEBUG('finish ! = event: %s, src: %s, dst: %s' \
                                 % (e.event, e.src, e.dst))
 
-        self._statement.finish = e.args[1]
-
         if e.dst == "error_state":
             self._error_occoured = True
         elif e.src in ['action_state', 'target_state', 'message_state']:
+            self._statement.finish = e.args[1]
             block = self._block_stack[-1]
             if isinstance(block, Block):
                 self._append_statement(block)
@@ -78,9 +76,6 @@ class CommandParser:
 
     def onfound_stop_flag(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
-
-        self._statement.stop = e.args[1]
-
         if e.dst == "error_state":
             self._error_occoured = True
         elif e.src in ['trigger_state',
@@ -90,6 +85,7 @@ class CommandParser:
                         'if_state',
                         'delay_state']:
 
+            self._statement.stop = e.args[1]
             if self.stop_callback:
                 self.stop_callback(self._last_cmd, self._statement.stop)
 
@@ -111,12 +107,13 @@ class CommandParser:
 
     def onfound_while(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
-        self._statement.whiles = e.args[1]
-
         if e.dst == "error_state":
             self._error_occoured = True
             return
+        elif e.dst == "message_state":
+            return
 
+        self._statement.whiles = e.args[1]
         block = self._block_stack[-1]
         if isinstance(block, Block):
             whiles = WhileStatement()
@@ -126,12 +123,14 @@ class CommandParser:
 
     def onfound_if(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
-        self._statement.ifs = e.args[1]
 
         if e.dst == "error_state":
             self._error_occoured = True
             return
+        elif e.dst == "message_state":
+            return
 
+        self._statement.ifs = e.args[1]
         block = self._block_stack[-1]
         if isinstance(block, Block):
             ifs = IfStatement()
@@ -144,12 +143,12 @@ class CommandParser:
 
     def onfound_then(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
-        self._statement.thens = e.args[1]
 
         if e.dst == "error_state":
             self._error_occoured = True
             return
 
+        self._statement.thens = e.args[1]
         block = self._block_stack.pop()
         if len(self._block_stack) < 1:
             ERROR("single then error.")
@@ -166,12 +165,12 @@ class CommandParser:
 
     def onfound_else(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
-        self._statement.elses = e.args[1]
 
         if e.dst == "error_state":
             self._error_occoured = True
             return
 
+        self._statement.elses = e.args[1]
         block = self._block_stack.pop()
         ifs = self._block_stack[-1]
         if isinstance(block, Block) and isinstance(ifs, IfStatement):
@@ -415,12 +414,14 @@ class CommandParser:
                 continue
             if _token_type == "whiles":
                 self._FSM.found_while(self, _token)
-                self._message_buf = ''
-                self._delay_buf = ''
+                if not self._FSM.current == "message_state":
+                    self._message_buf = ''
+                    self._delay_buf = ''
             elif _token_type == "ifs":
                 self._FSM.found_if(self, _token)
-                self._message_buf = ''
-                self._delay_buf = ''
+                if not self._FSM.current == "message_state":
+                    self._message_buf = ''
+                    self._delay_buf = ''
             elif _token_type == "thens":
                 self._FSM.found_then(self, _token)
                 self._message_buf = ''
@@ -434,6 +435,8 @@ class CommandParser:
             elif _token_type == "trigger":
                 self._FSM.found_trigger(self, _token)
             elif _token_type == "action":
+                import pdb
+                pdb.set_trace()
                 self._FSM.found_action(self, _token)
             elif _token_type == "target":
                 self._FSM.found_target(self, _token)

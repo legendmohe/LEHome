@@ -49,7 +49,7 @@ class CmdHandler(tornado.web.RequestHandler):
         if not cmd is None and not cmd == "":
             INFO("send cmd %s to home." % (cmd, ))
             SOCK.send_string(cmd)
-            self.write("cmd: %s" % (cmd, ))
+            self.write("ok")
         else:
             self.write("error")
 

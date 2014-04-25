@@ -20,6 +20,8 @@ UTIL_CN_NUM = {
 UTIL_CN_UNIT = {
                 u'十': 10,
                 u'百': 100,
+                u'千': 1000,
+                u'万': 10000,
                 }
 
 
@@ -37,6 +39,8 @@ def cn2dig(src):
         elif item in UTIL_CN_NUM.keys():
             num = UTIL_CN_NUM[item]
             rsl += num*unit
+        else:
+            return None
     if rsl < unit:
         rsl += unit
     return str(rsl)
