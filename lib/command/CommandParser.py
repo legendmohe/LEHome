@@ -338,6 +338,8 @@ class CommandParser:
         self.finish_callback = None
         self.stop_callback = None
 
+        self._load_stopwords()
+
     def _reset(self):
         self._reset_element()
         self._FSM.current = "initial_state"
@@ -406,7 +408,7 @@ class CommandParser:
         #     DEBUG("parse: %s" %(stream_term)
 
         for item in list(stream_term):
-            if item == " ":
+            if item == " " or item in self._stopwords:
                 continue
             _token, _token_type = self._parse_token(item)
             if _token == None:
@@ -475,6 +477,12 @@ class CommandParser:
 
     def reset(self):
         self._reset()
+
+    def _load_stopwords(self):
+        self._stopwords = set()
+        with open('usr/stopwords.txt') as stopwords:
+            for word in stopwords.readlines():
+                self._stopwords.add(word)
 
 if __name__ == '__main__':
     import sys

@@ -16,22 +16,34 @@ from util.thread import StoppableThread
 
 class Command:
     def __init__(self, coms, backup_path="backup.dat"):
-        self._tasklist_path = backup_path
         self._lock = threading.Lock()
         self._local = threading.local()
         self._thread_lock = threading.Lock()
         self.threads = {}
-        self._tasklist = self._load_tasklist()
-
         self._registered_callbacks = {}
-
         self._fsm = CommandParser(coms)
         self.setDEBUG(False)
 
         self._fsm.finish_callback = self._finish_callback
         self._fsm.stop_callback = self._stop_callback
 
-        self._keep_running = False
+        self._keep_running = True
+
+        self._init_tasklist(backup_path)
+
+    def _init_tasklist(self, backup_path):
+        self._tasklist_path = backup_path
+        self._tasklist = []
+        tasklist = self._load_tasklist()  # don't self._tasklist
+        if not tasklist is None:
+            for (block, command) in tasklist:
+                INFO("exec backup task:%s" % (command, ))
+                t = StoppableThread(
+                                    target=self._execute,
+                                    args=(block, command)
+                                    )
+                t.daemon = True
+                t.start()
 
     def _load_tasklist(self):
         with self._lock:
@@ -67,8 +79,9 @@ class Command:
             if stop in callbacks:
                 callbacks[stop](stop=stop)
 
-    def _execute(self, block, command, path="backup.pcl"):
-        self._tasklist.append(block)
+    def _execute(self, block, command):
+        tasklist_item = (block, command)
+        self._tasklist.append(tasklist_item)
         self._save_tasklist()
 
         try:
@@ -91,7 +104,7 @@ class Command:
         except AttributeError:
             DEBUG("no cmd_end_callback")
 
-        self._tasklist.remove(block)
+        self._tasklist.remove(tasklist_item)
         self._save_tasklist()
 
     def _invoke_block(self, block):
@@ -297,7 +310,7 @@ class Command:
 
     def parse(self, word_stream):
         if not self._keep_running:
-            ERROR("invoke start() first.")
+            WARN("parser is not running.")
             return
         for word in list(word_stream):
             self._fsm.put_into_parse_stream(word)
