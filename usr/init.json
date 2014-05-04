@@ -10,10 +10,11 @@
         "then" : ["那么", "内容为", "内容是"],
         "else" : ["否则"],
         "delay" : ["定时"],
-        "trigger" : ["hello"],
-        "action" : ["开", "关", "播放", "停止播放", "天气预报", "记录",
-                    "删除", "录音", "设置", "每", "执行", "停止", "显示"],
-        "target" : ["灯", "门", "豆瓣电台", "留言", "提醒", "闹铃", "任务"],
+        "trigger" : ["hello", "您好", "你好"],
+        "action" : ["开", "关", "播放", "停止播放", "天气预报", 
+                    "删除", "录音", "设置", "每", "执行", "运行", "停止",
+                    "显示", "新增"],
+        "target" : ["灯", "门", "豆瓣电台", "留言", "提醒", "闹铃", "任务", "脚本"],
         "stop" : ["算了", "取消"],
         "finish" : ["好吗", "谢谢"],
         "next" : ["然后", "接着"]
@@ -27,18 +28,21 @@
             "定时":"delay.delay_callback"
         },
         "trigger":{
-            "hello":"trigger.trigger_callback"
+            "hello":"trigger.trigger_callback",
+            "您好":"trigger.trigger_callback",
+            "你好":"trigger.trigger_callback"
         },
         "action":{
             "每":"action.every_callback",
-            "执行":"action.loop_callback",
+            "执行":"action.invoke_callback",
+            "运行":"action.invoke_callback",
             "开":"action.action_callback",
             "关":"action.action_callback",
             "播放":"action.play_callback",
             "停止播放":"action.stop_play_callback",
             "天气预报":"action.weather_report_callback",
-            "记录":"action.record_callback",
             "录音":"action.memo_callback",
+            "新增":"action.add_callback",
             "删除":"action.remove_callback",
             "设置":"action.set_callback",
             "停止":"action.break_callback",
@@ -51,6 +55,7 @@
             "闹铃":"target.alarm_callback",
             "豆瓣电台":"target.douban_callback",
             "留言":"target.message_callback",
+            "脚本":"target.script_callback",
             "任务":"target.task_callback"
         },
         "stop":{

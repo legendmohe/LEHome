@@ -3,6 +3,7 @@
 
 from collections import OrderedDict
 from Queue import Queue, Empty
+from types import MethodType
 import threading
 import pickle
 import sys
@@ -345,7 +346,7 @@ class Comfirmation:
                     pass
 
         old_callback = self._home.parse_cmd
-        self._home.parse_cmd = callback
+        self._home.parse_cmd = MethodType(callback, self._home)
 
         confirmed = False
         for idx in range(5):
@@ -359,6 +360,8 @@ class Comfirmation:
                     confirmed = False
                     queue.task_done()
                     break
+                else:
+                    queue.task_done()
             except Empty:
                 pass
 

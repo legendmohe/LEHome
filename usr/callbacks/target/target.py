@@ -73,7 +73,7 @@ class message_callback(Callback.Callback):
             target=None,
             msg=None, 
             pre_value=None):
-        if action == u"记录":
+        if action == u"新增":
             if isinstance(pre_value, types.FunctionType):
                 path = "usr/message/"
                 try:
@@ -107,6 +107,14 @@ class message_callback(Callback.Callback):
                         )
 
             self._home.setResume(False)
+        elif action == u"删除":
+            filelist = glob.glob("usr/message/*.mp3")
+            for f in filelist:
+                os.remove(f)
+                INFO("remove:%s" % (f, ))
+            Sound.play(
+                        Res.get_res_path("sound/com_trash")
+                        )
         return True, "pass"
 
 
@@ -208,3 +216,11 @@ class task_callback(Callback.Callback):
                 self._home.publish_info(cmd, u"停止执行任务%d" % (thread_index, ))
                 INFO("stop thread: %d with cmd: %s" % (thread_index, cmd))
         return True, True
+
+
+class script_callback(Callback.Callback):
+    def callback(self, cmd, action, msg):
+        if action == u"新增":
+            pass
+        elif action == u"删除":
+            pass

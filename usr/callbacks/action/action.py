@@ -102,65 +102,19 @@ class play_callback(Callback.Callback):
 
 class remove_callback(Callback.Callback):
     def callback(self,
-            action=None,
-            target=None,
-            msg=None, 
+            cmd=None,
             pre_value=None):
         
-        self._speaker.speak(u'确认删除' + msg + u'?')
+        self._speaker.speak(u'确认' + cmd + u'?')
+        self._home.publish_info(cmd, u'确认' + cmd + u'?')
         cfm = Comfirmation(self._home)
         is_cfm = cfm.confirm()
         if is_cfm:
-            if target == u"留言":
-                filelist = glob.glob("usr/message/*.mp3")
-                for f in filelist:
-                    os.remove(f)
-                    INFO("remove:%s" % (f, ))
-            Sound.play(
-                        Res.get_res_path("sound/com_trash")
-                        )
+            return True, pre_value
         else:
             INFO("cancel")
+            return False, pre_value
 
-        return True, pre_value
-
-
-class record_callback(Callback.Callback):
-    def callback(self,
-            action=None,
-            target=None,
-            msg=None, 
-            pre_value=None):
-
-        if action == u"记录" and target != None:
-            def record(path=None):
-                if not path:
-                    return
-                INFO("record : " + path)
-
-                if "recorder" in self._context:
-                    recorder = self._context["recorder"]
-                    if not recorder.poll():
-                        recorder.kill()
-
-                import subprocess
-                try:
-                    recorder = subprocess.Popen([
-                            "sudo",
-                            "rec", path,
-                            "rate", "16k",
-                            "silence", "1", "0.1", "3%", "1", "3.0", "3%"])
-                    self._context["recorder"] = recorder
-                    recorder.wait()
-                    if not recorder.poll():
-                        recorder.kill()
-                except Exception, ex:
-                    ERROR(ex)
-                del self._context["recorder"]
-            
-            return True, record
-        else:
-            return True, pre_value
 
 class cal_callback(Callback.Callback):
     def callback(self,
@@ -181,8 +135,8 @@ class every_callback(Callback.Callback):
             msg=None,  # 每天 每*小时 每*分钟 每天*点*分
             pre_value=None):
         if pre_value != "while" or msg is None:       
-            INFO(pre_value + msg)
-            return False, None
+            WARN("every callback must in a 'while'")
+            return False, pre_value
 
         first_every_invoke = getattr(threadlocal, 'first_every_invoke', None)
         if first_every_invoke is None:
@@ -235,32 +189,32 @@ class every_callback(Callback.Callback):
             return True, True
 
 
-class loop_callback(Callback.Callback):
+class invoke_callback(Callback.Callback):
     def callback(self,
             action=None,
             target=None,
             msg=None,  # 执行*次
             pre_value=None):
-        if pre_value != "while" or msg is None:       
-            INFO("invaild loop statement.")
-            return False, None
+        if pre_value == "while" and not msg is None:       
+            if not msg.endswith(u'次'):
+                INFO(u"loop not ends with 次")
+                threading.current_thread().waitUtil(0.5) # time gap
+                return True, True
 
-        if not msg.endswith(u'次'):
-            INFO(u"loop must ends with 次")
-            return False, None
+            invoke_time = getattr(threadlocal, 'invoke_time', None)
+            if invoke_time is None:
+                threadlocal.invoke_time = 0
 
-        invoke_time = getattr(threadlocal, 'invoke_time', None)
-        if invoke_time is None:
-            threadlocal.invoke_time = 0
-
-        times = int(cn2dig(msg[:-1]))
-        INFO('invoke %s for %d times, current is %d'
-                % (action, times, threadlocal.invoke_time))
-        if threadlocal.invoke_time < times:
-            threadlocal.invoke_time += 1
-            return True, True
+            times = int(cn2dig(msg[:-1]))
+            INFO('invoke %s for %d times, current is %d'
+                    % (action, times, threadlocal.invoke_time))
+            if threadlocal.invoke_time < times:
+                threadlocal.invoke_time += 1
+                return True, True
+            else:
+                return True, False
         else:
-            return True, False
+            return True, True
 
 
 class break_callback(Callback.Callback):
@@ -306,6 +260,7 @@ class memo_callback(Callback.Callback):
                 ERROR(ex)
         return True, pre_value
 
+
 class set_callback(Callback.Callback):
     def callback(self,
             action=None,
@@ -313,3 +268,36 @@ class set_callback(Callback.Callback):
             msg=None, 
             pre_value=None):
         return True, pre_value
+
+
+class add_callback(Callback.Callback):
+    def callback(self, cmd, target, pre_value):
+        if target == u"录音":
+            def record(path=None):
+                if not path:
+                    return
+                INFO("record : " + path)
+
+                if "recorder" in self._context:
+                    recorder = self._context["recorder"]
+                    if not recorder.poll():
+                        recorder.kill()
+
+                import subprocess
+                try:
+                    recorder = subprocess.Popen([
+                            "sudo",
+                            "rec", path,
+                            "rate", "16k",
+                            "silence", "1", "0.1", "3%", "1", "3.0", "3%"])
+                    self._context["recorder"] = recorder
+                    recorder.wait()
+                    if not recorder.poll():
+                        recorder.kill()
+                except Exception, ex:
+                    ERROR(ex)
+                del self._context["recorder"]
+            
+            return True, record
+        else:
+            return True, pre_value

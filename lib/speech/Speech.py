@@ -377,6 +377,7 @@ class Text2Speech:
         INFO("speaker stop.")
 
     def speak(self, phrase, inqueue=False):
+        print phrase
         if not self.__keep_speaking:
             WARN("__keep_speaking is False.")
             return

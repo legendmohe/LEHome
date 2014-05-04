@@ -7,6 +7,7 @@ import argparse
 import zmq
 import tornado.ioloop
 import tornado.web
+from util.Res import Res
 from util.log import *
 
 
@@ -54,6 +55,17 @@ class CmdHandler(tornado.web.RequestHandler):
             self.write("error")
 
 
+class CmdListHandler(tornado.web.RequestHandler):
+
+    def get(self):
+        cmds = Res.init("init.json")["command"]
+        for key in cmds:
+            self.write("%s: " % (key, ))
+            for cmd in cmds[key]:
+                self.write("%s, " % (cmd, ))
+            self.write("\n")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
                     description='cmd_http_server.py -p port -b http_server_port')
@@ -75,8 +87,10 @@ if __name__ == "__main__":
     INFO("http command server is activate.")
     initialize(port)
     application = tornado.web.Application([
-                (r"/cmd/([^/]*)", CmdHandler)
+                (r"/cmd/([^/]*)", CmdHandler),
+                (r"/cmdlist", CmdListHandler),
                 ])
     application.listen(http_port)
+    INFO("listening to %s " % (http_port))
     tornado.ioloop.PeriodicCallback(try_exit, 100).start()
     tornado.ioloop.IOLoop.instance().start()
