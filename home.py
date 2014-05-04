@@ -125,9 +125,10 @@ class Home:
         INFO("command end: %s" % (command))
         # self.publish_info(command, "end: " + command)
 
-    def publish_info(self, sub_id, info):
+    def publish_info(self, sub_id, info, cmd_type="normal"):
         # INFO("publish %s to %s" % (info, sub_id))
-        self._pub_sock.send_string(info)
+        msg = "%s|%s" % (cmd_type, info)
+        self._pub_sock.send_string(msg)
         # self._pub_sock.send_string("%s %s" % (sub_id, info))
 
     def parse_cmd(self, cmd):

@@ -106,9 +106,9 @@ class remove_callback(Callback.Callback):
             pre_value=None):
         
         self._speaker.speak(u'确认' + cmd + u'?')
-        self._home.publish_info(cmd, u'确认' + cmd + u'?')
+        self._home.publish_info(cmd, u'确认' + cmd + u'?', cmd_type='confirm')
         cfm = Comfirmation(self._home)
-        is_cfm = cfm.confirm()
+        is_cfm = cfm.confirm(ok=u'确认', cancel=u'取消')
         if is_cfm:
             return True, pre_value
         else:
