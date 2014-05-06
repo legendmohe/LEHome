@@ -6,7 +6,7 @@ import subprocess
 import glob
 import os
 import time
-import datetime
+from datetime import datetime
 import threading
 from lib.command.Command import Comfirmation
 from lib.sound import Sound
@@ -200,31 +200,32 @@ class every_callback(Callback.Callback):
                 t = int(cn2dig(msg[:-2]))*60
         elif msg.startswith(u'天') \
                             and (msg.endswith(u'点') or msg.endswith(u'分')):
-            INFO("thread wait util %s" % (msg, ))
             t_list = parse_time(msg[1:]).split(":")
             target_hour = int(t_list[0])
             target_min = int(t_list[1])
             now = datetime.now()
             cur_hour = now.hour
             cur_min = now.minute
-            if cur_hour <= target_hour:
-                threading.current_thread().waitUtil(
-                    (target_hour - cur_hour)*60*60 + (target_min - cur_min)*60
-                    )
+            if cur_hour <= target_hour and cur_min <= target_min:
+                t = (target_hour - cur_hour)*60*60 + (target_min - cur_min)*60
+                INFO("thread wait for %d sec" % (t, ))
+                threading.current_thread().waitUtil(t)
             else:
-                threading.current_thread().waitUtil(
-                24*60*60 -
-                ((cur_hour - target_hour)*60*60 + (cur_min - target_min)*60)
-                )
+                t = 24*60*60 - ((cur_hour - target_hour)*60*60 + (cur_min - target_min)*60)
+                INFO("thread wait for %d sec" % (t, ))
+                threading.current_thread().waitUtil(t)
             t = 24*60*60
 
         if threadlocal.first_every_invoke is False:
+            INFO("thread wait for %d sec" % (t, ))
             threading.current_thread().waitUtil(t)
             if threading.current_thread().stopped():
                 return False, False
             return True, True
         else:
             threadlocal.first_every_invoke = False
+            if threading.current_thread().stopped():
+                return False, False
             return True, True
 
 

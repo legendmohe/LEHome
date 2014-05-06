@@ -35,8 +35,8 @@ class Home:
         self._init_audio_server()
         self._init_switch_server()
 
-        self._cmd.init_tasklist()  # load unfinished task
         self._resume = False
+        self._cmd.init_tasklist()  # load unfinished task
 
     def _init_command(self):
         INFO('initlizing command...')
@@ -56,13 +56,12 @@ class Home:
                         "stop":com_json["stop"],
                         "finish":com_json["finish"],
                         "nexts":com_json["next"],
+                        "logical":com_json["logical"],
                         })
             self._cmd.setDEBUG(False)
             self._cmd.cmd_begin_callback = self._cmd_begin_callback
             self._cmd.cmd_end_callback = self._cmd_end_callback
 
-            import traceback
-            
             cb_json = settings["callback"]
             for com_name in cb_json.keys():
                 cbs = cb_json[com_name]
@@ -137,6 +136,7 @@ class Home:
     def publish_info(self, sub_id, info, cmd_type="normal"):
         # INFO("publish %s to %s" % (info, sub_id))
         msg = "%s|%s" % (cmd_type, info)
+        # INFO("public info:" + info)
         self._pub_sock.send_string(msg)
         # self._pub_sock.send_string("%s %s" % (sub_id, info))
 

@@ -3,7 +3,7 @@
 
 from fysom import Fysom
 from heapq import heappush, heapify
-from lib.model.Elements import Statement, IfStatement, WhileStatement, Block
+from lib.model.Elements import Statement, IfStatement, WhileStatement, Block, LogicalOperator
 from util.log import *
 
 
@@ -92,7 +92,6 @@ class CommandParser:
 
     def onfound_nexts_flag(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
-
         if e.dst == "error_state":
             self._error_occoured = True
             return
@@ -161,6 +160,27 @@ class CommandParser:
         ERROR("single then error.")
         self._error_occoured = True
 
+    def onfound_logical(self, e):
+        DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
+        if e.dst == "error_state":
+            self._error_occoured = True
+            return
+        block = self._block_stack[-1]
+        if isinstance(block, Block):
+            logical_operator = LogicalOperator()
+            logical_operator.name = e.args[1]
+            if len(block.statements) < 1:
+                ERROR("single right logical operator error.")
+                self._error_occoured = True
+                return
+            cur_statement = block.statements.pop()
+            cur_statement.delay_time = self._delay_buf
+            cur_statement.msg = self._message_buf
+            logical_operator.a_statement = cur_statement
+            self._statement = logical_operator.b_statement
+            block.statements.append(LogicalOperator)
+            
+
     def onfound_else(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
 
@@ -219,6 +239,7 @@ class CommandParser:
                     {'name': 'found_stop_flag', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_finish_flag', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_nexts_flag', 'src': 'initial_state',  'dst': 'initial_state'},
+                    {'name': 'found_logical', 'src': 'initial_state',  'dst': 'initial_state'},
 
                     {'name': 'found_while', 'src': 'trigger_state',  'dst': 'if_state'},
                     {'name': 'found_if', 'src': 'trigger_state',  'dst': 'if_state'},
@@ -231,6 +252,7 @@ class CommandParser:
                     {'name': 'found_others', 'src': 'trigger_state',  'dst': 'error_state'},
                     {'name': 'found_finish_flag', 'src': 'trigger_state',  'dst': 'initial_state'},
                     {'name': 'found_nexts_flag', 'src': 'trigger_state',  'dst': 'error_state'},
+                    {'name': 'found_logical', 'src': 'trigger_state',  'dst': 'error_state'},
 
                     {'name': 'found_while', 'src': 'delay_state',  'dst': 'error_state'},
                     {'name': 'found_if', 'src': 'delay_state',  'dst': 'error_state'},
@@ -243,6 +265,7 @@ class CommandParser:
                     {'name': 'found_others', 'src': 'delay_state',  'dst': 'delay_state'},
                     {'name': 'found_finish_flag', 'src': 'delay_state',  'dst': 'error_state'},
                     {'name': 'found_nexts_flag', 'src': 'delay_state',  'dst': 'error_state'},
+                    {'name': 'found_logical', 'src': 'delay_state',  'dst': 'error_state'},
 
                     {'name': 'found_while', 'src': 'if_state',  'dst': 'error_state'},
                     {'name': 'found_if', 'src': 'if_state',  'dst': 'error_state'},
@@ -255,6 +278,7 @@ class CommandParser:
                     {'name': 'found_others', 'src': 'if_state',  'dst': 'error_state'},
                     {'name': 'found_finish_flag', 'src': 'if_state',  'dst': 'error_state'},
                     {'name': 'found_nexts_flag', 'src': 'if_state',  'dst': 'error_state'},
+                    {'name': 'found_logical', 'src': 'if_state',  'dst': 'error_state'},
 
                     {'name': 'found_delay', 'src': 'action_state',  'dst': 'message_state'},
                     {'name': 'found_trigger', 'src': 'action_state',  'dst': 'message_state'},
@@ -296,6 +320,9 @@ class CommandParser:
                     {'name': 'found_else', 
                         'src': ['action_state', 'target_state', 'message_state'], 
                         'dst': 'trigger_state'},
+                    {'name': 'found_logical', 
+                        'src': ['action_state', 'target_state', 'message_state'], 
+                        'dst': 'trigger_state'},
                     ],
         }
         )
@@ -304,7 +331,7 @@ class CommandParser:
         self.flag = []
 
         flags = ['whiles', 'ifs', 'thens', 'elses', 'delay', 'trigger', 'stop', 'finish',
-                'action', 'target', 'nexts']
+                'action', 'target', 'nexts', 'logical']
         for flag in flags:
             if flag in coms.keys():
                 self.flag.append((flag, coms[flag]))
@@ -319,6 +346,7 @@ class CommandParser:
         self._FSM.onfound_finish_flag = self.onfound_finish_flag
         self._FSM.onfound_stop_flag = self.onfound_stop_flag
         self._FSM.onfound_nexts_flag = self.onfound_nexts_flag
+        self._FSM.onfound_logical = self.onfound_logical
         self._FSM.onfound_while = self.onfound_while
         self._FSM.onfound_if = self.onfound_if
         self._FSM.onfound_then = self.onfound_then
@@ -449,6 +477,10 @@ class CommandParser:
                 self._FSM.found_nexts_flag(self, _token)
                 self._message_buf = ''
                 self._delay_buf = ''
+            elif _token_type == "logical":
+                self._FSM.found_logical(self, _token)
+                self._message_buf = ''
+                self._delay_buf = ''
             elif _token_type == "others":
                 self._FSM.found_others(self, _token)
                 if self._FSM.current == 'delay_state':  # put it into buf here
@@ -509,6 +541,7 @@ if __name__ == '__main__':
             "stop":["停止"],
             "finish":["结束"],
             "nexts":["然后", "接着"],
+            "logical":["等于"],
             })
     fsm.DEBUG = True
     fsm.finish_callback = test_callback
@@ -517,7 +550,7 @@ if __name__ == '__main__':
     parser_target = "启动开灯结束"
     fsm.put_into_parse_stream(parser_target)
     print fsm.last_command()
-    parser_target = "启动循环执行5次那么开灯8结束"
+    parser_target = "启动如果开灯等于关灯那么开门谢谢"
     fsm.put_into_parse_stream(parser_target)
     print fsm.last_command()
 

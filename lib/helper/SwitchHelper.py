@@ -15,9 +15,6 @@ class SwitchHelper:
         self.name2ip = init_json["switchs"]
 
         self._send_lock = threading.Lock()
-        self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.REQ)
-        self.socket.connect(self.server_ip)
         self.init_switchs()
 
     def init_switchs(self):
@@ -56,8 +53,12 @@ class SwitchHelper:
         INFO("sending cmd to switch server:" + cmd)
 
         self._send_lock.acquire()
-        self.socket.send_string(cmd)
-        message = self.socket.recv_string()
+        context = zmq.Context()
+        socket = context.socket(zmq.REQ)
+        socket.connect(self.server_ip)
+        socket.send_string(cmd)
+        message = socket.recv_string()
+        socket.close()
         self._send_lock.release()
 
         INFO("recv msgs:" + message)

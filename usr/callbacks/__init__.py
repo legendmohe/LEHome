@@ -6,3 +6,4 @@ import stop
 import next
 import whiles
 import trigger
+import logical

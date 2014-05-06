@@ -201,7 +201,7 @@ class task_callback(Callback.Callback):
                     info += u"\n  序号：%d 内容：%s" % (thread_index, threads[thread_index][0])
                 INFO(info)
                 self._home.publish_info(cmd, info)
-        elif action == u'停止':
+        elif action == u'停止' or action == u"结束":
             thread_index = cn2dig(msg)
             if thread_index is None or thread_index == '':
                 WARN("invaild thread index %s" % (thread_index, ))

@@ -8,7 +8,7 @@ import threading
 import pickle
 import sys
 from CommandParser import CommandParser
-from lib.model.Elements import Statement, Block, IfStatement, WhileStatement
+from lib.model.Elements import Statement, Block, IfStatement, WhileStatement, LogicalOperator
 from lib.sound import Sound
 from util.Res import Res
 from util.log import *
@@ -109,23 +109,14 @@ class Command:
         self._save_tasklist()
 
     def _invoke_block(self, block):
+        thread = self._local.thread  # break out for thread stopped
         pass_value = None
         for statement in block.statements:
+            if thread.stopped():
+                return False
+
             if isinstance(statement, Statement):
-                coms = OrderedDict([
-                    ("trigger", statement.trigger),
-                    ("nexts", statement.nexts),
-                    ("whiles", statement.whiles),
-                    ("if", statement.ifs),
-                    ("delay", statement.delay),
-                    ("action", statement.action),
-                    ("target", statement.target),
-                    ("finish", statement.finish)])
-                if pass_value is not None:
-                    coms["pass_value"] = pass_value
-                msg = statement.msg
-                delay_time = statement.delay_time
-                pass_value = self._invoke_callbacks(coms, msg, delay_time)
+                pass_value = self._invoke_statement(statement, pass_value)
             elif isinstance(statement, IfStatement):
                 if self._invoke_block(statement.if_block):
                     pass_value = self._invoke_block(statement.then_block)
@@ -134,14 +125,59 @@ class Command:
             elif isinstance(statement, WhileStatement):
                 while self._invoke_block(statement.if_block):
                     pass_value = self._invoke_block(statement.then_block)
+            elif isinstance(statement, LogicalOperator):
+                aValue = self._invoke_statement(
+                                            statement.a_statement, pass_value)
+                bValue = self._invoke_statement(
+                                            statement.b_statement, pass_value)
+                pass_value = self._invoke_logical_operator(
+                                                            statement.name,
+                                                            aValue,
+                                                            bValue)
             elif isinstance(statement, Block):
                 pass_value = self._invoke_block(Block)
         return pass_value
 
+    def _invoke_logical_operator(self, name, aValue, bValue):
+        if name is None or name == "":
+            ERROR("empty logical name.")
+            return False
+        if not "logical" in self._registered_callbacks:
+            WARN("logical callback not registered.")
+            return False
+        logical_callbacks = self._registered_callbacks.get("logical", None)
+        if not logical_callbacks:
+            WARN("logical callback is empty.")
+            return False
+        if not name in logical_callbacks:
+            WARN("invaild logical name.")
+            return False
+        callback = logical_callbacks[name]
+        return callback.internal_callback(aValue=aValue, bValue=bValue)
+
+    def _invoke_statement(self, statement, pass_value):
+        coms = OrderedDict([
+            ("trigger", statement.trigger),
+            ("nexts", statement.nexts),
+            ("whiles", statement.whiles),
+            ("if", statement.ifs),
+            ("delay", statement.delay),
+            ("action", statement.action),
+            ("target", statement.target),
+            ("finish", statement.finish)])
+        coms["pass_value"] = pass_value  # for next token
+        msg = statement.msg
+        delay_time = statement.delay_time
+        pass_value = self._invoke_callbacks(coms, msg, delay_time)
+        return pass_value
+
     def _invoke_callbacks(self, coms, msg, delay):
+        thread = self._local.thread  # break out for thread stopped
+        if thread.stopped():
+            return
+
         cmd = self._local.cmd
-        thread = self._local.thread
-        return_value = None
+        pass_value = None
         is_continue = True
         for com_type in coms.keys():
             if not is_continue:
@@ -157,11 +193,16 @@ class Command:
                         continue
                     callback = callbacks[coms[com_type]]
                     if com_type == "trigger":
-                        is_continue, return_value = callback.internal_callback(
+                        return_value = callback.internal_callback(
                                 cmd=cmd,
                                 trigger=coms["trigger"],
                                 action=coms["action"],
                                 )
+                        if len(return_value) > 1:
+                            is_continue = return_value[0]
+                            pass_value = return_value[1]
+                        else:
+                            is_continue = return_value
                         if thread.stopped():
                             callback.internal_canceled(
                                     cmd=cmd,
@@ -169,15 +210,19 @@ class Command:
                                     action=coms["action"],
                                     )
                     elif com_type == "nexts":
-                        is_continue, return_value = callback.internal_callback(
+                        return_value = callback.internal_callback(
                                 cmd=cmd,
                                 action=coms["action"],
                                 target=coms["target"],
                                 state=coms["nexts"],
                                 msg=msg,
-                                pre_value=return_value,
-                                pass_value=coms["pass_value"]
+                                pre_value=coms["pass_value"]
                                 )
+                        if len(return_value) > 1:
+                            is_continue = return_value[0]
+                            pass_value = return_value[1]
+                        else:
+                            is_continue = return_value
                         if thread.stopped():
                             callback.internal_canceled(
                                     cmd=cmd,
@@ -185,18 +230,22 @@ class Command:
                                     target=coms["target"],
                                     state=coms["nexts"],
                                     msg=msg,
-                                    pre_value=return_value,
-                                    pass_value=coms["pass_value"]
+                                    pre_value=coms["pass_value"]
                                     )
                     elif com_type == "whiles":
-                        is_continue, return_value = callback.internal_callback(
+                        return_value = callback.internal_callback(
                                 cmd=cmd,
                                 whiles=coms["whiles"],
                                 msg=msg,
                                 action=coms["action"],
                                 target=coms["target"],
-                                pre_value=return_value
+                                pre_value=pass_value
                                 )
+                        if len(return_value) > 1:
+                            is_continue = return_value[0]
+                            pass_value = return_value[1]
+                        else:
+                            is_continue = return_value
                         if thread.stopped():
                             callback.internal_canceled(
                                     cmd=cmd,
@@ -204,17 +253,22 @@ class Command:
                                     msg=msg,
                                     action=coms["action"],
                                     target=coms["target"],
-                                    pre_value=return_value
+                                    pre_value=pass_value
                                     )
                     elif com_type == "if":
-                        is_continue, return_value = callback.internal_callback(
+                        return_value = callback.internal_callback(
                                 cmd=cmd,
                                 ifs=coms["if"],
                                 msg=msg,
                                 action=coms["action"],
                                 target=coms["target"],
-                                pre_value=return_value
+                                pre_value=pass_value
                                 )
+                        if len(return_value) > 1:
+                            is_continue = return_value[0]
+                            pass_value = return_value[1]
+                        else:
+                            is_continue = return_value
                         if thread.stopped():
                             callback.internal_canceled(
                                     cmd=cmd,
@@ -222,17 +276,22 @@ class Command:
                                     msg=msg,
                                     action=coms["action"],
                                     target=coms["target"],
-                                    pre_value=return_value
+                                    pre_value=pass_value
                                     )
                     elif com_type == "delay":
-                        is_continue, return_value = callback.internal_callback(
+                        return_value = callback.internal_callback(
                                 cmd=cmd,
                                 delay=coms["delay"],
                                 delay_time=delay,
                                 action=coms["action"],
                                 target=coms["target"],
-                                pre_value=return_value
+                                pre_value=pass_value
                                 )
+                        if len(return_value) > 1:
+                            is_continue = return_value[0]
+                            pass_value = return_value[1]
+                        else:
+                            is_continue = return_value
                         if thread.stopped():
                             callback.internal_canceled(
                                     cmd=cmd,
@@ -240,49 +299,64 @@ class Command:
                                     delay_time=delay,
                                     action=coms["action"],
                                     target=coms["target"],
-                                    pre_value=return_value
+                                    pre_value=pass_value
                                     )
                     elif com_type == "action":
-                        is_continue, return_value = callback.internal_callback(
+                        return_value = callback.internal_callback(
                                 cmd=cmd,
                                 action=coms["action"],
                                 target=coms["target"],
                                 msg=msg,
-                                pre_value=return_value
+                                pre_value=pass_value
                                 )
+                        if len(return_value) > 1:
+                            is_continue = return_value[0]
+                            pass_value = return_value[1]
+                        else:
+                            is_continue = return_value
                         if thread.stopped():
                             callback.internal_canceled(
                                     cmd=cmd,
                                     action=coms["action"],
                                     target=coms["target"],
                                     msg=msg,
-                                    pre_value=return_value
+                                    pre_value=pass_value
                                     )
                     elif com_type == "target":
-                        is_continue, return_value = callback.internal_callback(
+                        return_value = callback.internal_callback(
                                 cmd=cmd,
                                 action=coms["action"],
                                 target=coms["target"],
                                 msg=msg,
-                                pre_value=return_value
+                                pre_value=pass_value
                                 )
+                        if len(return_value) > 1:
+                            is_continue = return_value[0]
+                            pass_value = return_value[1]
+                        else:
+                            is_continue = return_value
                         if thread.stopped():
                             callback.internal_canceled(
                                     cmd=cmd,
                                     action=coms["action"],
                                     target=coms["target"],
                                     msg=msg,
-                                    pre_value=return_value
+                                    pre_value=pass_value
                                     )
                     elif com_type == "finish":
-                        is_continue, return_value = callback.internal_callback(
+                        return_value = callback.internal_callback(
                                 cmd=cmd,
                                 action=coms["action"],
                                 target=coms["target"],
                                 finish=coms["finish"],
                                 msg=msg,
-                                pre_value=return_value
+                                pre_value=pass_value
                                 )
+                        if len(return_value) > 1:
+                            is_continue = return_value[0]
+                            pass_value = return_value[1]
+                        else:
+                            is_continue = return_value
                         if thread.stopped():
                             callback.internal_canceled(
                                     cmd=cmd,
@@ -290,12 +364,12 @@ class Command:
                                     target=coms["target"],
                                     finish=coms["finish"],
                                     msg=msg,
-                                    pre_value=return_value
+                                    pre_value=pass_value
                                     )
 
                     if not is_continue or thread.stopped():
                         break
-        return return_value
+        return pass_value
 
     def register_callback(self, com_type, com_item, callback):
         if com_type and com_item and callback:

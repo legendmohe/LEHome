@@ -24,6 +24,13 @@ class Block:
         self.statements = []
 
 
+class LogicalOperator:
+    def __init__(self):
+        self.name = ""
+        self.a_statement = Statement()
+        self.b_statement = Statement()
+
+
 class IfStatement:
     def __init__(self):
         self.if_block = Block()
