@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+import threading
 import zmq
 from util.Res import Res
 from util.log import *
@@ -13,6 +14,7 @@ class SwitchHelper:
         self.server_ip = init_json["connection"]["switch_server"]
         self.name2ip = init_json["switchs"]
 
+        self._send_lock = threading.Lock()
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
         self.socket.connect(self.server_ip)
@@ -52,8 +54,12 @@ class SwitchHelper:
             ERROR("invaild switch cmd.")
             return
         INFO("sending cmd to switch server:" + cmd)
+
+        self._send_lock.acquire()
         self.socket.send_string(cmd)
         message = self.socket.recv_string()
+        self._send_lock.release()
+
         INFO("recv msgs:" + message)
         return message
 

@@ -34,6 +34,8 @@ class Home:
         self._init_publisher()
         self._init_audio_server()
         self._init_switch_server()
+
+        self._cmd.init_tasklist()  # load unfinished task
         self._resume = False
 
     def _init_command(self):
@@ -88,7 +90,6 @@ class Home:
                     except Exception, e:
                         ERROR("init commands faild.")
                         print traceback.format_exc()
-            self._cmd.init_tasklist()  # load unfinished task
 
     def _init_speaker(self):
         INFO("initlizing speaker...")
