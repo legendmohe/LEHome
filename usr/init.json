@@ -2,7 +2,8 @@
     "connection":{
         "subscribable" : ["tcp://localhost:8000", "tcp://localhost:7999"],
         "publisher" : "tcp://*:9000",
-        "audio_source" : "http://localhost:8001"
+        "audio_server" : "http://localhost:8001",
+        "switch_server" : "tcp://192.168.1.193:8004"
     },
     "command":{
         "while" : ["循环", "重复"],
@@ -11,10 +12,11 @@
         "else" : ["否则"],
         "delay" : ["定时"],
         "trigger" : ["hello", "您好", "你好"],
-        "action" : ["开", "关", "播放", "停止播放", "天气预报", 
+        "action" : ["打开", "关闭", "播放", "停止播放", "天气预报", 
                     "删除", "录音", "设置", "每", "执行", "运行", "停止",
-                    "显示", "新增"],
-        "target" : ["灯", "门", "豆瓣电台", "留言", "提醒", "闹铃", "任务", "脚本"],
+                    "显示", "查看", "新增"],
+        "target" : ["豆瓣电台", "留言", "提醒", "闹铃", "任务",
+                    "脚本", "开关"],
         "stop" : ["算了", "取消"],
         "finish" : ["好吗", "谢谢"],
         "next" : ["然后", "接着"]
@@ -36,8 +38,8 @@
             "每":"action.every_callback",
             "执行":"action.invoke_callback",
             "运行":"action.invoke_callback",
-            "开":"action.action_callback",
-            "关":"action.action_callback",
+            "打开":"action.switch_on_callback",
+            "关闭":"action.switch_off_callback",
             "播放":"action.play_callback",
             "停止播放":"action.stop_play_callback",
             "天气预报":"action.weather_report_callback",
@@ -46,17 +48,17 @@
             "删除":"action.remove_callback",
             "设置":"action.set_callback",
             "停止":"action.break_callback",
-            "显示":"action.show_callback"
+            "显示":"action.show_callback",
+            "查看":"action.show_callback"
         },
         "target":{
-            "灯":"target.target_callback",
-            "门":"target.target_callback",
             "提醒":"target.remind_callback",
             "闹铃":"target.alarm_callback",
             "豆瓣电台":"target.douban_callback",
             "留言":"target.message_callback",
             "脚本":"target.script_callback",
-            "任务":"target.task_callback"
+            "任务":"target.task_callback",
+            "开关":"target.switch_callback"
         },
         "stop":{
             "算了":"stop.stop_callback",
@@ -78,5 +80,8 @@
         "com_bell":"com_bell.mp3",
         "com_bell2":"com_bell2.mp3",
         "com_trash":"com_trash.mp3"
+    },
+    "switchs":{
+        "台灯":"192.168.1.126"
     }
 }

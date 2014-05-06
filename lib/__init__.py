@@ -1,1 +1,1 @@
-import command, speech, sound, model
+import command, speech, sound, model, helper

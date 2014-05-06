@@ -29,10 +29,10 @@ class Command:
         self._fsm.stop_callback = self._stop_callback
 
         self._keep_running = True
+        self.backup_path = backup_path
 
-        self._init_tasklist(backup_path)
-
-    def _init_tasklist(self, backup_path):
+    def init_tasklist(self):
+        backup_path = self.backup_path
         self._tasklist_path = backup_path
         self._tasklist = []
         tasklist = self._load_tasklist()  # don't self._tasklist
@@ -370,6 +370,40 @@ class Comfirmation:
             return True
         else:
             return False
+
+
+class UserInput:
+    def __init__(self, home):
+        self._home = home
+
+    def waitForInput(self):
+        INFO("begin UserInput.")
+
+        queue = Queue(1)
+
+        # 替换callback
+        def callback(self, result):
+            if not self._resume:
+                INFO("user input: " + result)
+                try:
+                    queue.put(result, timeout=2)
+                except Empty:
+                    pass
+
+        old_callback = self._home.parse_cmd
+        self._home.parse_cmd = MethodType(callback, self._home)
+
+        userinput = ""
+        for idx in range(5):
+            try:
+                userinput = queue.get(timeout=4)
+                queue.task_done()
+            except Empty:
+                pass
+
+        self._home.parse_cmd = old_callback
+        return userinput
+
 
 if __name__ == '__main__':
     from time import sleep

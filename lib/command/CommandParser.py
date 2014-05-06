@@ -29,12 +29,10 @@ class CommandParser:
         if e.dst == "error_state":
             self._error_occoured = True
             return
-        self._statement.trigger = e.args[1]
-
-    def onafterfound_trigger(self, e):
         if e.src == "initial_state":
             self._last_cmd = ''
             self._is_cmd_triggered = True
+        self._statement.trigger = e.args[1]
 
     def onfound_target(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
@@ -315,7 +313,6 @@ class CommandParser:
 
         self._FSM.onfound_delay = self.onfound_delay
         self._FSM.onfound_trigger = self.onfound_trigger
-        self._FSM.onafterfound_trigger = self.onafterfound_trigger
         self._FSM.onfound_others = self.onfound_others
         self._FSM.onfound_action = self.onfound_action
         self._FSM.onfound_target = self.onfound_target

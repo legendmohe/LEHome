@@ -181,17 +181,16 @@ class alarm_callback(Callback.Callback):
         self._home.setResume(False)
         self._speaker.speak(action + target + alarm_time)
 
-        return True, "remind"
+        return True, pre_value
 
 
 class task_callback(Callback.Callback):
     def callback(self, cmd, action, msg):
         if action == u"显示" and msg == u"列表":
             threads = self._home._cmd.threads
-            info = u"==========\n"
+            info = u""
             if len(threads) <= 1: #  当前任务不计入
                 info += u"当前无任务"
-                info += u"\n=========="
                 INFO(info)
                 self._home.publish_info(cmd, info)
             else:
@@ -199,8 +198,7 @@ class task_callback(Callback.Callback):
                 for thread_index in threads:
                     if threads[thread_index][0] == cmd:
                         continue
-                    info += u"\n序号：%d 内容：%s" % (thread_index, threads[thread_index][0])
-                info += u"\n=========="
+                    info += u"\n  序号：%d 内容：%s" % (thread_index, threads[thread_index][0])
                 INFO(info)
                 self._home.publish_info(cmd, info)
         elif action == u'停止':
@@ -224,3 +222,25 @@ class script_callback(Callback.Callback):
             pass
         elif action == u"删除":
             pass
+        return True, True
+
+
+class switch_callback(Callback.Callback):
+    def callback(self, cmd, action, target, msg):
+        if action == u"显示":
+            if msg == u"列表":
+                states = self._home._switch.list_state()
+                if len(states) == 0:
+                    self._home.publish_info(cmd, target + u"列表为空")
+                else:
+                    info = target + u"列表:"
+                    for switch_ip in states:
+                        switch_name = self._home._switch.name_for_ip(switch_ip)
+                        info += u"\n  名称:" \
+                                + switch_name \
+                                + u" 状态:" \
+                                + states[switch_ip]["state"]
+                    self._home.publish_info(cmd, info)
+            else:
+                pass
+        return True, True

@@ -23,8 +23,47 @@ class action_callback(Callback.Callback):
             target=None,
             msg=None, 
             pre_value=None):
-        DEBUG("* action callback: %s, target: %s, message: %s pre_value: %s" %(action, target, msg, pre_value))
+        INFO("* action callback: %s, target: %s, message: %s pre_value: %s" %(action, target, msg, pre_value))
         return True, "pass"
+
+
+class switch_on_callback(Callback.Callback):
+    def callback(self, cmd, msg):
+        if msg is None or len(msg) == 0:
+            WARN("empty switch on target.")
+            return False, False
+        ip = self._home._switch.ip_for_name(msg)
+        if ip is None:
+            WARN("invaild switch on target:" + msg)
+            return False, False
+        state = self._home._switch.show_state(ip)
+        if state == "close":
+            res = self._home._switch.send_open(ip)
+            if res == "open":
+                self._home.publish_info(cmd, u"打开" + msg)
+            else:
+                self._home.publish_info(cmd, u"打开" + msg + u"失败")
+        return True, True
+
+
+class switch_off_callback(Callback.Callback):
+    def callback(self, cmd, msg):
+        if msg is None or len(msg) == 0:
+            WARN("empty switch off target.")
+            return False, False
+        ip = self._home._switch.ip_for_name(msg)
+        if ip is None:
+            WARN("invaild switch off target:" + msg)
+            return False, False
+        state = self._home._switch.show_state(ip)
+        if state == "open":
+            res = self._home._switch.send_close(ip)
+            if res == "close":
+                self._home.publish_info(cmd, u"关闭" + msg)
+            else:
+                self._home.publish_info(cmd, u"关闭" + msg + u"失败")
+        return True, True
+
 
 class weather_report_callback(Callback.Callback):
     def callback(self,

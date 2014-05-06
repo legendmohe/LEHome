@@ -8,6 +8,7 @@ import traceback
 import zmq
 from lib.command.Command import Command
 from lib.speech.Speech import Text2Speech
+from lib.helper.SwitchHelper import SwitchHelper
 from util.Res import Res
 from lib.sound import Sound
 from util.log import *
@@ -32,6 +33,7 @@ class Home:
         self._init_subscribable()
         self._init_publisher()
         self._init_audio_server()
+        self._init_switch_server()
         self._resume = False
 
     def _init_command(self):
@@ -86,13 +88,14 @@ class Home:
                     except Exception, e:
                         ERROR("init commands faild.")
                         print traceback.format_exc()
+            self._cmd.init_tasklist()  # load unfinished task
 
     def _init_speaker(self):
         INFO("initlizing speaker...")
         self._spk = Text2Speech()
 
     def _init_audio_server(self):
-        Sound.AUDIO_SERVER_ADDRESS = self._init_res["connection"]["audio_source"]
+        Sound.AUDIO_SERVER_ADDRESS = self._init_res["connection"]["audio_server"]
         INFO("connect to audio server: %s " % (Sound.AUDIO_SERVER_ADDRESS))
 
     def _init_subscribable(self):
@@ -102,7 +105,7 @@ class Home:
         for subscribable in subscribables:
             try:
                 _sub_sock.connect(subscribable)
-                INFO("connect to command subscribable: %s " % (subscribable))
+                INFO("connect to subscribable: %s " % (subscribable))
             except Exception, e:
                 ERROR("connection faild: %s" % (subscribable, ))
                 ERROR(e)
@@ -116,6 +119,11 @@ class Home:
         INFO("bind to : %s " % (publisher))
         _pub_sock.bind(publisher)
         self._pub_sock = _pub_sock
+
+    def _init_switch_server(self):
+        switch_server_ip = self._init_res["connection"]["switch_server"]
+        INFO("init switch server: " + switch_server_ip)
+        self._switch = SwitchHelper()
 
     def _cmd_begin_callback(self, command):
         INFO("command begin: %s" % (command))
