@@ -141,30 +141,38 @@ class Command:
                     pass_value = self._invoke_block(statement.then_block)
             elif isinstance(statement, CompareOperator):
                 bValue = self._invoke_statement(
-                                            statement.b_statement, pass_value)
-                pass_value = self._invoke_compare_operator(
-                                                            statement.name,
-                                                            pass_value,
-                                                            bValue)
+                                            statement.statement, pass_value)
+                pass_value = self._invoke_operator(
+                                                    "compare",
+                                                    statement.name,
+                                                    pass_value,
+                                                    bValue)
+            elif isinstance(statement, LogicalOperator):
+                bValue = self._invoke_block(statement.block)
+                pass_value = self._invoke_operator(
+                                                    "logical",
+                                                    statement.name,
+                                                    pass_value,
+                                                    bValue)
             elif isinstance(statement, Block):
                 pass_value = self._invoke_block(Block)
         return pass_value
 
-    def _invoke_compare_operator(self, name, aValue, bValue):
+    def _invoke_operator(self, otype, name, aValue, bValue):
         if name is None or name == "":
-            ERROR("empty compare name.")
+            ERROR("empty %s name." % (otype, ))
             return False
-        if not "compare" in self._registered_callbacks:
-            WARN("compare callback not registered.")
+        if not otype in self._registered_callbacks:
+            WARN(otype + " callback not registered.")
             return False
-        compare_callbacks = self._registered_callbacks.get("compare", None)
-        if not compare_callbacks:
-            WARN("compare callback is empty.")
+        op_callbacks = self._registered_callbacks.get(otype, None)
+        if not op_callbacks:
+            WARN(otype, " callback is empty.")
             return False
-        if not name in compare_callbacks:
-            WARN("invaild compare name.")
+        if not name in op_callbacks:
+            WARN("invaild %s name." % (otype, ))
             return False
-        callback = compare_callbacks[name]
+        callback = op_callbacks[name]
         return callback.internal_callback(aValue=aValue, bValue=bValue)
 
     def _invoke_statement(self, statement, pass_value):
