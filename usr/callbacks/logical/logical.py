@@ -7,4 +7,4 @@ from lib.model import Callback
 class logical_callback(Callback.Callback):
     def callback(self, aValue, bValue):
         DEBUG("logical callback invoke.")
-        return aValue == bValue
+        return aValue and bValue

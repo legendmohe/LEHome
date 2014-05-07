@@ -140,13 +140,11 @@ class Command:
                 while self._invoke_block(statement.if_block):
                     pass_value = self._invoke_block(statement.then_block)
             elif isinstance(statement, CompareOperator):
-                aValue = self._invoke_statement(
-                                            statement.a_statement, pass_value)
                 bValue = self._invoke_statement(
                                             statement.b_statement, pass_value)
                 pass_value = self._invoke_compare_operator(
                                                             statement.name,
-                                                            aValue,
+                                                            pass_value,
                                                             bValue)
             elif isinstance(statement, Block):
                 pass_value = self._invoke_block(Block)

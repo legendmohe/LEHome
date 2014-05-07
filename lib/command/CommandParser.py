@@ -169,10 +169,8 @@ class CommandParser:
         if isinstance(block, Block):
             compare_operator = CompareOperator()
             compare_operator.name = e.args[1]
-            self._statement.delay_time = self._delay_buf
-            self._statement.msg = self._message_buf
-            compare_operator.a_statement = self._statement
-            self._statement = compare_operator.b_statement
+            self._append_statement(block)
+            self._statement = compare_operator.statement
             block.statements.append(compare_operator)
 
     def onfound_else(self, e):

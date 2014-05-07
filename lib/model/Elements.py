@@ -27,15 +27,13 @@ class Block:
 class LogicalOperator:
     def __init__(self):
         self.name = ""
-        self.a_block = Block()
-        self.b_block = Block()
+        self.block = Block()
 
 
 class CompareOperator:
     def __init__(self):
         self.name = ""
-        self.a_statement = Statement()
-        self.b_statement = Statement()
+        self.statement = Statement()
 
 
 class IfStatement:
