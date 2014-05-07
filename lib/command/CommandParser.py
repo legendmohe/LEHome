@@ -3,7 +3,7 @@
 
 from fysom import Fysom
 from heapq import heappush, heapify
-from lib.model.Elements import Statement, IfStatement, WhileStatement, Block, LogicalOperator
+from lib.model.Elements import Statement, IfStatement, WhileStatement, Block, LogicalOperator, CompareOperator
 from util.log import *
 
 
@@ -160,20 +160,20 @@ class CommandParser:
         ERROR("single then error.")
         self._error_occoured = True
 
-    def onfound_logical(self, e):
+    def onfound_compare(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
         if e.dst == "error_state":
             self._error_occoured = True
             return
         block = self._block_stack[-1]
         if isinstance(block, Block):
-            logical_operator = LogicalOperator()
-            logical_operator.name = e.args[1]
+            compare_operator = CompareOperator()
+            compare_operator.name = e.args[1]
             self._statement.delay_time = self._delay_buf
             self._statement.msg = self._message_buf
-            logical_operator.a_statement = self._statement
-            self._statement = logical_operator.b_statement
-            block.statements.append(logical_operator)
+            compare_operator.a_statement = self._statement
+            self._statement = compare_operator.b_statement
+            block.statements.append(compare_operator)
 
     def onfound_else(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
@@ -217,7 +217,7 @@ class CommandParser:
         if len(block.statements) == 0:
             block.statements.append(self._statement)
         else:
-            if isinstance(block.statements[-1], LogicalOperator):
+            if isinstance(block.statements[-1], CompareOperator):
                 pass
             else:
                 block.statements.append(self._statement)
@@ -239,7 +239,7 @@ class CommandParser:
                     {'name': 'found_stop_flag', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_finish_flag', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_nexts_flag', 'src': 'initial_state',  'dst': 'initial_state'},
-                    {'name': 'found_logical', 'src': 'initial_state',  'dst': 'initial_state'},
+                    {'name': 'found_compare', 'src': 'initial_state',  'dst': 'initial_state'},
 
                     {'name': 'found_while', 'src': 'trigger_state',  'dst': 'if_state'},
                     {'name': 'found_if', 'src': 'trigger_state',  'dst': 'if_state'},
@@ -252,7 +252,7 @@ class CommandParser:
                     {'name': 'found_others', 'src': 'trigger_state',  'dst': 'error_state'},
                     {'name': 'found_finish_flag', 'src': 'trigger_state',  'dst': 'initial_state'},
                     {'name': 'found_nexts_flag', 'src': 'trigger_state',  'dst': 'error_state'},
-                    {'name': 'found_logical', 'src': 'trigger_state',  'dst': 'error_state'},
+                    {'name': 'found_compare', 'src': 'trigger_state',  'dst': 'error_state'},
 
                     {'name': 'found_while', 'src': 'delay_state',  'dst': 'error_state'},
                     {'name': 'found_if', 'src': 'delay_state',  'dst': 'error_state'},
@@ -265,7 +265,7 @@ class CommandParser:
                     {'name': 'found_others', 'src': 'delay_state',  'dst': 'delay_state'},
                     {'name': 'found_finish_flag', 'src': 'delay_state',  'dst': 'error_state'},
                     {'name': 'found_nexts_flag', 'src': 'delay_state',  'dst': 'error_state'},
-                    {'name': 'found_logical', 'src': 'delay_state',  'dst': 'error_state'},
+                    {'name': 'found_compare', 'src': 'delay_state',  'dst': 'error_state'},
 
                     {'name': 'found_while', 'src': 'if_state',  'dst': 'error_state'},
                     {'name': 'found_if', 'src': 'if_state',  'dst': 'error_state'},
@@ -278,7 +278,7 @@ class CommandParser:
                     {'name': 'found_others', 'src': 'if_state',  'dst': 'error_state'},
                     {'name': 'found_finish_flag', 'src': 'if_state',  'dst': 'error_state'},
                     {'name': 'found_nexts_flag', 'src': 'if_state',  'dst': 'error_state'},
-                    {'name': 'found_logical', 'src': 'if_state',  'dst': 'error_state'},
+                    {'name': 'found_compare', 'src': 'if_state',  'dst': 'error_state'},
 
                     {'name': 'found_delay', 'src': 'action_state',  'dst': 'message_state'},
                     {'name': 'found_trigger', 'src': 'action_state',  'dst': 'message_state'},
@@ -320,7 +320,7 @@ class CommandParser:
                     {'name': 'found_else', 
                         'src': ['action_state', 'target_state', 'message_state'], 
                         'dst': 'trigger_state'},
-                    {'name': 'found_logical', 
+                    {'name': 'found_compare', 
                         'src': ['action_state', 'target_state', 'message_state'], 
                         'dst': 'trigger_state'},
                     ],
@@ -331,7 +331,7 @@ class CommandParser:
         self.flag = []
 
         flags = ['whiles', 'ifs', 'thens', 'elses', 'delay', 'trigger', 'stop', 'finish',
-                'action', 'target', 'nexts', 'logical']
+                'action', 'target', 'nexts', 'logical', 'compare']
         for flag in flags:
             if flag in coms.keys():
                 self.flag.append((flag, coms[flag]))
@@ -346,7 +346,7 @@ class CommandParser:
         self._FSM.onfound_finish_flag = self.onfound_finish_flag
         self._FSM.onfound_stop_flag = self.onfound_stop_flag
         self._FSM.onfound_nexts_flag = self.onfound_nexts_flag
-        self._FSM.onfound_logical = self.onfound_logical
+        self._FSM.onfound_compare = self.onfound_compare
         self._FSM.onfound_while = self.onfound_while
         self._FSM.onfound_if = self.onfound_if
         self._FSM.onfound_then = self.onfound_then
@@ -477,8 +477,8 @@ class CommandParser:
                 self._FSM.found_nexts_flag(self, _token)
                 self._message_buf = ''
                 self._delay_buf = ''
-            elif _token_type == "logical":
-                self._FSM.found_logical(self, _token)
+            elif _token_type == "compare":
+                self._FSM.found_compare(self, _token)
                 self._message_buf = ''
                 self._delay_buf = ''
             elif _token_type == "others":

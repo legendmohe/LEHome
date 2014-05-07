@@ -57,6 +57,7 @@ class Home:
                         "finish":com_json["finish"],
                         "nexts":com_json["next"],
                         "logical":com_json["logical"],
+                        "compare":com_json["compare"],
                         })
             self._cmd.setDEBUG(False)
             self._cmd.cmd_begin_callback = self._cmd_begin_callback

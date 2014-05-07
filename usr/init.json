@@ -20,7 +20,8 @@
         "stop" : ["算了", "取消"],
         "finish" : ["好吗", "谢谢"],
         "next" : ["然后", "接着"],
-        "logical" : ["大于", "等于", "小于", "而且", "并且", "或者"]
+        "logical" : ["而且", "并且", "或者"],
+        "compare" : ["大于", "等于", "小于"]
     },
     "callback":{
         "whiles":{
@@ -79,12 +80,14 @@
             "然后":"next.next_callback"
         },
         "logical" : {
-            "大于":"logical.logical_callback",
-            "等于":"logical.logical_callback",
-            "小于":"logical.logical_callback",
             "而且":"logical.logical_callback",
             "并且":"logical.logical_callback",
             "或者":"logical.logical_callback"
+        },
+        "compare": {
+            "大于":"compare.compare_callback",
+            "等于":"compare.compare_callback",
+            "小于":"compare.compare_callback"
         }
     },
     "sound":{

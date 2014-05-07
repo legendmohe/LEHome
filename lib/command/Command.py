@@ -8,7 +8,7 @@ import threading
 import pickle
 import sys
 from CommandParser import CommandParser
-from lib.model.Elements import Statement, Block, IfStatement, WhileStatement, LogicalOperator
+from lib.model.Elements import Statement, Block, IfStatement, WhileStatement, LogicalOperator, CompareOperator
 from lib.sound import Sound
 from util.Res import Res
 from util.log import *
@@ -139,12 +139,12 @@ class Command:
             elif isinstance(statement, WhileStatement):
                 while self._invoke_block(statement.if_block):
                     pass_value = self._invoke_block(statement.then_block)
-            elif isinstance(statement, LogicalOperator):
+            elif isinstance(statement, CompareOperator):
                 aValue = self._invoke_statement(
                                             statement.a_statement, pass_value)
                 bValue = self._invoke_statement(
                                             statement.b_statement, pass_value)
-                pass_value = self._invoke_logical_operator(
+                pass_value = self._invoke_compare_operator(
                                                             statement.name,
                                                             aValue,
                                                             bValue)
@@ -152,21 +152,21 @@ class Command:
                 pass_value = self._invoke_block(Block)
         return pass_value
 
-    def _invoke_logical_operator(self, name, aValue, bValue):
+    def _invoke_compare_operator(self, name, aValue, bValue):
         if name is None or name == "":
-            ERROR("empty logical name.")
+            ERROR("empty compare name.")
             return False
-        if not "logical" in self._registered_callbacks:
-            WARN("logical callback not registered.")
+        if not "compare" in self._registered_callbacks:
+            WARN("compare callback not registered.")
             return False
-        logical_callbacks = self._registered_callbacks.get("logical", None)
-        if not logical_callbacks:
-            WARN("logical callback is empty.")
+        compare_callbacks = self._registered_callbacks.get("compare", None)
+        if not compare_callbacks:
+            WARN("compare callback is empty.")
             return False
-        if not name in logical_callbacks:
-            WARN("invaild logical name.")
+        if not name in compare_callbacks:
+            WARN("invaild compare name.")
             return False
-        callback = logical_callbacks[name]
+        callback = compare_callbacks[name]
         return callback.internal_callback(aValue=aValue, bValue=bValue)
 
     def _invoke_statement(self, statement, pass_value):

@@ -7,3 +7,4 @@ import next
 import whiles
 import trigger
 import logical
+import compare
