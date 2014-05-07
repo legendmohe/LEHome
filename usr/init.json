@@ -14,7 +14,7 @@
         "trigger" : ["hello", "您好", "你好"],
         "action" : ["打开", "关闭", "播放", "停止播放", "天气预报", 
                     "删除", "录音", "设置", "每", "执行", "运行", "停止",
-                    "结束", "显示", "查看", "新增"],
+                    "结束", "显示", "查看", "新增", "逻辑", "数值", "字符"],
         "target" : ["豆瓣电台", "留言", "提醒", "闹铃", "任务",
                     "脚本", "开关"],
         "stop" : ["算了", "取消"],
@@ -37,6 +37,9 @@
             "你好":"trigger.trigger_callback"
         },
         "action":{
+            "逻辑":"action.logical_value_callback",
+            "数值":"action.num_value_callback",
+            "字符":"action.str_value_callback",
             "每":"action.every_callback",
             "执行":"action.invoke_callback",
             "运行":"action.invoke_callback",

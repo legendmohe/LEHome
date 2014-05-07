@@ -65,6 +65,9 @@ class SwitchHelper:
         return message
 
     def show_state(self, target_ip):
+        if not target_ip in self.switchs:
+            ERROR("target_ip not exist: " + target_ip)
+            return
         cmd = self.get_vaild_cmd(target_ip, "check")
         state = self.send_cmd(cmd)
         self.switchs[target_ip]["state"] = state

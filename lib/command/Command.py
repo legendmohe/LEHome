@@ -63,7 +63,21 @@ class Command:
             except:
                 ERROR("invaild tasklist path:%s", self._tasklist_path)
 
+    def print_block(self, command, block, index=1):
+        print "statements: ", block.statements
+        for statement in block.statements:
+            sys.stdout.write("-"*index)
+            print statement, index
+            for attr in vars(statement):
+                sys.stdout.write("-"*index)
+                block = getattr(statement, attr)
+                print "obj.%s = %s" % (attr, block)
+                if isinstance(block, Block):
+                    self.print_block(command, block, index + 1)
+
     def _finish_callback(self, command, block):
+        # self.print_block(command, block)
+
         Sound.play(Res.get_res_path("sound/com_begin"))
         #  stoppable thread
         t = StoppableThread(

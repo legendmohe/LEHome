@@ -169,17 +169,11 @@ class CommandParser:
         if isinstance(block, Block):
             logical_operator = LogicalOperator()
             logical_operator.name = e.args[1]
-            if len(block.statements) < 1:
-                ERROR("single right logical operator error.")
-                self._error_occoured = True
-                return
-            cur_statement = block.statements.pop()
-            cur_statement.delay_time = self._delay_buf
-            cur_statement.msg = self._message_buf
-            logical_operator.a_statement = cur_statement
+            self._statement.delay_time = self._delay_buf
+            self._statement.msg = self._message_buf
+            logical_operator.a_statement = self._statement
             self._statement = logical_operator.b_statement
-            block.statements.append(LogicalOperator)
-            
+            block.statements.append(logical_operator)
 
     def onfound_else(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
@@ -220,7 +214,13 @@ class CommandParser:
     def _append_statement(self, block):
         self._statement.delay_time = self._delay_buf
         self._statement.msg = self._message_buf
-        block.statements.append(self._statement)
+        if len(block.statements) == 0:
+            block.statements.append(self._statement)
+        else:
+            if isinstance(block.statements[-1], LogicalOperator):
+                pass
+            else:
+                block.statements.append(self._statement)
         self._statement = Statement()
 
     _FSM = Fysom({
@@ -514,9 +514,9 @@ class CommandParser:
                 self._stopwords.add(word)
 
 if __name__ == '__main__':
-    import sys
 
     def test_callback(command, block, index=1):
+        import sys
         print block.statements
         for statement in block.statements:
             for attr in vars(statement):

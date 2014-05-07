@@ -341,3 +341,33 @@ class add_callback(Callback.Callback):
             return True, record
         else:
             return True, pre_value
+
+
+class logical_value_callback(Callback.Callback):
+    def callback(self, msg):
+        if msg == u"真":
+            return True, True
+        elif msg == u"假":
+            return True, False
+        else:
+            ERROR("logical_value_callback msg is invaild:" + msg)
+            return False
+
+
+class num_value_callback(Callback.Callback):
+    def callback(self, msg):
+        num = cn2dig(msg)
+        if num is None:
+            ERROR("num_value_callback num is invaild:" + msg)
+            return False
+        else:
+            return True, num
+
+
+class str_value_callback(Callback.Callback):
+    def callback(self, msg):
+        if msg is None:
+            ERROR("str_value_callback msg is None.")
+            return False
+        else:
+            return True, msg
