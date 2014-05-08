@@ -30,7 +30,7 @@ class action_callback(Callback.Callback):
 class switch_on_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg):
         if target is None or len(target) == 0:
-            WARN("empty switch on target.")
+            WARN("no switch on target.")
             return False, False
         ip = self._home._switch.ip_for_name(target)
         if ip is None:
@@ -44,7 +44,7 @@ class switch_on_callback(Callback.Callback):
 class switch_off_callback(Callback.Callback):
     def callback(self, cmd, target, msg):
         if target is None or len(target) == 0:
-            WARN("empty switch off target.")
+            WARN("no switch off target.")
             return False, False
         ip = self._home._switch.ip_for_name(target)
         if ip is None:

@@ -20,6 +20,8 @@ class SwitchHelper:
 
     def init_switchs(self):
         self.switchs = self.list_state()
+        if self.switchs is None:
+            self.switchs = []
 
     def ip_for_name(self, name):
         return self.name2ip.get(name, None)
