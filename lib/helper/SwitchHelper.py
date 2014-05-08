@@ -99,7 +99,7 @@ class SwitchHelper:
             ERROR("error: invaild switch response")
             return
         self.switchs[target_ip]["state"] = state
-        return state.state
+        return state
 
     def list_state(self):
         res = {}
