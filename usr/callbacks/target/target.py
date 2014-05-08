@@ -151,6 +151,11 @@ class remind_callback(Callback.Callback):
         return True, "remind"
 
 
+class todo_callback(Callback.Callback):
+    def callback(self, cmd, action, target, msg):
+        pass
+
+
 class alarm_callback(Callback.Callback):
     def callback(self,
             action=None,
@@ -255,7 +260,7 @@ class lamp_callback(Callback.Callback):
             elif state == "close":
                 res = self._home._switch.send_open(ip)
                 if res is None:
-                    self._home.publish_info(cmd, u"内部错误")
+                    self._home.publish_info(cmd, u"打开" + target + u"失败")
                 elif res == "open":
                     self._home.publish_info(cmd, u"打开" + target)
                 else:
@@ -268,7 +273,7 @@ class lamp_callback(Callback.Callback):
             elif state == "open":
                 res = self._home._switch.send_close(ip)
                 if res is None:
-                    self._home.publish_info(cmd, u"内部错误")
+                    self._home.publish_info(cmd, u"关闭" + target + u"失败")
                 elif res == "close":
                     self._home.publish_info(cmd, u"关闭" + target)
                 else:

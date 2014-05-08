@@ -39,6 +39,7 @@ class SwitchHelper:
         return vaild_cmd
 
     def send_open(self, target_ip):
+        self.list_state()
         cmd = self.get_vaild_cmd(target_ip, "open")
         rep = self.send_cmd(cmd)
         try:
@@ -46,10 +47,11 @@ class SwitchHelper:
         except:
             ERROR("error: invaild switch response")
             return
-        self.list_state()
+        self.show_state(target_ip)
         return rep
 
     def send_close(self, target_ip):
+        self.list_state()
         cmd = self.get_vaild_cmd(target_ip, "close")
         rep = self.send_cmd(cmd)
         try:
@@ -57,7 +59,7 @@ class SwitchHelper:
         except:
             ERROR("error: invaild switch response")
             return
-        self.list_state()
+        self.show_state(target_ip)
         return rep
 
     def send_cmd(self, cmd):
@@ -114,4 +116,5 @@ class SwitchHelper:
             res[ip]["name"] = self.name_for_ip(ip)
             res[ip]["mac"] = switch["mac"]
             res[ip]["state"] = switch["state"]
-        return res
+        self.switchs = res
+        return self.switchs
