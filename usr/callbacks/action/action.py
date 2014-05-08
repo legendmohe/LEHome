@@ -28,21 +28,14 @@ class action_callback(Callback.Callback):
 
 
 class switch_on_callback(Callback.Callback):
-    def callback(self, cmd, msg):
-        if msg is None or len(msg) == 0:
+    def callback(self, cmd, target, msg):
+        if target is None or len(target) == 0:
             WARN("empty switch on target.")
             return False, False
-        ip = self._home._switch.ip_for_name(msg)
+        ip = self._home._switch.ip_for_name(target)
         if ip is None:
-            WARN("invaild switch on target:" + msg)
+            WARN("invaild switch on target:" + target)
             return False, False
-        state = self._home._switch.show_state(ip)
-        if state == "close":
-            res = self._home._switch.send_open(ip)
-            if res == "open":
-                self._home.publish_info(cmd, u"打开" + msg)
-            else:
-                self._home.publish_info(cmd, u"打开" + msg + u"失败")
         return True, True
 
 
@@ -55,13 +48,6 @@ class switch_off_callback(Callback.Callback):
         if ip is None:
             WARN("invaild switch off target:" + msg)
             return False, False
-        state = self._home._switch.show_state(ip)
-        if state == "open":
-            res = self._home._switch.send_close(ip)
-            if res == "close":
-                self._home.publish_info(cmd, u"关闭" + msg)
-            else:
-                self._home.publish_info(cmd, u"关闭" + msg + u"失败")
         return True, True
 
 
@@ -259,12 +245,12 @@ class invoke_callback(Callback.Callback):
 
 class break_callback(Callback.Callback):
     def callback(self):
-        return True, True
+        return True
 
 
 class show_callback(Callback.Callback):
     def callback(self, action, msg, target):
-        return True, True
+        return True
 
 
 class memo_callback(Callback.Callback):

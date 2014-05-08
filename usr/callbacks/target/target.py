@@ -222,25 +222,55 @@ class script_callback(Callback.Callback):
             pass
         elif action == u"删除":
             pass
-        return True, True
+        return True
 
 
 class switch_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg):
-        if action == u"显示":
-            if msg == u"列表":
-                states = self._home._switch.list_state()
-                if len(states) == 0:
-                    self._home.publish_info(cmd, target + u"列表为空")
-                else:
-                    info = target + u"列表:"
-                    for switch_ip in states:
-                        switch_name = self._home._switch.name_for_ip(switch_ip)
-                        info += u"\n  名称:" \
-                                + switch_name \
-                                + u" 状态:" \
-                                + states[switch_ip]["state"]
-                    self._home.publish_info(cmd, info)
+        if msg == u"列表" or msg == u"状态":
+            states = self._home._switch.list_state()
+            if len(states) == 0:
+                self._home.publish_info(cmd, target + u"列表为空")
             else:
-                pass
-        return True, True
+                info = target + u"列表:"
+                for switch_ip in states:
+                    switch_name = self._home._switch.name_for_ip(switch_ip)
+                    info += u"\n  名称:" \
+                            + switch_name \
+                            + u" 状态:" \
+                            + states[switch_ip]["state"]
+                self._home.publish_info(cmd, info)
+        return True
+
+
+class lamp_callback(Callback.Callback):
+    def callback(self, cmd, action, target, msg):
+        ip = self._home._switch.ip_for_name(target)
+        if action == u"打开":
+            state = self._home._switch.show_state(ip)
+            if state == "close":
+                res = self._home._switch.send_open(ip)
+                if res == "open":
+                    self._home.publish_info(cmd, u"打开" + target)
+                else:
+                    self._home.publish_info(cmd, u"打开" + target + u"失败")
+            return True, True
+        elif action == u"关闭":
+            state = self._home._switch.show_state(ip)
+            if state == "open":
+                res = self._home._switch.send_close(ip)
+                if res == "close":
+                    self._home.publish_info(cmd, u"关闭" + msg)
+                else:
+                    self._home.publish_info(cmd, u"关闭" + msg + u"失败")
+            return True, True
+        elif msg == u"状态":
+            state = self._home._switch.show_state(ip)
+            info = u"\n  名称:" \
+                   + target \
+                   + u" 状态:" \
+                   + state
+            self._home.publish_info(cmd, info)
+            return True, state
+        else:
+            return False

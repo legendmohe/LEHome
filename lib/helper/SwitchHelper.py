@@ -53,15 +53,20 @@ class SwitchHelper:
         INFO("sending cmd to switch server:" + cmd)
 
         self._send_lock.acquire()
+        message = ""
         context = zmq.Context()
         socket = context.socket(zmq.REQ)
         socket.connect(self.server_ip)
-        socket.send_string(cmd)
-        message = socket.recv_string()
+        try:
+            socket.send_string(cmd, timeout=5)
+            message = socket.recv_string(timeout=10)
+            INFO("recv msgs:" + message)
+        except Exception, e:
+            DEBUG(e)
+            WARN("socket timeout.")
         socket.close()
+        context.term()
         self._send_lock.release()
-
-        INFO("recv msgs:" + message)
         return message
 
     def show_state(self, target_ip):

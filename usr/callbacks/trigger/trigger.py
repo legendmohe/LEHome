@@ -9,4 +9,4 @@ class trigger_callback(Callback.Callback):
             trigger  = None, 
             pre_value = None):
         DEBUG("* trigger callback: %s, action: %s pre_value: %s" %(trigger, action, pre_value))
-        return True, "pass"
+        return True, True

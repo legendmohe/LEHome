@@ -146,17 +146,17 @@ class CommandParser:
             return
 
         self._statement.thens = e.args[1]
-        block = self._block_stack.pop()
-        if len(self._block_stack) < 1:
-            ERROR("single then error.")
-            self._error_occoured = True
-            return
-        ifs = self._block_stack[-1]
-        if isinstance(block, Block):
-            if isinstance(ifs, IfStatement) or isinstance(ifs, WhileStatement):
-                self._append_statement(block)
-                self._block_stack.append(ifs.then_block)
-                return
+        for index in range(len(self._block_stack)):
+            block = self._block_stack.pop()
+            if isinstance(block, Block):
+                if len(self._block_stack) < 1:
+                    break
+                ifs = self._block_stack[-1]
+                if isinstance(ifs, IfStatement) \
+                    or isinstance(ifs, WhileStatement):
+                    self._append_statement(block)
+                    self._block_stack.append(ifs.then_block)
+                    return
         ERROR("single then error.")
         self._error_occoured = True
 
@@ -173,6 +173,19 @@ class CommandParser:
             self._statement = compare_operator.statement
             block.statements.append(compare_operator)
 
+    def onfound_logical(self, e):
+        DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
+        if e.dst == "error_state":
+            self._error_occoured = True
+            return
+        block = self._block_stack[-1]
+        if isinstance(block, Block):
+            logical_operator = LogicalOperator()
+            logical_operator.name = e.args[1]
+            self._append_statement(block)
+            block.statements.append(logical_operator)
+            self._block_stack.append(logical_operator.block)
+
     def onfound_else(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
 
@@ -181,13 +194,18 @@ class CommandParser:
             return
 
         self._statement.elses = e.args[1]
-        block = self._block_stack.pop()
-        ifs = self._block_stack[-1]
-        if isinstance(block, Block) and isinstance(ifs, IfStatement):
-            self._append_statement(block)
-            self._block_stack.append(ifs.else_block)
-        else:
-            ERROR("single else error.")
+        for index in range(len(self._block_stack)):
+            block = self._block_stack.pop()
+            if isinstance(block, Block):
+                if len(self._block_stack) < 1:
+                    break
+                ifs = self._block_stack[-1]
+                if isinstance(ifs, IfStatement) \
+                    or isinstance(ifs, WhileStatement):
+                    self._append_statement(block)
+                    self._block_stack.append(ifs.else_block)
+                    return
+        ERROR("single else error.")
 
     def onreset(self, e):
         DEBUG('reset ! = event: %s, src: %s, dst: %s' \
@@ -238,6 +256,7 @@ class CommandParser:
                     {'name': 'found_finish_flag', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_nexts_flag', 'src': 'initial_state',  'dst': 'initial_state'},
                     {'name': 'found_compare', 'src': 'initial_state',  'dst': 'initial_state'},
+                    {'name': 'found_logical', 'src': 'initial_state',  'dst': 'initial_state'},
 
                     {'name': 'found_while', 'src': 'trigger_state',  'dst': 'if_state'},
                     {'name': 'found_if', 'src': 'trigger_state',  'dst': 'if_state'},
@@ -251,6 +270,7 @@ class CommandParser:
                     {'name': 'found_finish_flag', 'src': 'trigger_state',  'dst': 'initial_state'},
                     {'name': 'found_nexts_flag', 'src': 'trigger_state',  'dst': 'error_state'},
                     {'name': 'found_compare', 'src': 'trigger_state',  'dst': 'error_state'},
+                    {'name': 'found_logical', 'src': 'trigger_state',  'dst': 'error_state'},
 
                     {'name': 'found_while', 'src': 'delay_state',  'dst': 'error_state'},
                     {'name': 'found_if', 'src': 'delay_state',  'dst': 'error_state'},
@@ -264,6 +284,7 @@ class CommandParser:
                     {'name': 'found_finish_flag', 'src': 'delay_state',  'dst': 'error_state'},
                     {'name': 'found_nexts_flag', 'src': 'delay_state',  'dst': 'error_state'},
                     {'name': 'found_compare', 'src': 'delay_state',  'dst': 'error_state'},
+                    {'name': 'found_logical', 'src': 'delay_state',  'dst': 'error_state'},
 
                     {'name': 'found_while', 'src': 'if_state',  'dst': 'error_state'},
                     {'name': 'found_if', 'src': 'if_state',  'dst': 'error_state'},
@@ -277,6 +298,7 @@ class CommandParser:
                     {'name': 'found_finish_flag', 'src': 'if_state',  'dst': 'error_state'},
                     {'name': 'found_nexts_flag', 'src': 'if_state',  'dst': 'error_state'},
                     {'name': 'found_compare', 'src': 'if_state',  'dst': 'error_state'},
+                    {'name': 'found_logical', 'src': 'if_state',  'dst': 'error_state'},
 
                     {'name': 'found_delay', 'src': 'action_state',  'dst': 'message_state'},
                     {'name': 'found_trigger', 'src': 'action_state',  'dst': 'message_state'},
@@ -321,9 +343,11 @@ class CommandParser:
                     {'name': 'found_compare', 
                         'src': ['action_state', 'target_state', 'message_state'], 
                         'dst': 'trigger_state'},
+                    {'name': 'found_logical', 
+                        'src': ['action_state', 'target_state', 'message_state'], 
+                        'dst': 'trigger_state'},
                     ],
-        }
-        )
+        })
 
     def __init__(self, coms):
         self.flag = []
@@ -345,6 +369,7 @@ class CommandParser:
         self._FSM.onfound_stop_flag = self.onfound_stop_flag
         self._FSM.onfound_nexts_flag = self.onfound_nexts_flag
         self._FSM.onfound_compare = self.onfound_compare
+        self._FSM.onfound_logical = self.onfound_logical
         self._FSM.onfound_while = self.onfound_while
         self._FSM.onfound_if = self.onfound_if
         self._FSM.onfound_then = self.onfound_then
@@ -477,6 +502,10 @@ class CommandParser:
                 self._delay_buf = ''
             elif _token_type == "compare":
                 self._FSM.found_compare(self, _token)
+                self._message_buf = ''
+                self._delay_buf = ''
+            elif _token_type == "logical":
+                self._FSM.found_logical(self, _token)
                 self._message_buf = ''
                 self._delay_buf = ''
             elif _token_type == "others":

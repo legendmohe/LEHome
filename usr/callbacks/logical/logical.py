@@ -8,3 +8,13 @@ class logical_callback(Callback.Callback):
     def callback(self, aValue, bValue):
         DEBUG("logical callback invoke.")
         return aValue and bValue
+
+
+class and_callback(Callback.Callback):
+    def callback(self, aValue, bValue):
+        return aValue and bValue
+
+
+class or_callback(Callback.Callback):
+    def callback(self, aValue, bValue):
+        return aValue or bValue

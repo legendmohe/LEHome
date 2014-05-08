@@ -77,6 +77,8 @@ class Command:
 
     def _finish_callback(self, command, block):
         # self.print_block(command, block)
+        # import pdb
+        # pdb.set_trace()
 
         Sound.play(Res.get_res_path("sound/com_begin"))
         #  stoppable thread

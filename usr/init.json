@@ -14,9 +14,10 @@
         "trigger" : ["hello", "您好", "你好"],
         "action" : ["打开", "关闭", "播放", "停止播放", "天气预报", 
                     "删除", "录音", "设置", "每", "执行", "运行", "停止",
-                    "结束", "显示", "查看", "新增", "逻辑", "数值", "字符"],
+                    "结束", "显示", "查看", "新增", "逻辑", "数值", "字符",
+                    "当前"],
         "target" : ["豆瓣电台", "留言", "提醒", "闹铃", "任务",
-                    "脚本", "开关"],
+                    "脚本", "开关", "台灯"],
         "stop" : ["算了", "取消"],
         "finish" : ["好吗", "谢谢"],
         "next" : ["然后", "接着"],
@@ -56,7 +57,8 @@
             "停止":"action.break_callback",
             "结束":"action.break_callback",
             "显示":"action.show_callback",
-            "查看":"action.show_callback"
+            "查看":"action.show_callback",
+            "当前":"action.show_callback"
         },
         "target":{
             "提醒":"target.remind_callback",
@@ -65,7 +67,8 @@
             "留言":"target.message_callback",
             "脚本":"target.script_callback",
             "任务":"target.task_callback",
-            "开关":"target.switch_callback"
+            "开关":"target.switch_callback",
+            "台灯":"target.lamp_callback"
         },
         "stop":{
             "算了":"stop.stop_callback",
@@ -80,14 +83,15 @@
             "然后":"next.next_callback"
         },
         "logical" : {
-            "而且":"logical.logical_callback",
-            "并且":"logical.logical_callback",
-            "或者":"logical.logical_callback"
+            "而且":"logical.and_callback",
+            "并且":"logical.and_callback",
+            "或者":"logical.or_callback"
         },
         "compare": {
-            "大于":"compare.compare_callback",
-            "等于":"compare.compare_callback",
-            "小于":"compare.compare_callback"
+            "大于":"compare.greater_callback",
+            "等于":"compare.equal_callback",
+            "不等于":"compare.not_equal_callback",
+            "小于":"compare.less_callback"
         }
     },
     "sound":{
