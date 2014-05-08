@@ -229,7 +229,9 @@ class switch_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg):
         if msg == u"列表" or msg == u"状态":
             states = self._home._switch.list_state()
-            if len(states) == 0:
+            if states is None:
+                self._home.publish_info(cmd, u"内部错误")
+            elif len(states) == 0:
                 self._home.publish_info(cmd, target + u"列表为空")
             else:
                 info = target + u"列表:"
@@ -248,24 +250,35 @@ class lamp_callback(Callback.Callback):
         ip = self._home._switch.ip_for_name(target)
         if action == u"打开":
             state = self._home._switch.show_state(ip)
-            if state == "close":
+            if state is None:
+                self._home.publish_info(cmd, u"内部错误")
+            elif state == "close":
                 res = self._home._switch.send_open(ip)
-                if res == "open":
+                if res is None:
+                    self._home.publish_info(cmd, u"内部错误")
+                elif res == "open":
                     self._home.publish_info(cmd, u"打开" + target)
                 else:
                     self._home.publish_info(cmd, u"打开" + target + u"失败")
             return True, True
         elif action == u"关闭":
             state = self._home._switch.show_state(ip)
-            if state == "open":
+            if state is None:
+                self._home.publish_info(cmd, u"内部错误")
+            elif state == "open":
                 res = self._home._switch.send_close(ip)
-                if res == "close":
-                    self._home.publish_info(cmd, u"关闭" + msg)
+                if res is None:
+                    self._home.publish_info(cmd, u"内部错误")
+                elif res == "close":
+                    self._home.publish_info(cmd, u"关闭" + target)
                 else:
-                    self._home.publish_info(cmd, u"关闭" + msg + u"失败")
+                    self._home.publish_info(cmd, u"关闭" + target + u"失败")
             return True, True
         elif msg == u"状态":
             state = self._home._switch.show_state(ip)
+            if state is None:
+                self._home.publish_info(cmd, u"内部错误")
+                return False
             info = u"\n  名称:" \
                    + target \
                    + u" 状态:" \

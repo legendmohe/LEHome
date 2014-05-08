@@ -28,26 +28,30 @@ class action_callback(Callback.Callback):
 
 
 class switch_on_callback(Callback.Callback):
-    def callback(self, cmd, target, msg):
+    def callback(self, cmd, action, target, msg):
         if target is None or len(target) == 0:
             WARN("empty switch on target.")
             return False, False
         ip = self._home._switch.ip_for_name(target)
         if ip is None:
             WARN("invaild switch on target:" + target)
+            self._home.publish_info(cmd, target + u"不存在")
             return False, False
+        self._home.publish_info(cmd, action + target)
         return True, True
 
 
 class switch_off_callback(Callback.Callback):
-    def callback(self, cmd, msg):
-        if msg is None or len(msg) == 0:
+    def callback(self, cmd, target, msg):
+        if target is None or len(target) == 0:
             WARN("empty switch off target.")
             return False, False
-        ip = self._home._switch.ip_for_name(msg)
+        ip = self._home._switch.ip_for_name(target)
         if ip is None:
-            WARN("invaild switch off target:" + msg)
+            WARN("invaild switch off target:" + target)
+            self._home.publish_info(cmd, target + u"不存在")
             return False, False
+        self._home.publish_info(cmd, action + target)
         return True, True
 
 

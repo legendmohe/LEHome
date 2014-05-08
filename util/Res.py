@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 import os
+import json
 from util.log import *
 
 class Res:
@@ -26,7 +27,6 @@ class Res:
 
     @staticmethod
     def init(path):
-        import json
         path = os.path.join(Res.base_path, path)
         with open(path) as init_file:
             init_json = json.load(init_file)

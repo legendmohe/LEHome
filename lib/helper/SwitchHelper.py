@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 import threading
+import json
 import zmq
 from util.Res import Res
 from util.log import *
@@ -30,19 +31,30 @@ class SwitchHelper:
         return None
 
     def get_vaild_cmd(self, target_ip, cmd):
-        if not target_ip in self.switchs:
+        if target_ip and not target_ip in self.switchs:
             return None
-        return cmd + "|" + target_ip
+        vaild_cmd = json.dumps({"cmd": cmd, "target": target_ip})
+        return vaild_cmd
 
     def send_open(self, target_ip):
         cmd = self.get_vaild_cmd(target_ip, "open")
         rep = self.send_cmd(cmd)
+        try:
+            rep = json.loads(rep)["res"]
+        except:
+            ERROR("error: invaild switch response")
+            return
         self.list_state()
         return rep
 
     def send_close(self, target_ip):
         cmd = self.get_vaild_cmd(target_ip, "close")
         rep = self.send_cmd(cmd)
+        try:
+            rep = json.loads(rep)["res"]
+        except:
+            ERROR("error: invaild switch response")
+            return
         self.list_state()
         return rep
 
@@ -56,13 +68,16 @@ class SwitchHelper:
         message = ""
         context = zmq.Context()
         socket = context.socket(zmq.REQ)
+        socket.setsockopt(zmq.LINGER, 0)
         socket.connect(self.server_ip)
+        socket.send_string(cmd)
         try:
-            socket.send_string(cmd, timeout=5)
-            message = socket.recv_string(timeout=10)
-            INFO("recv msgs:" + message)
-        except Exception, e:
-            DEBUG(e)
+            poller = zmq.Poller()
+            poller.register(socket, zmq.POLLIN)
+            if poller.poll(10*1000):
+                message = socket.recv_string()
+                INFO("recv msgs:" + message)
+        except:
             WARN("socket timeout.")
         socket.close()
         context.term()
@@ -74,18 +89,27 @@ class SwitchHelper:
             ERROR("target_ip not exist: " + target_ip)
             return
         cmd = self.get_vaild_cmd(target_ip, "check")
-        state = self.send_cmd(cmd)
+        try:
+            state = json.loads(self.send_cmd(cmd))["res"]
+        except:
+            ERROR("error: invaild switch response")
+            return
         self.switchs[target_ip]["state"] = state
-        return state
+        return state.state
 
     def list_state(self):
         res = {}
-        switchs = self.send_cmd("list")
-        if not switchs is None and len(switchs) > 0:
-            for switch_state in switchs.split("\n"):
-                states = switch_state.split("|")
-                res[states[0]] = {}
-                res[states[0]]["name"] = self.name_for_ip(states[0])
-                res[states[0]]["mac"] = states[1]
-                res[states[0]]["state"] = states[2]
+        try:
+            cmd = self.get_vaild_cmd("", "list")
+            response = self.send_cmd(cmd)
+            switchs = json.loads(response)["res"]["switchs"]
+        except Exception, e:
+            ERROR("error: " + str(e))
+            return
+        for switch in switchs:
+            ip = switch["ip"]
+            res[ip] = {}
+            res[ip]["name"] = self.name_for_ip(ip)
+            res[ip]["mac"] = switch["mac"]
+            res[ip]["state"] = switch["state"]
         return res

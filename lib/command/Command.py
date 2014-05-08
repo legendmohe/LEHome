@@ -220,7 +220,7 @@ class Command:
                                 trigger=coms["trigger"],
                                 action=coms["action"],
                                 )
-                        if len(return_value) > 1:
+                        if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
                             pass_value = return_value[1]
                         else:
@@ -240,7 +240,7 @@ class Command:
                                 msg=msg,
                                 pre_value=coms["pass_value"]
                                 )
-                        if len(return_value) > 1:
+                        if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
                             pass_value = return_value[1]
                         else:
@@ -263,7 +263,7 @@ class Command:
                                 target=coms["target"],
                                 pre_value=pass_value
                                 )
-                        if len(return_value) > 1:
+                        if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
                             pass_value = return_value[1]
                         else:
@@ -286,7 +286,7 @@ class Command:
                                 target=coms["target"],
                                 pre_value=pass_value
                                 )
-                        if len(return_value) > 1:
+                        if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
                             pass_value = return_value[1]
                         else:
@@ -309,7 +309,7 @@ class Command:
                                 target=coms["target"],
                                 pre_value=pass_value
                                 )
-                        if len(return_value) > 1:
+                        if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
                             pass_value = return_value[1]
                         else:
@@ -331,7 +331,7 @@ class Command:
                                 msg=msg,
                                 pre_value=pass_value
                                 )
-                        if len(return_value) > 1:
+                        if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
                             pass_value = return_value[1]
                         else:
@@ -352,7 +352,7 @@ class Command:
                                 msg=msg,
                                 pre_value=pass_value
                                 )
-                        if len(return_value) > 1:
+                        if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
                             pass_value = return_value[1]
                         else:
@@ -374,7 +374,7 @@ class Command:
                                 msg=msg,
                                 pre_value=pass_value
                                 )
-                        if len(return_value) > 1:
+                        if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
                             pass_value = return_value[1]
                         else:
