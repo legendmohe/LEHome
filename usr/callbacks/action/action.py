@@ -42,7 +42,7 @@ class switch_on_callback(Callback.Callback):
 
 
 class switch_off_callback(Callback.Callback):
-    def callback(self, cmd, target, msg):
+    def callback(self, cmd, action, target, msg):
         if target is None or len(target) == 0:
             WARN("no switch off target.")
             return False, False
