@@ -37,8 +37,20 @@ class switch_on_callback(Callback.Callback):
             WARN("invaild switch on target:" + target)
             self._home.publish_info(cmd, target + u"不存在")
             return False, False
-        self._home.publish_info(cmd, action + target)
-        return True, True
+        state = self._home._switch.show_state(ip)
+        if state is None:
+            self._home.publish_info(cmd, u"内部错误")
+        elif state == "close":
+            res = self._home._switch.send_open(ip)
+            if res is None:
+                self._home.publish_info(cmd, u"打开" + target + u"失败")
+            elif res == "open":
+                self._home.publish_info(cmd, u"已打开" + target)
+            else:
+                self._home.publish_info(cmd, u"打开" + target + u"失败")
+        elif state == "open":
+            self._home.publish_info(cmd, u"已打开" + target)
+        return True, "on"
 
 
 class switch_off_callback(Callback.Callback):
@@ -51,82 +63,56 @@ class switch_off_callback(Callback.Callback):
             WARN("invaild switch off target:" + target)
             self._home.publish_info(cmd, target + u"不存在")
             return False, False
-        self._home.publish_info(cmd, action + target)
-        return True, True
+        state = self._home._switch.show_state(ip)
+        if state is None:
+            self._home.publish_info(cmd, u"内部错误")
+        elif state == "open":
+            res = self._home._switch.send_close(ip)
+            if res is None:
+                self._home.publish_info(cmd, u"关闭" + target + u"失败")
+            elif res == "close":
+                self._home.publish_info(cmd, u"已关闭" + target)
+            else:
+                self._home.publish_info(cmd, u"关闭" + target + u"失败")
+        elif state == "close":
+            self._home.publish_info(cmd, u"已关闭" + target)
+        return True, "off"
 
-
-class weather_report_callback(Callback.Callback):
-    def callback(self,
-            action=None,
-            target=None,
-            msg=None, 
-            pre_value=None):
-        
-        url = 'http://m.weather.com.cn/data/101280101.html'  # GUangzhou
-
-        re = urllib2.urlopen(url).read()
-        re = re.decode('UTF-8')
-        we = json.loads(re)['weatherinfo']
-
-        INFO(u'城市：' + we['city'])
-        INFO(u'日期：' + we['date_y'])
-        INFO(u'week：' + we['week'])
-        INFO(u'未来6天天气：')
-        INFO('\t' + we['temp1'] + '\t' + we['weather1'] + '\t' + we['wind1'])
-        INFO('\t' + we['temp2'] + '\t' + we['weather2'] + '\t' + we['wind2'])
-        INFO('\t' + we['temp3'] + '\t' + we['weather3'] + '\t' + we['wind3'])
-        INFO('\t' + we['temp4'] + '\t' + we['weather4'] + '\t' + we['wind4'])
-        INFO('\t' + we['temp5'] + '\t' + we['weather5'] + '\t' + we['wind5'])
-        INFO('\t' + we['temp6'] + '\t' + we['weather6'] + '\t' + we['wind6'])
-        INFO(u'穿衣指数: '+ we['index_d'])
-        INFO(u'紫外线: ' + we['index_uv'])
-        
-        content = ""
-        if msg == u"明天":
-            content += u'明天天气：' + ',' + we['temp2'] + ',' + we['weather2'] + '.\n'
-        elif msg == u"今天":
-            content += u'今天天气：' + ',' + we['temp1'] + ',' + we['weather1'] + '.\n'
-        else:
-            content += u'今天天气：' + ',' + we['temp1'] + ',' + we['weather1'] + '.\n'
-            content += u'明天天气：' + ',' + we['temp2'] + ',' + we['weather2'] + '.\n'
-            content += u'后天天气：' + ',' + we['temp3'] + ',' + we['weather3'] + '.\n'
-        content += u'穿衣指数：' + we['index_d'] + '\n'
-        
-        self._speaker.speak(content.split('\n'), inqueue=True)
-
-        return True, pre_value
 
 class stop_play_callback(Callback.Callback):
     def callback(self, action = None, target = None,
             msg = None, 
             pre_value = None):
         INFO("action:stop_play_callback invoke")
-        if "playlist" in self._context.keys():
+        if "player" in self._context:
             INFO("clear audio queue.")
             Sound.clear_queue()
-        return True, pre_value
+            del self._context["player"]
+            if "playlist" in self._context:
+                del self._context["playlist"]
+        return True, "stop_playing"
 
 
 class play_callback(Callback.Callback):
     def callback(self, action = None, target = None,
             msg = None, pre_value = None):
-        if action == u"播放" and target != None:
+        if target != None:
             def play(path = None):
                 if not path:
                     return
-
                 if not "playlist" in self._context:
                     self._context["playlist"] = []
-
                 playlist = self._context["playlist"]
                 if not path in playlist:
+                    playlist.append(path)
                     Sound.play(path, inqueue=True)
                 else:
                     INFO("%s was already in audio queue." % (path, ))
-
-            return True, play
+            if not "player" in self._context:
+                self._context["player"] = play
+            return True, "play"
         else:
-            return True, pre_value
+            return True, "play"
 
 
 class remove_callback(Callback.Callback):
@@ -139,10 +125,10 @@ class remove_callback(Callback.Callback):
         cfm = Comfirmation(self._home)
         is_cfm = cfm.confirm(ok=u'确认', cancel=u'取消')
         if is_cfm:
-            return True, pre_value
+            return True, "remove"
         else:
             INFO("cancel")
-            return False, pre_value
+            return False
 
 
 class cal_callback(Callback.Callback):
@@ -151,8 +137,6 @@ class cal_callback(Callback.Callback):
             target=None,
             msg=None, 
             pre_value=None):
-        
-
         return True, pre_value
 
 
@@ -244,17 +228,17 @@ class invoke_callback(Callback.Callback):
             else:
                 return True, False
         else:
-            return True, True
+            return True, "invoke"
 
 
 class break_callback(Callback.Callback):
     def callback(self):
-        return True
+        return True, "break"
 
 
 class show_callback(Callback.Callback):
     def callback(self, action, msg, target):
-        return True
+        return True, "show"
 
 
 class memo_callback(Callback.Callback):
@@ -297,7 +281,7 @@ class set_callback(Callback.Callback):
             target=None,
             msg=None, 
             pre_value=None):
-        return True, pre_value
+        return True, "set"
 
 
 class add_callback(Callback.Callback):
@@ -327,10 +311,9 @@ class add_callback(Callback.Callback):
                 except Exception, ex:
                     ERROR(ex)
                 del self._context["recorder"]
-            
             return True, record
         else:
-            return True, pre_value
+            return True, "new"
 
 
 class logical_value_callback(Callback.Callback):
