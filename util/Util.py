@@ -77,3 +77,4 @@ if __name__ == "__main__":
     print parse_time(u"一百零五分")
     print parse_time(u"七点五分")
     print parse_time(u"七点零五分")
+    print parse_time(u"9点04分")

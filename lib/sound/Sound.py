@@ -52,8 +52,8 @@ def get_clear_request_url():
     return AUDIO_SERVER_ADDRESS + '/clear'
 
 
-def play(path, inqueue=False):
-    url = get_play_request_url(path)
+def play(path, inqueue=False, loop=-1):
+    url = get_play_request_url(path, inqueue, loop)
     if url is None:
         return
     INFO("sending audio url: " + url)

@@ -61,7 +61,7 @@
         },
         "target":{
             "提醒":"target.remind_callback",
-            "闹铃":"target.alarm_callback",
+            "闹铃":"target.remind_callback",
             "豆瓣电台":"target.douban_callback",
             "天气":"target.weather_report_callback",
             "留言":"target.message_callback",

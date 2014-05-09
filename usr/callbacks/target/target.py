@@ -167,69 +167,24 @@ class remind_callback(Callback.Callback):
             target=None,
             msg=None, 
             pre_value=None):
-        if pre_value == "set" or pre_value == "new":
-            if msg is None:
-                return False, None
-
-            minutes = parse_time(msg)
-            print msg, " to ", minutes
-            if minutes is None:
-                return False, None
-
+        if pre_value == "play":
+            if msg is None or not msg.endswith(u"次"):
+                count = 5
+            else:
+                count = int(cn2dig(msg[:-1]))
             self._home.setResume(True)
-            p = Popen(["at", "now", "+", minutes, "minutes"],
-                    stdin=PIPE,
-                    stdout=PIPE,
-                    bufsize=1)
-            url = Sound.get_play_request_url(Res.get_res_path("sound/com_bell"), 4)
-            print >>p.stdin, "mpg123 \"" + url + "\""
-            print p.communicate("EOF")[0]
-
-            Sound.play(
-                        Res.get_res_path("sound/com_stop")
-                        )
+            url = Sound.get_play_request_url(
+                                            Res.get_res_path("sound/com_bell")
+                                            , loop=count)
+            play = self._context["player"]
+            play(url)
             self._home.setResume(False)
-            self._speaker.speak(action + target + minutes + u"分钟")
-
-        return True, True
+        return True
 
 
 class todo_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
         pass
-
-
-class alarm_callback(Callback.Callback):
-    def callback(self,
-            action=None,
-            target=None,
-            msg=None, 
-            pre_value=None):
-        if pre_value == "set" or pre_value == "new":
-            if msg is None:
-                return False, None
-            alarm_time = parse_time(msg)
-            INFO("alarm_time:" + alarm_time)
-            if alarm_time is None:
-                WARN("invalid alarm time:", msg)
-                return False, None
-
-            self._home.setResume(True)
-            p = Popen(["at", alarm_time],
-                    stdin=PIPE,
-                    stdout=PIPE,
-                    bufsize=1)
-            url = Sound.get_play_request_url(Res.get_res_path("sound/com_bell2"), 6)
-            print >>p.stdin, "mpg123 \"" + url + "\""
-            print p.communicate("EOF")[0]
-
-            Sound.play(
-                        Res.get_res_path("sound/com_stop")
-                        )
-            self._home.setResume(False)
-            self._speaker.speak(action + target + alarm_time)
-
-        return True, True
 
 
 class task_callback(Callback.Callback):

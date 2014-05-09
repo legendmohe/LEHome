@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
-import urllib2
-import json
 import subprocess
-import glob
 import os
-import time
 from datetime import datetime
 import threading
 from lib.command.Command import Confirmation
@@ -97,7 +93,7 @@ class play_callback(Callback.Callback):
     def callback(self, action = None, target = None,
             msg = None, pre_value = None):
         if target != None:
-            def play(path = None):
+            def play(path = None, inqueue=True, loop=-1):
                 if not path:
                     return
                 if not "playlist" in self._context:
@@ -105,7 +101,7 @@ class play_callback(Callback.Callback):
                 playlist = self._context["playlist"]
                 if not path in playlist:
                     playlist.append(path)
-                    Sound.play(path, inqueue=True)
+                    Sound.play(path, inqueue, loop)
                 else:
                     INFO("%s was already in audio queue." % (path, ))
             if not "player" in self._context:
