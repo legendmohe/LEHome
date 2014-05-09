@@ -3,13 +3,16 @@
 
 import urllib2
 import json
+import pickle
 import glob
 import types
 import httplib
 import os
+import threading
 import errno
 from datetime import datetime
 from subprocess import PIPE, Popen
+from lib.command.Command import UserInput
 from util.Res import Res
 from util.Util import parse_time, cn2dig
 from lib.sound import Sound
@@ -262,11 +265,105 @@ class task_callback(Callback.Callback):
 
 
 class script_callback(Callback.Callback):
+
+    script_path = "scripts.pcl"
+
+    def __init__(self):
+        super(script_callback, self).__init__()
+        self._lock = threading.Lock()
+        self.load_scripts()
+
+    def load_scripts(self):
+        self.scripts = {}
+        with self._lock:
+            try:
+                with open(script_callback.script_path, "rb") as f:
+                    self.scripts = pickle.load(f)
+            except Exception, e:
+                INFO("empty script list.")
+        return self.scripts
+
+    def save_scripts(self):
+        with self._lock:
+            try:
+                with open(script_callback.script_path, "wb") as f:
+                    pickle.dump(self.scripts, f, True)
+            except Exception, e:
+                ERROR(e)
+                ERROR("invaild save script path:%s", self.script_path)
+
+    def script_by_name(self, name):
+        if name in self.scripts:
+            return self.scripts[name]
+        return None
+
+    def add_script(self, name, content):
+        if name is None or len(name) == 0:
+            ERROR("empty script name.")
+            return False
+        if content is None or len(content) == 0:
+            ERROR("empty ecript content.")
+            return False
+        self.scripts[name] = content
+        return True
+
+    def remove_script_by_name(self, name):
+        if name in self.scripts:
+            del self.scripts[name]
+            self.save_scripts()
+            return True
+        return False
+
+    def run_script(self, name):
+        script = self.script_by_name(name)
+        if script is None or len(script) == 0:
+            ERROR("empty script content or invaild script name.")
+            return
+        else:
+            self._home.parse_cmd(script)
+
     def callback(self, cmd, action, msg, pre_value):
-        if pre_value == "new":
-            pass
-        elif pre_value == "remove":
-            pass
+        if pre_value == "show":
+            info = ""
+            self.load_scripts()
+            for script_name in self.scripts:
+                info += u"名称: " + script_name  \
+                        + u"\n    内容: " + self.scripts[script_name]  \
+                        + "\n"
+            if len(info) == 0:
+                info = u"当前无脚本"
+            else:
+                info = info[:-1]
+            self._home.publish_info(cmd, info)
+        else:
+            if msg is None or len(msg) == 0:
+                self._home.publish_info(cmd, u"缺少脚本名称")
+                return False
+            script_name = msg
+            if pre_value == "new":
+                cancel_flag = u"取消"
+                finish_flag = u"完成"
+                self._home.publish_info(cmd
+                        , u"脚本名称: " + script_name  \
+                        + u"\n请输入脚本内容, 输入\"" + cancel_flag  \
+                        + u"\"或\"" + finish_flag + u"\"结束..."
+                        , cmd_type="input")
+                userinput = UserInput(self._home).waitForInput(
+                                                            finish=finish_flag,
+                                                            cancel=cancel_flag)
+                if userinput is None  \
+                        or not self.add_script(script_name, userinput):
+                    self._home.publish_info(cmd, u"新建脚本失败")
+                else:
+                    self._home.publish_info(cmd, u"成功新建脚本")
+                    self.save_scripts()
+            elif pre_value == "remove":
+                if self.remove_script_by_name(script_name):
+                    INFO("remove script: " + script_name)
+                    self._home.publish_info(cmd, u"删除脚本:" + script_name)
+            elif pre_value == "run":
+                self._home.publish_info(cmd, u"执行脚本:" + script_name)
+                self.run_script(script_name)
         return True
 
 

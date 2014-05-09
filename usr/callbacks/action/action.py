@@ -8,7 +8,7 @@ import os
 import time
 from datetime import datetime
 import threading
-from lib.command.Command import Comfirmation
+from lib.command.Command import Confirmation
 from lib.sound import Sound
 from util.Res import Res
 from util.Util import parse_time, cn2dig
@@ -122,7 +122,7 @@ class remove_callback(Callback.Callback):
         
         self._speaker.speak(u'确认' + cmd + u'?')
         self._home.publish_info(cmd, u'确认' + cmd + u'?', cmd_type='confirm')
-        cfm = Comfirmation(self._home)
+        cfm = Confirmation(self._home)
         is_cfm = cfm.confirm(ok=u'确认', cancel=u'取消')
         if is_cfm:
             return True, "remove"
@@ -228,7 +228,7 @@ class invoke_callback(Callback.Callback):
             else:
                 return True, False
         else:
-            return True, "invoke"
+            return True, "run"
 
 
 class break_callback(Callback.Callback):

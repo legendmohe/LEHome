@@ -6,7 +6,7 @@ import inspect
 from util.log import *
 
 
-class Callback:
+class Callback(object):
     def __init__(self):
         if not callable(getattr(self, "callback", None)):
             ERROR("callback method not found.")

@@ -423,7 +423,7 @@ class Command:
         self.DEBUG = debug
 
 
-class Comfirmation:
+class Confirmation:
     def __init__(self, home):
         self._home = home
 
@@ -472,17 +472,17 @@ class UserInput:
     def __init__(self, home):
         self._home = home
 
-    def waitForInput(self):
+    def waitForInput(self, finish="finish", cancel="cancel"):
         INFO("begin UserInput.")
 
-        queue = Queue(1)
+        queue = Queue()
 
         # 替换callback
         def callback(self, result):
             if not self._resume:
                 INFO("user input: " + result)
                 try:
-                    queue.put(result, timeout=2)
+                    queue.put(result)
                 except Empty:
                     pass
 
@@ -490,10 +490,17 @@ class UserInput:
         self._home.parse_cmd = MethodType(callback, self._home)
 
         userinput = ""
-        for idx in range(5):
+        while True:
             try:
-                userinput = queue.get(timeout=4)
+                content = queue.get()
                 queue.task_done()
+                if content.endswith(finish):
+                    break
+                elif content.endswith(cancel):
+                    userinput = None
+                    break
+                else:
+                    userinput += content
             except Empty:
                 pass
 

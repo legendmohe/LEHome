@@ -357,7 +357,7 @@ class Text2Speech:
 
     def __speakSpeechFromText(self, phrase):
         googleSpeechURL = self.__getGoogleSpeechURL(phrase)
-        INFO("text2speech retrive from: " + googleSpeechURL)
+        INFO("text2speech retrived.")
         Sound.play(googleSpeechURL, inqueue=True)
         # subprocess.call(["mpg123", "-q", googleSpeechURL])
 
@@ -377,7 +377,6 @@ class Text2Speech:
         INFO("speaker stop.")
 
     def speak(self, phrase, inqueue=False):
-        print phrase
         if not self.__keep_speaking:
             WARN("__keep_speaking is False.")
             return
