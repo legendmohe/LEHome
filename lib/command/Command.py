@@ -223,6 +223,8 @@ class Command:
                         if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
                             pass_value = return_value[1]
+                        elif return_value is None:
+                            is_continue = True
                         else:
                             is_continue = return_value
                         if thread.stopped():
@@ -243,6 +245,8 @@ class Command:
                         if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
                             pass_value = return_value[1]
+                        elif return_value is None:
+                            is_continue = True
                         else:
                             is_continue = return_value
                         if thread.stopped():
@@ -266,6 +270,8 @@ class Command:
                         if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
                             pass_value = return_value[1]
+                        elif return_value is None:
+                            is_continue = True
                         else:
                             is_continue = return_value
                         if thread.stopped():
@@ -289,6 +295,8 @@ class Command:
                         if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
                             pass_value = return_value[1]
+                        elif return_value is None:
+                            is_continue = True
                         else:
                             is_continue = return_value
                         if thread.stopped():
@@ -312,6 +320,8 @@ class Command:
                         if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
                             pass_value = return_value[1]
+                        elif return_value is None:
+                            is_continue = True
                         else:
                             is_continue = return_value
                         if thread.stopped():
@@ -334,6 +344,8 @@ class Command:
                         if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
                             pass_value = return_value[1]
+                        elif return_value is None:
+                            is_continue = True
                         else:
                             is_continue = return_value
                         if thread.stopped():
@@ -355,6 +367,8 @@ class Command:
                         if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
                             pass_value = return_value[1]
+                        elif return_value is None:
+                            is_continue = True
                         else:
                             is_continue = return_value
                         if thread.stopped():
@@ -377,6 +391,8 @@ class Command:
                         if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
                             pass_value = return_value[1]
+                        elif return_value is None:
+                            is_continue = True
                         else:
                             is_continue = return_value
                         if thread.stopped():

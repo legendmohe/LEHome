@@ -184,7 +184,13 @@ class remind_callback(Callback.Callback):
 
 class todo_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
-        pass
+        if pre_value == "show":
+            pass
+        elif pre_value == "add":
+            pass
+        elif pre_value == "remove":
+            pass
+        return True
 
 
 class task_callback(Callback.Callback):
@@ -363,3 +369,10 @@ class lamp_callback(Callback.Callback):
             return True, state
         else:
             return False
+
+
+class speech_callback(Callback.Callback):
+    def callback(self, cmd, action, target, msg, pre_value):
+        if pre_value == "play":
+            pass
+        return True

@@ -449,17 +449,25 @@ class CommandParser:
             return self._token_buf.pop(0), "others"
 
         return None, None
-                
-    def put_into_parse_stream(self, stream_term):
 
+    def put_into_parse_stream(self, stream_term):
         # if self.DEBUG :
         #     DEBUG("parse: %s" %(stream_term)
-
+        in_escape = False
         for item in list(stream_term):
-            if item == " " or item in self._stopwords:
+            if item == u"[":
+                in_escape = True
                 continue
-            _token, _token_type = self._parse_token(item)
-            if _token == None:
+            elif item == u"]":
+                in_escape = False
+                continue
+            elif item == " " or item in self._stopwords:
+                continue
+            if in_escape:
+                _token, _token_type = (item, "others")
+            else:
+                _token, _token_type = self._parse_token(item)
+            if _token is None:
                 #DEBUG("continue"
                 continue
             if _token_type == "whiles":
