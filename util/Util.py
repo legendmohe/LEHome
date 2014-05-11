@@ -69,6 +69,12 @@ def parse_time(msg):
     else:
         return None
 
+
+def empty_str(src):
+    if src is None or len(src) == 0:
+        return True
+    return False
+
 if __name__ == "__main__":
     print parse_time(u"7:30")
     print parse_time(u"两点30分")

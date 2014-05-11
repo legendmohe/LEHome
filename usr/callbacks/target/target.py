@@ -64,7 +64,7 @@ class weather_report_callback(Callback.Callback):
             content += u'后天天气：' + ',' + we['temp3'] + ',' + we['weather3'] + '.\n'
         content += u'穿衣指数：' + we['index_d'] + '\n'
 
-        self._speaker.speak(content.split('\n'), inqueue=True)
+        self._speaker.speak(content.split('\n'))
 
         return True, True
 
@@ -107,7 +107,7 @@ class douban_callback(Callback.Callback):
             httpConnection = httplib.HTTPConnection('douban.fm')
             httpConnection.request('GET', '/j/mine/playlist?type=n&channel=' + music_id)
             song = json.loads(httpConnection.getresponse().read())['song']
-            play(song[0]['url'])
+            play(song[0]['url'], inqueue=False)
         return True, "pass"
 
 class message_callback(Callback.Callback):
@@ -118,25 +118,24 @@ class message_callback(Callback.Callback):
             msg=None, 
             pre_value=None):
         if pre_value == "new":
-            if isinstance(pre_value, types.FunctionType):
-                path = "usr/message/"
-                try:
-                    os.makedirs(path)
-                except OSError as exc:
-                    if exc.errno == errno.EEXIST and os.path.isdir(path):
-                        pass
-                    else:
-                        ERROR(exc)
-                        return True, "pass"
+            path = "usr/message/"
+            try:
+                os.makedirs(path)
+            except OSError as exc:
+                if exc.errno == errno.EEXIST and os.path.isdir(path):
+                    pass
+                else:
+                    ERROR(exc)
+                    return False
 
-                self._home.setResume(True)
-                filepath = path + datetime.now().strftime("%m-%d_%H:%M") + ".mp3"
-                record = pre_value
-                record(filepath)
-                Sound.play(
-                            Res.get_res_path("sound/com_stop")
-                            )
-                self._home.setResume(False)
+            self._home.setResume(True)
+            filepath = path + datetime.now().strftime("%m-%d_%H:%M") + ".mp3"
+            record = self._context["recorder"]
+            record(filepath)
+            Sound.play(
+                        Res.get_res_path("sound/com_stop")
+                        )
+            self._home.setResume(False)
         elif pre_value == "play":
             self._home.setResume(True)
 
@@ -161,7 +160,36 @@ class message_callback(Callback.Callback):
         return True, "pass"
 
 
-class remind_callback(Callback.Callback):
+class record_callback(Callback.Callback):
+    def callback(self,
+            action=None,
+            target=None,
+            msg=None, 
+            pre_value=None):
+        
+        if pre_value == "new":
+            path = "usr/memo/"
+            try:
+                os.makedirs(path)
+            except OSError as exc:
+                if exc.errno == errno.EEXIST and os.path.isdir(path):
+                    pass
+                else:
+                    ERROR(exc)
+                    return False
+
+            self._home.setResume(True)
+            filepath = path + datetime.now().strftime("%m-%d_%H:%M") + ".mp3"
+            record = self._context["recorder"]
+            record(filepath)
+            Sound.play(
+                        Res.get_res_path("sound/com_stop")
+                        )
+            self._home.setResume(False)
+        return True
+
+
+class bell_callback(Callback.Callback):
     def callback(self,
             action=None,
             target=None,
@@ -183,19 +211,101 @@ class remind_callback(Callback.Callback):
 
 
 class todo_callback(Callback.Callback):
+
+    todo_path = "todo.pcl"
+
+    def __init__(self):
+        super(todo_callback, self).__init__()
+        self._lock = threading.Lock()
+        self.load_todos()
+
+    def load_todos(self):
+        self.todos = []
+        with self._lock:
+            try:
+                with open(todo_callback.todo_path, "rb") as f:
+                    self.todos = pickle.load(f)
+            except:
+                INFO("empty todo list.")
+        return self.todos
+
+    def save_todos(self):
+        with self._lock:
+            try:
+                with open(todo_callback.todo_path, "wb") as f:
+                    pickle.dump(self.todos, f, True)
+            except Exception, e:
+                ERROR(e)
+                ERROR("invaild save todo path:%s", self.todo_path)
+
+    def todo_at_index(self, index):
+        if index < 0 or index >= len(self.todos):
+            ERROR("invaild todo index.")
+            return NULL
+        else:
+            return self.todos[index]
+
+    def add_todo(self, content):
+        if content is None or len(content) == 0:
+            ERROR("empty ecript content.")
+            return False
+        self.todos.append(content)
+        return True
+
+    def remove_todo_at_index(self, index):
+        if index < 0 or index >= len(self.todos):
+            ERROR("invaild todo index.")
+            return False
+        else:
+            self.todos.remove(index)
+            return True
+
     def callback(self, cmd, action, target, msg, pre_value):
         if pre_value == "show":
+            info = ""
+            self.load_todos()
+            for index, todo in enumerate(self.todos):
+                info += u"序号: " + index  \
+                        + u"\n    内容: " + self.todos[index]  \
+                        + "\n"
+            if len(info) == 0:
+                info = u"当前无" + target
+            else:
+                info = info[:-1]
+            self._home.publish_info(cmd, info)
             pass
-        elif pre_value == "add":
-            pass
+        elif pre_value == "new":
+            msg = msg.replace("[\[\]]", "")
+            if Util.empty_str(msg):
+                cancel_flag = u"取消"
+                finish_flag = u"完成"
+                self._home.publish_info(cmd
+                        , u"请输入内容, 输入\"" + cancel_flag  \
+                        + u"\"或\"" + finish_flag + u"\"结束..."
+                        , cmd_type="input")
+                msg = UserInput(self._home).waitForInput(
+                                                            finish=finish_flag,
+                                                            cancel=cancel_flag)
+            if msg is None  \
+                    or not self.add_todo(msg):
+                self._home.publish_info(cmd, u"新建失败")
+            else:
+                self._home.publish_info(cmd, u"新建成功")
+                self.save_todos()
         elif pre_value == "remove":
-            pass
+            msg = cn2dig(msg)
+            if not msg is None and self.remove_todo_at_index(msg):
+                INFO("remove todo: " + msg)
+                self._home.publish_info(cmd
+                        , u"删除" + target + ": " + script_name)
+            else:
+                self._home.publish_info(cmd, u"删除失败")
         return True
 
 
 class task_callback(Callback.Callback):
     def callback(self, cmd, action, msg, pre_value):
-        if pre_value == "show" and msg == u"列表":
+        if pre_value == "show":
             threads = self._home._cmd.threads
             info = u""
             if len(threads) <= 1: #  当前任务不计入
@@ -240,7 +350,7 @@ class script_callback(Callback.Callback):
             try:
                 with open(script_callback.script_path, "rb") as f:
                     self.scripts = pickle.load(f)
-            except Exception, e:
+            except:
                 INFO("empty script list.")
         return self.scripts
 
@@ -292,10 +402,11 @@ class script_callback(Callback.Callback):
                         + u"\n    内容: " + self.scripts[script_name]  \
                         + "\n"
             if len(info) == 0:
-                info = u"当前无脚本"
+                info = u"当前无" + target
             else:
                 info = info[:-1]
             self._home.publish_info(cmd, info)
+            INFO(info)
         else:
             if msg is None or len(msg) == 0:
                 self._home.publish_info(cmd, u"缺少脚本名称")
@@ -353,9 +464,9 @@ class lamp_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
         ip = self._home._switch.ip_for_name(target)
         if pre_value == "on":
-            return True, True
+            return True
         elif pre_value == "off":
-            return True, True
+            return True
         elif pre_value == "show" and msg == u"状态":
             state = self._home._switch.show_state(ip)
             if state is None:
@@ -374,5 +485,23 @@ class lamp_callback(Callback.Callback):
 class speech_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
         if pre_value == "play":
-            pass
+            msg = msg.replace("[\[\]]", "")
+            if Util.empty_str(msg):
+                cancel_flag = u"取消"
+                finish_flag = u"完成"
+                self._home.publish_info(cmd
+                        , u"请输入内容, 输入\"" + cancel_flag  \
+                        + u"\"或\"" + finish_flag + u"\"结束..."
+                        , cmd_type="input")
+                userinput = UserInput(self._home).waitForInput(
+                                                            finish=finish_flag,
+                                                            cancel=cancel_flag)
+                if userinput is None:
+                    WARN("speech content is None.")
+                    self._home.publish_info(cmd, u"语音内容为空")
+                    return True
+                else:
+                    self._speaker.speak(userinput)
+            else:
+                self._speaker.speak(msg)
         return True

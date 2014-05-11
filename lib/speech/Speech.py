@@ -355,10 +355,10 @@ class Text2Speech:
             except Exception, ex:
                 ERROR(ex)
 
-    def __speakSpeechFromText(self, phrase):
+    def __speakSpeechFromText(self, phrase, inqueue=True):
         googleSpeechURL = self.__getGoogleSpeechURL(phrase)
         INFO("text2speech retrived.")
-        Sound.play(googleSpeechURL, inqueue=True)
+        Sound.play(googleSpeechURL, inqueue)
         # subprocess.call(["mpg123", "-q", googleSpeechURL])
 
     def start(self):
@@ -376,7 +376,7 @@ class Text2Speech:
         self.__speak_thread.join()
         INFO("speaker stop.")
 
-    def speak(self, phrase, inqueue=False):
+    def speak(self, phrase, inqueue=True):
         if not self.__keep_speaking:
             WARN("__keep_speaking is False.")
             return
@@ -386,7 +386,7 @@ class Text2Speech:
                     if inqueue is True:
                         self.__speak_queue.put(item)
                     else:
-                        self.__speakSpeechFromText(item)
+                        self.__speakSpeechFromText(item, inqueue=False)
                 else:
                     ERROR("phrase must be unicode")
         else:
@@ -394,7 +394,7 @@ class Text2Speech:
                 if inqueue is True:
                     self.__speak_queue.put(phrase)
                 else:
-                    self.__speakSpeechFromText(phrase)
+                    self.__speakSpeechFromText(phrase, inqueue=False)
             else:
                 ERROR("phrase must be unicode")
 

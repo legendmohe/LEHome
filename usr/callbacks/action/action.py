@@ -27,52 +27,62 @@ class switch_on_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg):
         if target is None or len(target) == 0:
             WARN("no switch on target.")
-            return False, False
+            return True, False
         ip = self._home._switch.ip_for_name(target)
         if ip is None:
             WARN("invaild switch on target:" + target)
             self._home.publish_info(cmd, target + u"不存在")
-            return False, False
+            return True, False
         state = self._home._switch.show_state(ip)
         if state is None:
             self._home.publish_info(cmd, u"内部错误")
+            return True, False
         elif state == "close":
             res = self._home._switch.send_open(ip)
             if res is None:
                 self._home.publish_info(cmd, u"打开" + target + u"失败")
+                return True, False
             elif res == "open":
                 self._home.publish_info(cmd, u"已打开" + target)
+                return True, "on"
             else:
                 self._home.publish_info(cmd, u"打开" + target + u"失败")
+                return True, False
         elif state == "open":
             self._home.publish_info(cmd, u"已打开" + target)
-        return True, "on"
+            return True, "on"
+        return True, False
 
 
 class switch_off_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg):
         if target is None or len(target) == 0:
             WARN("no switch off target.")
-            return False, False
+            return True, False
         ip = self._home._switch.ip_for_name(target)
         if ip is None:
             WARN("invaild switch off target:" + target)
             self._home.publish_info(cmd, target + u"不存在")
-            return False, False
+            return True, False
         state = self._home._switch.show_state(ip)
         if state is None:
             self._home.publish_info(cmd, u"内部错误")
+            return True, False
         elif state == "open":
             res = self._home._switch.send_close(ip)
             if res is None:
                 self._home.publish_info(cmd, u"关闭" + target + u"失败")
+                return True, False
             elif res == "close":
                 self._home.publish_info(cmd, u"已关闭" + target)
+                return True, "off"
             else:
                 self._home.publish_info(cmd, u"关闭" + target + u"失败")
+                return True, False
         elif state == "close":
             self._home.publish_info(cmd, u"已关闭" + target)
-        return True, "off"
+            return True, "off"
+        return True, False
 
 
 class stop_play_callback(Callback.Callback):
@@ -237,40 +247,6 @@ class show_callback(Callback.Callback):
         return True, "show"
 
 
-class memo_callback(Callback.Callback):
-    def callback(self,
-            action=None,
-            target=None,
-            msg=None, 
-            pre_value=None):
-        
-        if action == u"录音" and target == None:
-            try:
-                path = "usr/memo/"
-                try:
-                    os.makedirs(path)
-                except OSError as exc:
-                    if exc.errno == errno.EEXIST and os.path.isdir(path):
-                        pass
-                    else:
-                        ERROR(exc)
-                        return True, "pass"
-
-                self._home.setResume(True)
-                filepath = path + datetime.now().strftime("%y-%m-%d_%H:%M:%S") + ".mp3"
-                subprocess.call([
-                        "rec", path,
-                        "rate", "16k",
-                        "silence", "1", "0.1", "3%", "1", "5.0", "3%"])
-                Sound.play(
-                            Res.get_res_path("sound/com_stop")
-                            )
-                self._home.setResume(False)
-            except Exception, ex:
-                ERROR(ex)
-        return True, pre_value
-
-
 class set_callback(Callback.Callback):
     def callback(self,
             action=None,
@@ -280,36 +256,35 @@ class set_callback(Callback.Callback):
         return True, "set"
 
 
-class add_callback(Callback.Callback):
+class new_callback(Callback.Callback):
     def callback(self, cmd, target, pre_value):
-        if target == u"录音":
+        if not "recorder" in self._context:
             def record(path=None):
                 if not path:
                     return
                 INFO("record : " + path)
 
-                if "recorder" in self._context:
-                    recorder = self._context["recorder"]
-                    if not recorder.poll():
-                        recorder.kill()
+                if "record_process" in self._context:
+                    record_process = self._context["record_process"]
+                    if not record_process.poll():
+                        record_process.kill()
 
-                import subprocess
                 try:
-                    recorder = subprocess.Popen([
+                    record_process = subprocess.Popen([
                             "sudo",
                             "rec", path,
                             "rate", "16k",
                             "silence", "1", "0.1", "3%", "1", "3.0", "3%"])
-                    self._context["recorder"] = recorder
-                    recorder.wait()
-                    if not recorder.poll():
-                        recorder.kill()
+                    self._context["record_process"] = record_process
+                    record_process.wait()
+                    if not record_process.poll():
+                        record_process.kill()
                 except Exception, ex:
                     ERROR(ex)
-                del self._context["recorder"]
-            return True, record
-        else:
-            return True, "new"
+                del self._context["record_process"]
+
+            self._context["recorder"] = record
+        return True, "new"
 
 
 class logical_value_callback(Callback.Callback):
