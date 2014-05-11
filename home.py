@@ -41,6 +41,8 @@ class Home:
         self._resume = False
         self._cmd.init_tasklist()  # load unfinished task
 
+        self.publish_msg("init", u"服务器启动")
+
     def _init_command(self):
         INFO('initlizing command...')
         
