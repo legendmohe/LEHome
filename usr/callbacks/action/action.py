@@ -31,25 +31,25 @@ class switch_on_callback(Callback.Callback):
         ip = self._home._switch.ip_for_name(target)
         if ip is None:
             WARN("invaild switch on target:" + target)
-            self._home.publish_info(cmd, target + u"不存在")
+            self._home.publish_msg(cmd, target + u"不存在")
             return True, False
         state = self._home._switch.show_state(ip)
         if state is None:
-            self._home.publish_info(cmd, u"内部错误")
+            self._home.publish_msg(cmd, u"内部错误")
             return True, False
         elif state == "close":
             res = self._home._switch.send_open(ip)
             if res is None:
-                self._home.publish_info(cmd, u"打开" + target + u"失败")
+                self._home.publish_msg(cmd, u"打开" + target + u"失败")
                 return True, False
             elif res == "open":
-                self._home.publish_info(cmd, u"已打开" + target)
+                self._home.publish_msg(cmd, u"已打开" + target)
                 return True, "on"
             else:
-                self._home.publish_info(cmd, u"打开" + target + u"失败")
+                self._home.publish_msg(cmd, u"打开" + target + u"失败")
                 return True, False
         elif state == "open":
-            self._home.publish_info(cmd, u"已打开" + target)
+            self._home.publish_msg(cmd, u"已打开" + target)
             return True, "on"
         return True, False
 
@@ -62,25 +62,25 @@ class switch_off_callback(Callback.Callback):
         ip = self._home._switch.ip_for_name(target)
         if ip is None:
             WARN("invaild switch off target:" + target)
-            self._home.publish_info(cmd, target + u"不存在")
+            self._home.publish_msg(cmd, target + u"不存在")
             return True, False
         state = self._home._switch.show_state(ip)
         if state is None:
-            self._home.publish_info(cmd, u"内部错误")
+            self._home.publish_msg(cmd, u"内部错误")
             return True, False
         elif state == "open":
             res = self._home._switch.send_close(ip)
             if res is None:
-                self._home.publish_info(cmd, u"关闭" + target + u"失败")
+                self._home.publish_msg(cmd, u"关闭" + target + u"失败")
                 return True, False
             elif res == "close":
-                self._home.publish_info(cmd, u"已关闭" + target)
+                self._home.publish_msg(cmd, u"已关闭" + target)
                 return True, "off"
             else:
-                self._home.publish_info(cmd, u"关闭" + target + u"失败")
+                self._home.publish_msg(cmd, u"关闭" + target + u"失败")
                 return True, False
         elif state == "close":
-            self._home.publish_info(cmd, u"已关闭" + target)
+            self._home.publish_msg(cmd, u"已关闭" + target)
             return True, "off"
         return True, False
 
@@ -127,7 +127,7 @@ class remove_callback(Callback.Callback):
             pre_value=None):
         
         self._speaker.speak(u'确认' + cmd + u'?')
-        self._home.publish_info(cmd, u'确认' + cmd + u'?', cmd_type='confirm')
+        self._home.publish_msg(cmd, u'确认' + cmd + u'?', cmd_type='confirm')
         cfm = Confirmation(self._home)
         is_cfm = cfm.confirm(ok=u'确认', cancel=u'取消')
         if is_cfm:
@@ -148,11 +148,7 @@ class cal_callback(Callback.Callback):
 
 threadlocal = threading.local()
 class every_callback(Callback.Callback):
-    def callback(self,
-            action=None,
-            target=None,
-            msg=None,  # 每天 每*小时 每*分钟 每天*点*分
-            pre_value=None):
+    def callback(self, cmd, action, target, msg, pre_value):
         if pre_value != "while" or msg is None:       
             WARN("every callback must in a 'while'")
             return False, pre_value
@@ -189,15 +185,18 @@ class every_callback(Callback.Callback):
             if cur_hour <= target_hour and cur_min <= target_min:
                 t = (target_hour - cur_hour)*60*60 + (target_min - cur_min)*60
                 INFO("thread wait for %d sec" % (t, ))
+                self._home.publish_msg(cmd, u"循环触发:" + cmd)
                 threading.current_thread().waitUtil(t)
             else:
                 t = 24*60*60 - ((cur_hour - target_hour)*60*60 + (cur_min - target_min)*60)
                 INFO("thread wait for %d sec" % (t, ))
+                self._home.publish_msg(cmd, u"循环触发:" + cmd)
                 threading.current_thread().waitUtil(t)
             t = 24*60*60
 
         if threadlocal.first_every_invoke is False:
             INFO("thread wait for %d sec" % (t, ))
+            self._home.publish_msg(cmd, u"循环触发:" + cmd)
             threading.current_thread().waitUtil(t)
             if threading.current_thread().stopped():
                 return False, False

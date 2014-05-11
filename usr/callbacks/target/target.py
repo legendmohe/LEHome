@@ -5,16 +5,14 @@ import urllib2
 import json
 import pickle
 import glob
-import types
 import httplib
 import os
 import threading
 import errno
 from datetime import datetime
-from subprocess import PIPE, Popen
 from lib.command.Command import UserInput
 from util.Res import Res
-from util.Util import parse_time, cn2dig
+from util import Util
 from lib.sound import Sound
 from util.log import *
 from lib.model import Callback
@@ -51,7 +49,7 @@ class weather_report_callback(Callback.Callback):
         info += u'穿衣指数: ' + we['index_d'] + "\n"
         info += u'紫外线: ' + we['index_uv']
 
-        self._home.publish_info(cmd, info)
+        self._home.publish_msg(cmd, info)
 
         content = ""
         if msg == u"明天":
@@ -199,7 +197,7 @@ class bell_callback(Callback.Callback):
             if msg is None or not msg.endswith(u"次"):
                 count = 5
             else:
-                count = int(cn2dig(msg[:-1]))
+                count = int(Util.cn2dig(msg[:-1]))
             self._home.setResume(True)
             url = Sound.get_play_request_url(
                                             Res.get_res_path("sound/com_bell")
@@ -257,7 +255,8 @@ class todo_callback(Callback.Callback):
             ERROR("invaild todo index.")
             return False
         else:
-            self.todos.remove(index)
+            del self.todos[index]
+            self.save_todos()
             return True
 
     def callback(self, cmd, action, target, msg, pre_value):
@@ -265,21 +264,18 @@ class todo_callback(Callback.Callback):
             info = ""
             self.load_todos()
             for index, todo in enumerate(self.todos):
-                info += u"序号: " + index  \
-                        + u"\n    内容: " + self.todos[index]  \
-                        + "\n"
+                info += u"序号: %d\n    内容:%s\n"  \
+                        % (index, self.todos[index])
             if len(info) == 0:
                 info = u"当前无" + target
             else:
                 info = info[:-1]
-            self._home.publish_info(cmd, info)
-            pass
+            self._home.publish_msg(cmd, info)
         elif pre_value == "new":
-            msg = msg.replace("[\[\]]", "")
             if Util.empty_str(msg):
                 cancel_flag = u"取消"
                 finish_flag = u"完成"
-                self._home.publish_info(cmd
+                self._home.publish_msg(cmd
                         , u"请输入内容, 输入\"" + cancel_flag  \
                         + u"\"或\"" + finish_flag + u"\"结束..."
                         , cmd_type="input")
@@ -288,18 +284,21 @@ class todo_callback(Callback.Callback):
                                                             cancel=cancel_flag)
             if msg is None  \
                     or not self.add_todo(msg):
-                self._home.publish_info(cmd, u"新建失败")
+                self._home.publish_msg(cmd, u"新建失败")
             else:
-                self._home.publish_info(cmd, u"新建成功")
+                self._home.publish_msg(cmd, u"新建成功")
                 self.save_todos()
         elif pre_value == "remove":
-            msg = cn2dig(msg)
-            if not msg is None and self.remove_todo_at_index(msg):
-                INFO("remove todo: " + msg)
-                self._home.publish_info(cmd
-                        , u"删除" + target + ": " + script_name)
+            index = Util.cn2dig(msg)
+            if not index is None:
+                if self.remove_todo_at_index(int(index)):
+                    INFO("remove todo: " + msg)
+                    self._home.publish_msg(cmd
+                            , u"删除" + target + ": " + msg)
+                else:
+                    self._home.publish_msg(cmd, u"删除失败")
             else:
-                self._home.publish_info(cmd, u"删除失败")
+                self._home.publish_msg(cmd, u"删除失败")
         return True
 
 
@@ -311,7 +310,7 @@ class task_callback(Callback.Callback):
             if len(threads) <= 1: #  当前任务不计入
                 info += u"当前无任务"
                 INFO(info)
-                self._home.publish_info(cmd, info)
+                self._home.publish_msg(cmd, info)
             else:
                 info += u"任务列表:"
                 for thread_index in threads:
@@ -319,9 +318,9 @@ class task_callback(Callback.Callback):
                         continue
                     info += u"\n  序号：%d 内容：%s" % (thread_index, threads[thread_index][0])
                 INFO(info)
-                self._home.publish_info(cmd, info)
+                self._home.publish_msg(cmd, info)
         elif pre_value == "break":
-            thread_index = cn2dig(msg)
+            thread_index = Util.cn2dig(msg)
             if thread_index is None or thread_index == '':
                 WARN("invaild thread index %s" % (thread_index, ))
                 return False, None
@@ -330,7 +329,7 @@ class task_callback(Callback.Callback):
             if thread_index in self._home._cmd.threads:
                 cmd, thread = self._home._cmd.threads[thread_index]
                 thread.stop()
-                self._home.publish_info(cmd, u"停止执行任务%d" % (thread_index, ))
+                self._home.publish_msg(cmd, u"停止执行任务%d" % (thread_index, ))
                 INFO("stop thread: %d with cmd: %s" % (thread_index, cmd))
         return True, True
 
@@ -405,17 +404,17 @@ class script_callback(Callback.Callback):
                 info = u"当前无" + target
             else:
                 info = info[:-1]
-            self._home.publish_info(cmd, info)
+            self._home.publish_msg(cmd, info)
             INFO(info)
         else:
             if msg is None or len(msg) == 0:
-                self._home.publish_info(cmd, u"缺少脚本名称")
+                self._home.publish_msg(cmd, u"缺少脚本名称")
                 return False
             script_name = msg
             if pre_value == "new":
                 cancel_flag = u"取消"
                 finish_flag = u"完成"
-                self._home.publish_info(cmd
+                self._home.publish_msg(cmd
                         , u"脚本名称: " + script_name  \
                         + u"\n请输入脚本内容, 输入\"" + cancel_flag  \
                         + u"\"或\"" + finish_flag + u"\"结束..."
@@ -425,16 +424,16 @@ class script_callback(Callback.Callback):
                                                             cancel=cancel_flag)
                 if userinput is None  \
                         or not self.add_script(script_name, userinput):
-                    self._home.publish_info(cmd, u"新建脚本失败")
+                    self._home.publish_msg(cmd, u"新建脚本失败")
                 else:
-                    self._home.publish_info(cmd, u"成功新建脚本")
+                    self._home.publish_msg(cmd, u"成功新建脚本")
                     self.save_scripts()
             elif pre_value == "remove":
                 if self.remove_script_by_name(script_name):
                     INFO("remove script: " + script_name)
-                    self._home.publish_info(cmd, u"删除脚本:" + script_name)
+                    self._home.publish_msg(cmd, u"删除脚本:" + script_name)
             elif pre_value == "run":
-                self._home.publish_info(cmd, u"执行脚本:" + script_name)
+                self._home.publish_msg(cmd, u"执行脚本:" + script_name)
                 self.run_script(script_name)
         return True
 
@@ -445,9 +444,9 @@ class switch_callback(Callback.Callback):
             if msg == u"列表" or msg == u"状态":
                 states = self._home._switch.list_state()
                 if states is None:
-                    self._home.publish_info(cmd, u"内部错误")
+                    self._home.publish_msg(cmd, u"内部错误")
                 elif len(states) == 0:
-                    self._home.publish_info(cmd, target + u"列表为空")
+                    self._home.publish_msg(cmd, target + u"列表为空")
                 else:
                     info = target + u"列表:"
                     for switch_ip in states:
@@ -456,7 +455,7 @@ class switch_callback(Callback.Callback):
                                 + switch_name \
                                 + u" 状态:" \
                                 + states[switch_ip]["state"]
-                    self._home.publish_info(cmd, info)
+                    self._home.publish_msg(cmd, info)
         return True
 
 
@@ -470,13 +469,13 @@ class lamp_callback(Callback.Callback):
         elif pre_value == "show" and msg == u"状态":
             state = self._home._switch.show_state(ip)
             if state is None:
-                self._home.publish_info(cmd, u"内部错误")
+                self._home.publish_msg(cmd, u"内部错误")
                 return False
             info = u"名称:" \
                    + target \
                    + u" 状态:" \
                    + state
-            self._home.publish_info(cmd, info)
+            self._home.publish_msg(cmd, info)
             return True, state
         else:
             return False
@@ -485,11 +484,10 @@ class lamp_callback(Callback.Callback):
 class speech_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
         if pre_value == "play":
-            msg = msg.replace("[\[\]]", "")
             if Util.empty_str(msg):
                 cancel_flag = u"取消"
                 finish_flag = u"完成"
-                self._home.publish_info(cmd
+                self._home.publish_msg(cmd
                         , u"请输入内容, 输入\"" + cancel_flag  \
                         + u"\"或\"" + finish_flag + u"\"结束..."
                         , cmd_type="input")
@@ -498,7 +496,7 @@ class speech_callback(Callback.Callback):
                                                             cancel=cancel_flag)
                 if userinput is None:
                     WARN("speech content is None.")
-                    self._home.publish_info(cmd, u"语音内容为空")
+                    self._home.publish_msg(cmd, u"语音内容为空")
                     return True
                 else:
                     self._speaker.speak(userinput)

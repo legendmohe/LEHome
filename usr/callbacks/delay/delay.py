@@ -26,7 +26,7 @@ class time_callback(Callback.Callback):
 class delay_callback(Callback.Callback):
     def callback(self, cmd, delay_time, action, target, msg):
         if delay_time is None:
-            self._home.publish_info(cmd, u"时间格式错误")
+            self._home.publish_msg(cmd, u"时间格式错误")
             return False, None
 
         print delay_time
@@ -49,10 +49,10 @@ class delay_callback(Callback.Callback):
         elif delay_time.endswith(u"小时"):
             t = int(cn2dig(delay_time[:-2]))*60*60
         else:
-            self._home.publish_info(cmd, u"时间格式错误")
+            self._home.publish_msg(cmd, u"时间格式错误")
             return False
         info = delay_time + u"执行"
-        self._home.publish_info(cmd, info)
+        self._home.publish_msg(cmd, info)
         INFO("thread wait for %d sec" % (t, ))
 
         threading.current_thread().waitUtil(t)

@@ -5,6 +5,9 @@
 import sys
 import importlib
 import traceback
+import threading
+import time
+import json
 import zmq
 from lib.command.Command import Command
 from lib.speech.Speech import Text2Speech
@@ -28,12 +31,12 @@ class Home:
     def __init__(self):
         self._context = {}
         self._init_res = Res.init("init.json")
-        self._init_speaker()
-        self._init_command()
         self._init_subscribable()
         self._init_publisher()
         self._init_audio_server()
         self._init_switch_server()
+        self._init_speaker()
+        self._init_command()
 
         self._resume = False
         self._cmd.init_tasklist()  # load unfinished task
@@ -112,6 +115,8 @@ class Home:
                 ERROR(e)
         _sub_sock.setsockopt(zmq.SUBSCRIBE, '')
         self._sub_sock = _sub_sock
+        #  for receiving init string too fast
+        time.sleep(0.5)
 
     def _init_publisher(self):
         context = zmq.Context()
@@ -120,6 +125,8 @@ class Home:
         INFO("bind to : %s " % (publisher))
         _pub_sock.bind(publisher)
         self._pub_sock = _pub_sock
+        #  for sending init string too fast
+        time.sleep(0.5)
 
     def _init_switch_server(self):
         switch_server_ip = self._init_res["connection"]["switch_server"]
@@ -128,18 +135,20 @@ class Home:
 
     def _cmd_begin_callback(self, command):
         INFO("command begin: %s" % (command))
-        # self.publish_info(command, u"执行: " + command)
+        # self.publish_msg(command, u"执行: " + command)
 
     def _cmd_end_callback(self, command):
         INFO("command end: %s" % (command))
-        # self.publish_info(command, "end: " + command)
+        # self.publish_msg(command, "end: " + command)
 
-    def publish_info(self, sub_id, info, cmd_type="normal"):
-        # INFO("publish %s to %s" % (info, sub_id))
-        msg = "%s|%s" % (cmd_type, info)
-        # INFO("public info:" + info)
-        self._pub_sock.send_string(msg)
-        # self._pub_sock.send_string("%s %s" % (sub_id, info))
+    def publish_msg(self, sub_id, msg, cmd_type="normal"):
+        def send_msg():
+            msg_string = json.dumps({"type": cmd_type, "msg": msg})
+            # INFO("public msg:" + msg_string)
+            self._pub_sock.send_string(msg_string)
+        t = threading.Thread(target=send_msg)
+        t.start()
+        t.join()
 
     def parse_cmd(self, cmd):
         if not self._resume:

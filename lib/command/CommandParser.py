@@ -9,6 +9,9 @@ from util.log import *
 
 class CommandParser:
 
+    ESCAPE_BEGIN = u"#"
+    ESCAPE_END = u"#"
+
     _error_occoured = False
     _message_buf = ''
     _delay_buf = ''
@@ -455,10 +458,10 @@ class CommandParser:
         #     DEBUG("parse: %s" %(stream_term)
         in_escape = False
         for item in list(stream_term):
-            if item == u"[":
+            if item == CommandParser.ESCAPE_BEGIN:
                 in_escape = True
                 continue
-            elif item == u"]":
+            elif item == CommandParser.ESCAPE_END:
                 in_escape = False
                 continue
             elif item == " " or item in self._stopwords:
