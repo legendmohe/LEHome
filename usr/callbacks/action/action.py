@@ -149,7 +149,7 @@ class cal_callback(Callback.Callback):
 threadlocal = threading.local()
 class every_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
-        if pre_value != "while" or msg is None:       
+        if pre_value != "while" or msg is None:
             WARN("every callback must in a 'while'")
             return False, pre_value
 
@@ -197,12 +197,14 @@ class every_callback(Callback.Callback):
 
 
 class invoke_callback(Callback.Callback):
-    def callback(self,
+    def callback(
+            self,
             action=None,
             target=None,
             msg=None,  # 执行*次
-            pre_value=None):
-        if pre_value == "while" and not msg is None:       
+            pre_value=None
+        ):
+        if pre_value == "while" and not msg is None:
             if not msg.endswith(u'次'):
                 INFO(u"loop not ends with 次")
                 threading.current_thread().waitUtil(0.5) # time gap

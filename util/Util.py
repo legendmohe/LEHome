@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 import re
-import datetime
+from datetime import datetime
 
 
 UTIL_CN_NUM = {
