@@ -176,19 +176,33 @@ class every_callback(Callback.Callback):
                 t = int(cn2dig(msg[:-2]))*60
         elif msg.startswith(u'天') \
                             and (msg.endswith(u'点') or msg.endswith(u'分')):
-            t_list = parse_time(msg[1:]).split(":")
+            t = 0
+            msg = msg[1:]
+            is_pm = False
+            if msg.startswith(u"上午"):
+                t = t + 0
+                msg = msg[2:]
+            elif msg.startswith(u"下午"):
+                t = t + 12*60*60
+                is_pm = True
+                msg = msg[2:]
+
+            t_list = parse_time(msg).split(":")
             target_hour = int(t_list[0])
+            if is_pm:
+                target_hour = target_hour + 12
             target_min = int(t_list[1])
             now = datetime.now()
             cur_hour = now.hour
             cur_min = now.minute
-            if cur_hour <= target_hour and cur_min <= target_min:
-                t = (target_hour - cur_hour)*60*60 + (target_min - cur_min)*60
+            if cur_hour < target_hour or \
+                    (cur_hour <= target_hour and cur_min <= target_min):
+                t = t + (target_hour - cur_hour)*60*60 + (target_min - cur_min)*60
                 INFO("thread wait for %d sec" % (t, ))
                 self._home.publish_msg(cmd, u"循环触发:" + cmd)
                 threading.current_thread().waitUtil(t)
             else:
-                t = 24*60*60 - ((cur_hour - target_hour)*60*60 + (cur_min - target_min)*60)
+                t = t + 24*60*60 - ((cur_hour - target_hour)*60*60 + (cur_min - target_min)*60)
                 INFO("thread wait for %d sec" % (t, ))
                 self._home.publish_msg(cmd, u"循环触发:" + cmd)
                 threading.current_thread().waitUtil(t)

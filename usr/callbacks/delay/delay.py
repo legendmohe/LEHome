@@ -33,13 +33,27 @@ class delay_callback(Callback.Callback):
 
         if delay_time.endswith(u'点') \
                 or delay_time.endswith(u'分'):
+            t = 0
+            delay_time = delay_time[1:]
+            is_pm = False
+            if delay_time.startswith(u"上午"):
+                t = t + 0
+                delay_time = delay_time[2:]
+            elif delay_time.startswith(u"下午"):
+                t = t + 12*60*60
+                is_pm = True
+                delay_time = delay_time[2:]
+
             t_list = parse_time(delay_time).split(":")
             target_hour = int(t_list[0])
+            if is_pm:
+                target_hour = target_hour + 12
             target_min = int(t_list[1])
             now = datetime.now()
             cur_hour = now.hour
             cur_min = now.minute
-            if cur_hour <= target_hour and cur_min <= target_min:
+            if cur_hour < target_hour or \
+                    (cur_hour <= target_hour and cur_min <= target_min):
                 t = (target_hour - cur_hour)*60*60 + (target_min - cur_min)*60
             else:
                 t = 24*60*60  \

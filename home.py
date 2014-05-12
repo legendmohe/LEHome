@@ -150,7 +150,6 @@ class Home:
             self._pub_sock.send_string(msg_string)
         t = threading.Thread(target=send_msg)
         t.start()
-        t.join()
 
     def parse_cmd(self, cmd):
         if not self._resume:
