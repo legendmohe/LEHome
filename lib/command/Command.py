@@ -511,6 +511,7 @@ class UserInput:
                 content = queue.get()
                 queue.task_done()
                 if content.endswith(finish):
+                    userinput += content[:-len(finish)]
                     break
                 elif content.endswith(cancel):
                     userinput = None

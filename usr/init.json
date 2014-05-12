@@ -14,8 +14,8 @@
         "trigger" : ["hello", "您好", "你好"],
         "action" : ["打开", "关闭", "播放", "停止播放", 
                     "删除", "设置", "每", "执行", "运行", "停止",
-                    "结束", "显示", "查看", "新增", "逻辑", "数值", "字符",
-                    "当前"],
+                    "结束", "显示", "查看", "新增", "新建", "逻辑",
+                    "数值", "字符", "当前", "翻译"],
         "target" : ["豆瓣电台", "留言", "提醒", "闹铃", "任务", "待办事项",
                     "脚本", "开关", "台灯", "天气", "录音", "语音"],
         "stop" : ["算了", "取消"],
@@ -50,13 +50,15 @@
             "播放":"action.play_callback",
             "停止播放":"action.stop_play_callback",
             "新增":"action.new_callback",
+            "新建":"action.new_callback",
             "删除":"action.remove_callback",
             "设置":"action.set_callback",
             "停止":"action.break_callback",
             "结束":"action.break_callback",
             "显示":"action.show_callback",
             "查看":"action.show_callback",
-            "当前":"action.show_callback"
+            "当前":"action.show_callback",
+            "翻译":"action.translate_callback"
         },
         "target":{
             "提醒":"target.bell_callback",

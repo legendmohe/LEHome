@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # encoding: utf-8
 import subprocess
-import os
-from datetime import datetime
+import urllib2
+import urllib
 import threading
+import json
 from lib.command.Command import Confirmation
 from lib.sound import Sound
-from util.Res import Res
-from util.Util import parse_time, cn2dig, gap_for_timestring
+from lib.command.Command import UserInput
+from util import Util
 from util.log import *
 from lib.model import Callback
 
@@ -21,6 +22,36 @@ class action_callback(Callback.Callback):
             pre_value=None):
         INFO("* action callback: %s, target: %s, message: %s pre_value: %s" %(action, target, msg, pre_value))
         return True, "pass"
+
+
+class logical_value_callback(Callback.Callback):
+    def callback(self, msg):
+        if msg == u"真":
+            return True, True
+        elif msg == u"假":
+            return True, False
+        else:
+            ERROR("logical_value_callback msg is invaild:" + msg)
+            return False
+
+
+class num_value_callback(Callback.Callback):
+    def callback(self, msg):
+        num = Util.cn2dig(msg)
+        if num is None:
+            ERROR("num_value_callback num is invaild:" + msg)
+            return False
+        else:
+            return True, num
+
+
+class str_value_callback(Callback.Callback):
+    def callback(self, msg):
+        if msg is None:
+            ERROR("str_value_callback msg is None.")
+            return False
+        else:
+            return True, msg
 
 
 class switch_on_callback(Callback.Callback):
@@ -164,20 +195,20 @@ class every_callback(Callback.Callback):
             if msg.startswith(u"天"):
                 t = 24*60*60
             else:
-                t = int(cn2dig(msg[:-1]))*24*60*60
+                t = int(Util.cn2dig(msg[:-1]))*24*60*60
         elif msg.endswith(u"小时"):
             if msg.startswith(u"小时"):
                 t = 60*60
             else:
-                t = int(cn2dig(msg[:-2]))*60*60
+                t = int(Util.cn2dig(msg[:-2]))*60*60
         elif msg.endswith(u"分钟"):
             if msg.startswith(u"分钟"):
                 t = 60
             else:
-                t = int(cn2dig(msg[:-2]))*60
+                t = int(Util.cn2dig(msg[:-2]))*60
         elif msg.startswith(u'天') and \
              (msg.endswith(u'点') or msg.endswith(u'分')):
-            t = gap_for_timestring(msg)
+            t = Util.gap_for_timestring(msg)
             if t > 0:
                 INFO("thread wait for %d sec" % (t, ))
                 threading.current_thread().waitUtil(t)
@@ -214,7 +245,7 @@ class invoke_callback(Callback.Callback):
             if invoke_time is None:
                 threadlocal.invoke_time = 0
 
-            times = int(cn2dig(msg[:-1]))
+            times = int(Util.cn2dig(msg[:-1]))
             INFO('invoke %s for %d times, current is %d'
                     % (action, times, threadlocal.invoke_time))
             if threadlocal.invoke_time < times:
@@ -276,31 +307,43 @@ class new_callback(Callback.Callback):
         return True, "new"
 
 
-class logical_value_callback(Callback.Callback):
-    def callback(self, msg):
-        if msg == u"真":
-            return True, True
-        elif msg == u"假":
-            return True, False
-        else:
-            ERROR("logical_value_callback msg is invaild:" + msg)
-            return False
+class translate_callback(Callback.Callback):
 
+    base_url = "http://fanyi.youdao.com/openapi.do"
 
-class num_value_callback(Callback.Callback):
-    def callback(self, msg):
-        num = cn2dig(msg)
-        if num is None:
-            ERROR("num_value_callback num is invaild:" + msg)
-            return False
-        else:
-            return True, num
-
-
-class str_value_callback(Callback.Callback):
-    def callback(self, msg):
+    def callback(self, cmd, msg):
+        if Util.empty_str(msg):
+            cancel_flag = u"取消"
+            finish_flag = u"完成"
+            self._home.publish_msg(
+                cmd
+                , u"请输入内容, 输入\"%s\"或\"%s\"结束:" % (finish_flag, cancel_flag)
+                , cmd_type="input"
+            )
+            msg = UserInput(self._home).waitForInput(
+                                                    finish=finish_flag,
+                                                    cancel=cancel_flag)
         if msg is None:
-            ERROR("str_value_callback msg is None.")
-            return False
+            self._home.publish_msg(cmd, u"无翻译内容")
+        elif len(msg) > 200:
+            self._home.publish_msg(cmd, u"翻译内容过长（<200字）")
         else:
-            return True, msg
+            try:
+                values = {
+                    "keyfrom":"11111testt111", 
+                    "key":"2125866912",
+                    "type":"data",
+                    "doctype":"json",
+                    "version":"1.1",
+                    "q":msg.encode("utf-8")
+                }
+                url = translate_callback.base_url + "?" + urllib.urlencode(values)
+                res = urllib2.urlopen(url).read()
+                res = " ".join(json.loads(res)["translation"])
+                self._home.publish_msg(cmd, u"翻译结果:\n" + res)
+                print res
+            except Exception, ex:
+                ERROR("request error:", ex)
+                self._home.publish_msg(cmd, u"翻译失败")
+                return True
+        return True

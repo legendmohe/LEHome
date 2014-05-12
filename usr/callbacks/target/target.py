@@ -275,13 +275,14 @@ class todo_callback(Callback.Callback):
             if Util.empty_str(msg):
                 cancel_flag = u"取消"
                 finish_flag = u"完成"
-                self._home.publish_msg(cmd
-                        , u"请输入内容, 输入\"" + cancel_flag  \
-                        + u"\"或\"" + finish_flag + u"\"结束..."
-                        , cmd_type="input")
+                self._home.publish_msg(
+                    cmd
+                    , u"请输入内容, 输入\"%s\"或\"%s\"结束:" % (finish_flag, cancel_flag)
+                    , cmd_type="input"
+                )
                 msg = UserInput(self._home).waitForInput(
-                                                            finish=finish_flag,
-                                                            cancel=cancel_flag)
+                                                        finish=finish_flag,
+                                                        cancel=cancel_flag)
             if msg is None  \
                     or not self.add_todo(msg):
                 self._home.publish_msg(cmd, u"新建失败")
