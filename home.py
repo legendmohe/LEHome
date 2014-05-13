@@ -83,7 +83,8 @@ class Home:
                         cb_module_name = "usr.callbacks.%s.%s" % (com_name, module_name)
                         cb_module = importlib.import_module(cb_module_name)
                         cb_object = getattr(cb_module, class_name)()
-                        cb_object._context = self._context
+                        cb_object._global_context = self._global_context
+                        cb_object._class_context = {}
                         cb_object._speaker = self._spk
                         cb_object._home = self
                                    

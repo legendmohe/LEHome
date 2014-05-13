@@ -121,12 +121,12 @@ class stop_play_callback(Callback.Callback):
             msg = None, 
             pre_value = None):
         INFO("action:stop_play_callback invoke")
-        if "player" in self._context:
+        if "player" in self._global_context:
             INFO("clear audio queue.")
             Sound.clear_queue()
-            del self._context["player"]
-            if "playlist" in self._context:
-                del self._context["playlist"]
+            del self._global_context["player"]
+            if "playlist" in self._global_context:
+                del self._global_context["playlist"]
         return True, "stop_playing"
 
 
@@ -137,16 +137,16 @@ class play_callback(Callback.Callback):
             def play(path = None, inqueue=True, loop=-1):
                 if not path:
                     return
-                if not "playlist" in self._context:
-                    self._context["playlist"] = []
-                playlist = self._context["playlist"]
+                if not "playlist" in self._global_context:
+                    self._global_context["playlist"] = []
+                playlist = self._global_context["playlist"]
                 if not path in playlist:
                     playlist.append(path)
                     Sound.play(path, inqueue, loop)
                 else:
                     INFO("%s was already in audio queue." % (path, ))
-            if not "player" in self._context:
-                self._context["player"] = play
+            if not "player" in self._global_context:
+                self._global_context["player"] = play
             return True, "play"
         else:
             return True, "play"
@@ -269,14 +269,14 @@ class set_callback(Callback.Callback):
 
 class new_callback(Callback.Callback):
     def callback(self, cmd, target, pre_value):
-        if not "recorder" in self._context:
+        if not "recorder" in self._global_context:
             def record(path=None):
                 if not path:
                     return
                 INFO("record : " + path)
 
-                if "record_process" in self._context:
-                    record_process = self._context["record_process"]
+                if "record_process" in self._global_context:
+                    record_process = self._global_context["record_process"]
                     if not record_process.poll():
                         record_process.kill()
 
@@ -286,13 +286,13 @@ class new_callback(Callback.Callback):
                             "rec", path,
                             "rate", "16k",
                             "silence", "1", "0.1", "3%", "1", "3.0", "3%"])
-                    self._context["record_process"] = record_process
+                    self._global_context["record_process"] = record_process
                     record_process.wait()
                     if not record_process.poll():
                         record_process.kill()
                 except Exception, ex:
                     ERROR(ex)
-                del self._context["record_process"]
+                del self._global_context["record_process"]
 
-            self._context["recorder"] = record
+            self._global_context["recorder"] = record
         return True, "new"

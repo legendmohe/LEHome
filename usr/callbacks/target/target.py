@@ -101,7 +101,7 @@ class douban_callback(Callback.Callback):
             music_id = "9" # 轻音乐
             if msg in self.__music_table:
                 music_id = self.__music_table[msg]
-            play = self._context["player"] 
+            play = self._global_context["player"] 
             httpConnection = httplib.HTTPConnection('douban.fm')
             httpConnection.request('GET', '/j/mine/playlist?type=n&channel=' + music_id)
             song = json.loads(httpConnection.getresponse().read())['song']
@@ -143,7 +143,7 @@ class qqfm_callback(Callback.Callback):
             music_id = "9" # 轻音乐
             if msg in self.__music_table:
                 music_id = self.__music_table[msg]
-            play = self._context["player"] 
+            play = self._global_context["player"] 
             httpConnection = httplib.HTTPConnection('douban.fm')
             httpConnection.request('GET', '/j/mine/playlist?type=n&channel=' + music_id)
             song = json.loads(httpConnection.getresponse().read())['song']
@@ -171,7 +171,7 @@ class message_callback(Callback.Callback):
 
             self._home.setResume(True)
             filepath = path + datetime.now().strftime("%m-%d_%H:%M") + ".mp3"
-            record = self._context["recorder"]
+            record = self._global_context["recorder"]
             record(filepath)
             Sound.play(
                         Res.get_res_path("sound/com_stop")
@@ -180,7 +180,7 @@ class message_callback(Callback.Callback):
         elif pre_value == "play":
             self._home.setResume(True)
 
-            play = self._context["player"]
+            play = self._global_context["player"]
             for idx, filepath in enumerate(glob.glob("usr/message/*.mp3")):
                 self._speaker.speak(u'第%d条留言' % (idx + 1))
                 play(filepath)
@@ -221,7 +221,7 @@ class record_callback(Callback.Callback):
 
             self._home.setResume(True)
             filepath = path + datetime.now().strftime("%m-%d_%H:%M") + ".mp3"
-            record = self._context["recorder"]
+            record = self._global_context["recorder"]
             record(filepath)
             Sound.play(
                         Res.get_res_path("sound/com_stop")
@@ -245,7 +245,7 @@ class bell_callback(Callback.Callback):
             url = Sound.get_play_request_url(
                                             Res.get_res_path("sound/com_bell")
                                             , loop=count)
-            play = self._context["player"]
+            play = self._global_context["player"]
             play(url)
             self._home.setResume(False)
         return True
@@ -367,6 +367,7 @@ class task_callback(Callback.Callback):
             thread_index = Util.cn2dig(msg)
             if thread_index is None or thread_index == '':
                 WARN("invaild thread index %s" % (thread_index, ))
+                self._home.publish_msg(cmd, u"无此任务序号:" + thread_index)
                 return False, None
             else:
                 thread_index = int(thread_index)
