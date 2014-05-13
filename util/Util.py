@@ -3,6 +3,7 @@
 
 import re
 from datetime import datetime
+from HTMLParser import HTMLParser
 
 
 UTIL_CN_NUM = {
@@ -98,6 +99,24 @@ def gap_for_timestring(msg):
         t = t + 24*60*60 - \
                 ((cur_hour - target_hour)*60*60 + (cur_min - target_min)*60)
     return t
+
+
+class MLStripper(HTMLParser):
+    def __init__(self):
+        self.reset()
+        self.fed = []
+
+    def handle_data(self, d):
+        self.fed.append(d)
+
+    def get_data(self):
+        return ''.join(self.fed)
+
+
+def strip_tags(html):
+    s = MLStripper()
+    s.feed(html)
+    return s.get_data()
 
 
 def empty_str(src):
