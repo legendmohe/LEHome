@@ -168,15 +168,6 @@ class remove_callback(Callback.Callback):
             return False
 
 
-class cal_callback(Callback.Callback):
-    def callback(self,
-            action=None,
-            target=None,
-            msg=None, 
-            pre_value=None):
-        return True, pre_value
-
-
 threadlocal = threading.local()
 class every_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
@@ -305,5 +296,3 @@ class new_callback(Callback.Callback):
 
             self._context["recorder"] = record
         return True, "new"
-
-

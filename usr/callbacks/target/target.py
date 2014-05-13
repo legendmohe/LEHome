@@ -108,6 +108,49 @@ class douban_callback(Callback.Callback):
             play(song[0]['url'], inqueue=False)
         return True, "pass"
 
+
+class qqfm_callback(Callback.Callback):
+
+    __music_table = {
+        "华语":"1",
+        "欧美":"2",
+        "70":"3",
+        "80":"4",
+        "90":"5",
+        "粤语":"6",
+        "摇滚":"7",
+        "民谣":"8",
+        "轻音乐":"9",
+        "电影原声":"10",
+        "爵士":"13",
+        "电子":"14",
+        "说唱":"15",
+        "R&B":"16",
+        "日语":"17",
+        "韩语":"18",
+        "女声":"20",
+        "特仑苏":"21",
+        "法语":"22",
+        "豆瓣音乐人":"26",
+                }
+    
+    def callback(self,
+            action=None,
+            target = None,
+            msg = None, 
+            pre_value = None):
+        if pre_value == "play":
+            music_id = "9" # 轻音乐
+            if msg in self.__music_table:
+                music_id = self.__music_table[msg]
+            play = self._context["player"] 
+            httpConnection = httplib.HTTPConnection('douban.fm')
+            httpConnection.request('GET', '/j/mine/playlist?type=n&channel=' + music_id)
+            song = json.loads(httpConnection.getresponse().read())['song']
+            play(song[0]['url'], inqueue=False)
+        return True, "pass"
+
+
 class message_callback(Callback.Callback):
     def callback(
             self,

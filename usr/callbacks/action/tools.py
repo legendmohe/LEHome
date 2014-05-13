@@ -45,7 +45,6 @@ class translate_callback(Callback.Callback):
                 res = urllib2.urlopen(url).read()
                 res = " ".join(json.loads(res)["translation"])
                 self._home.publish_msg(cmd, u"翻译结果:\n" + res)
-                print res
             except Exception, ex:
                 ERROR("request error:", ex)
                 self._home.publish_msg(cmd, u"翻译失败")
@@ -118,3 +117,82 @@ class baidu_wiki_callback(Callback.Callback):
         else:
             self._home.publish_msg(cmd, u"无百科内容")
         return True
+
+
+class cal_callback(Callback.Callback):
+
+    _ops = {
+            u'加':'+',
+            u'减':'-',
+            u'乘':'*',
+            u'除':'/',
+            u'+':'+',
+            u'-':'-',
+            u'*':'*',
+            u'/':'/',
+            u'(':'(',
+            u'（':'(',
+            u')':')',
+            u'）':')',
+            }
+
+    def _parse_tokens(self, src):
+        tokens = []
+        cur_t = u''
+        for term in src:
+            if term in cal_callback._ops:
+                if cur_t != u'':
+                    tokens.append(cur_t)
+                    cur_t = u''
+                tokens.append(term)
+            else:
+                cur_t += term
+        if cur_t != u'':
+            tokens.append(cur_t)
+        return tokens
+
+    def _parse_expression(self, tokens):
+        expression = u''
+        for token in tokens:
+            if token in cal_callback._ops:
+                expression += cal_callback._ops[token]
+            else:
+                num = Util.cn2dig(token)
+                if num is None:
+                    return None
+                expression += str(num)
+        res = None
+        INFO("expression: " + expression)
+        try:
+            res = eval(expression)
+        except Exception, ex:
+            ERROR("cal expression error:", ex)
+        return res
+
+    def callback(self, cmd, msg):
+        if Util.empty_str(msg):
+            cancel_flag = u"取消"
+            finish_flag = u"完成"
+            self._home.publish_msg(
+                cmd
+                , u"请输入公式, 输入\"%s\"或\"%s\"结束:" % (finish_flag, cancel_flag)
+                , cmd_type="input"
+            )
+            msg = UserInput(self._home).waitForInput(
+                                                    finish=finish_flag,
+                                                    cancel=cancel_flag)
+        if msg is None:
+            self._home.publish_msg(cmd, u"无公式内容")
+        else:
+            tokens = self._parse_tokens(msg)
+            if not tokens is None:
+                res = self._parse_expression(tokens)
+                if not res is None:
+                    self._home.publish_msg(cmd, u"%s = %s" % (msg, str(res)))
+                    return True, res
+                else:
+                    self._home.publish_msg(cmd, u"计算出错")
+                    return True, None
+            else:
+                self._home.publish_msg(cmd, u"格式有误")
+        return True, None
