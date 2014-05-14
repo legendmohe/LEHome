@@ -101,6 +101,13 @@ def gap_for_timestring(msg):
     return t
 
 
+def xunicode(u):
+    if u is None:
+        return u''
+    else:
+        return u
+
+
 class MLStripper(HTMLParser):
     def __init__(self):
         self.reset()

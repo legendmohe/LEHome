@@ -111,7 +111,8 @@ class Command:
             self.threads[thread_index] = (command, threading.current_thread())
         self._local.cmd = command
         self._local.thread = threading.current_thread()
-        self._invoke_block(block)
+        block_stack = Command.BlockStack()
+        self._invoke_block(block, block_stack)
         del self._local.cmd
         del self._local.thread
         del self.threads[thread_index]
@@ -124,45 +125,53 @@ class Command:
         self._tasklist.remove(tasklist_item)
         self._save_tasklist()
 
-    def _invoke_block(self, block):
+    def _invoke_block(self, block, stack, in_loop=False):
         thread = self._local.thread  # break out for thread stopped
         pass_value = None
+        if not in_loop:
+            stack.push_context()
         for statement in block.statements:
             if thread.stopped():
+                stack.pop_context()
                 return False
 
             if isinstance(statement, Statement):
-                pass_value = self._invoke_statement(statement, pass_value)
+                pass_value = self._invoke_statement(statement, pass_value, stack)
             elif isinstance(statement, IfStatement):
-                if self._invoke_block(statement.if_block):
-                    pass_value = self._invoke_block(statement.then_block)
+                if self._invoke_block(statement.if_block, stack):
+                    pass_value = self._invoke_block(statement.then_block, stack)
                 else:
-                    pass_value = self._invoke_block(statement.else_block)
+                    pass_value = self._invoke_block(statement.else_block, stack)
             elif isinstance(statement, WhileStatement):
-                while self._invoke_block(statement.if_block):
-                    pass_value = self._invoke_block(statement.then_block)
+                while self._invoke_block(statement.if_block, stack, in_loop=True):
+                    pass_value = self._invoke_block(statement.then_block, stack)
             elif isinstance(statement, CompareOperator):
                 bValue = self._invoke_statement(
                                                 statement.statement,
-                                                pass_value
+                                                pass_value,
+                                                stack
                                                 )
                 pass_value = self._invoke_operator(
                                                     "compare",
                                                     statement.name,
                                                     pass_value,
-                                                    bValue)
+                                                    bValue,
+                                                    stack)
             elif isinstance(statement, LogicalOperator):
-                bValue = self._invoke_block(statement.block)
+                bValue = self._invoke_block(statement.block, stack)
                 pass_value = self._invoke_operator(
                                                     "logical",
                                                     statement.name,
                                                     pass_value,
-                                                    bValue)
+                                                    bValue,
+                                                    stack)
             elif isinstance(statement, Block):
-                pass_value = self._invoke_block(Block)
+                pass_value = self._invoke_block(Block, stack)
+        if not in_loop:
+            stack.pop_context()
         return pass_value
 
-    def _invoke_operator(self, otype, name, aValue, bValue):
+    def _invoke_operator(self, otype, name, aValue, bValue, stack):
         if name is None or name == "":
             ERROR("empty %s name." % (otype, ))
             return False
@@ -177,9 +186,13 @@ class Command:
             WARN("invaild %s name." % (otype, ))
             return False
         callback = op_callbacks[name]
-        return callback.internal_callback(aValue=aValue, bValue=bValue)
+        return callback.internal_callback(
+                                        aValue=aValue,
+                                        bValue=bValue,
+                                        stack=stack
+                                        )
 
-    def _invoke_statement(self, statement, pass_value):
+    def _invoke_statement(self, statement, pass_value, stack):
         coms = OrderedDict([
             ("trigger", statement.trigger),
             ("nexts", statement.nexts),
@@ -190,6 +203,7 @@ class Command:
             ("target", statement.target),
             ("finish", statement.finish)])
         coms["pass_value"] = pass_value  # for next token
+        coms["stack"] = stack  # for next token
         msg = statement.msg
         delay_time = statement.delay_time
         pass_value = self._invoke_callbacks(coms, msg, delay_time)
@@ -221,6 +235,7 @@ class Command:
                                 cmd=cmd,
                                 trigger=coms["trigger"],
                                 action=coms["action"],
+                                stack=coms["stack"],
                                 )
                         if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
@@ -234,6 +249,7 @@ class Command:
                                     cmd=cmd,
                                     trigger=coms["trigger"],
                                     action=coms["action"],
+                                    stack=coms["stack"],
                                     )
                     elif com_type == "nexts":
                         return_value = callback.internal_callback(
@@ -242,7 +258,8 @@ class Command:
                                 target=coms["target"],
                                 state=coms["nexts"],
                                 msg=msg,
-                                pre_value=coms["pass_value"]
+                                pre_value=coms["pass_value"],
+                                stack=coms["stack"],
                                 )
                         if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
@@ -258,7 +275,8 @@ class Command:
                                     target=coms["target"],
                                     state=coms["nexts"],
                                     msg=msg,
-                                    pre_value=coms["pass_value"]
+                                    pre_value=coms["pass_value"],
+                                    stack=coms["stack"],
                                     )
                     elif com_type == "whiles":
                         return_value = callback.internal_callback(
@@ -267,7 +285,8 @@ class Command:
                                 msg=msg,
                                 action=coms["action"],
                                 target=coms["target"],
-                                pre_value=pass_value
+                                pre_value=pass_value,
+                                stack=coms["stack"],
                                 )
                         if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
@@ -283,7 +302,8 @@ class Command:
                                     msg=msg,
                                     action=coms["action"],
                                     target=coms["target"],
-                                    pre_value=pass_value
+                                    pre_value=pass_value,
+                                    stack=coms["stack"],
                                     )
                     elif com_type == "if":
                         return_value = callback.internal_callback(
@@ -292,7 +312,8 @@ class Command:
                                 msg=msg,
                                 action=coms["action"],
                                 target=coms["target"],
-                                pre_value=pass_value
+                                pre_value=pass_value,
+                                stack=coms["stack"],
                                 )
                         if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
@@ -308,7 +329,8 @@ class Command:
                                     msg=msg,
                                     action=coms["action"],
                                     target=coms["target"],
-                                    pre_value=pass_value
+                                    pre_value=pass_value,
+                                    stack=coms["stack"],
                                     )
                     elif com_type == "delay":
                         return_value = callback.internal_callback(
@@ -317,7 +339,8 @@ class Command:
                                 delay_time=delay,
                                 action=coms["action"],
                                 target=coms["target"],
-                                pre_value=pass_value
+                                pre_value=pass_value,
+                                stack=coms["stack"],
                                 )
                         if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
@@ -333,7 +356,8 @@ class Command:
                                     delay_time=delay,
                                     action=coms["action"],
                                     target=coms["target"],
-                                    pre_value=pass_value
+                                    pre_value=pass_value,
+                                    stack=coms["stack"],
                                     )
                     elif com_type == "action":
                         return_value = callback.internal_callback(
@@ -341,7 +365,8 @@ class Command:
                                 action=coms["action"],
                                 target=coms["target"],
                                 msg=msg,
-                                pre_value=pass_value
+                                pre_value=pass_value,
+                                stack=coms["stack"],
                                 )
                         if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
@@ -356,7 +381,8 @@ class Command:
                                     action=coms["action"],
                                     target=coms["target"],
                                     msg=msg,
-                                    pre_value=pass_value
+                                    pre_value=pass_value,
+                                    stack=coms["stack"],
                                     )
                     elif com_type == "target":
                         return_value = callback.internal_callback(
@@ -364,7 +390,8 @@ class Command:
                                 action=coms["action"],
                                 target=coms["target"],
                                 msg=msg,
-                                pre_value=pass_value
+                                pre_value=pass_value,
+                                stack=coms["stack"],
                                 )
                         if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
@@ -379,7 +406,8 @@ class Command:
                                     action=coms["action"],
                                     target=coms["target"],
                                     msg=msg,
-                                    pre_value=pass_value
+                                    pre_value=pass_value,
+                                    stack=coms["stack"],
                                     )
                     elif com_type == "finish":
                         return_value = callback.internal_callback(
@@ -388,7 +416,8 @@ class Command:
                                 target=coms["target"],
                                 finish=coms["finish"],
                                 msg=msg,
-                                pre_value=pass_value
+                                pre_value=pass_value,
+                                stack=coms["stack"],
                                 )
                         if isinstance(return_value, tuple) and len(return_value) > 1:
                             is_continue = return_value[0]
@@ -404,7 +433,8 @@ class Command:
                                     target=coms["target"],
                                     finish=coms["finish"],
                                     msg=msg,
-                                    pre_value=pass_value
+                                    pre_value=pass_value,
+                                    stack=coms["stack"],
                                     )
 
                     if not is_continue or thread.stopped():
@@ -439,6 +469,34 @@ class Command:
     def setDEBUG(self, debug):
         self._fsm.DEBUG = debug
         self.DEBUG = debug
+
+    class BlockStack:
+        def __init__(self):
+            self._stack = []
+
+        def push_context(self):
+            self._stack.append({})
+
+        def pop_context(self):
+            if len(self._stack) > 0:
+                self._stack.pop()
+
+        def cur_layer(self):
+            return len(self._stack)
+
+        def set_var(self, var_name, value):
+            if len(self._stack) > 0:
+                self._stack[-1][var_name] = value
+            else:
+                ERROR("var_name outside block.")
+
+        def get_value(self, var_name):
+            if len(self._stack) == 0:
+                return None
+            for context in reversed(self._stack):
+                if var_name in context:
+                    return context[var_name]
+            return None
 
 
 class Confirmation:

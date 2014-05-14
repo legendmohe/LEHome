@@ -3,11 +3,9 @@
 
 
 import threading
-import time
-from datetime import datetime
 from lib.sound import Sound
 from util.Res import Res
-from util.Util import parse_time, cn2dig, gap_for_timestring
+from util import Util
 from lib.model import Callback
 from util.log import *
 
@@ -31,15 +29,19 @@ class delay_callback(Callback.Callback):
 
         if delay_time.endswith(u'点') or \
            delay_time.endswith(u'分'):
-            t = gap_for_timestring(delay_time)
+            t = Util.gap_for_timestring(delay_time)
         elif delay_time.endswith(u"分钟"):
-            t = int(cn2dig(delay_time[:-2]))*60
+            t = int(Util.cn2dig(delay_time[:-2]))*60
         elif delay_time.endswith(u"小时"):
-            t = int(cn2dig(delay_time[:-2]))*60*60
+            t = int(Util.cn2dig(delay_time[:-2]))*60*60
         else:
             self._home.publish_msg(cmd, u"时间格式错误")
             return False
-        info = delay_time + u"执行"
+        info = delay_time + u"执行: %s%s%s" % (
+                                                Util.xunicode(action),
+                                                Util.xunicode(target),
+                                                Util.xunicode(msg)
+                                                )
         self._home.publish_msg(cmd, info)
         INFO("thread wait for %d sec" % (t, ))
 

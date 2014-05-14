@@ -168,17 +168,17 @@ class remove_callback(Callback.Callback):
             return False
 
 
-threadlocal = threading.local()
 class every_callback(Callback.Callback):
-    def callback(self, cmd, action, target, msg, pre_value):
+    def callback(self, cmd, action, target, msg, pre_value, stack):
         if pre_value != "while" or msg is None:
             WARN("every callback must in a 'while'")
             return False, pre_value
 
-        first_every_invoke = getattr(threadlocal, 'first_every_invoke', None)
+        var_name = "first_every_invoke" + str(stack.cur_layer())
+        first_every_invoke = stack.get_value(var_name)
         if first_every_invoke is None:
             self._home.publish_msg(cmd, u"循环建立:" + cmd)
-            threadlocal.first_every_invoke = True
+            stack.set_var(var_name, True)
 
         INFO("every_callback invoke:%s" % (msg, ))
 
@@ -205,42 +205,37 @@ class every_callback(Callback.Callback):
                 threading.current_thread().waitUtil(t)
             t = 24*60*60
 
-        if threadlocal.first_every_invoke is False:
+        if stack.get_value(var_name) is False:
             INFO("thread wait for %d sec" % (t, ))
             threading.current_thread().waitUtil(t)
             if threading.current_thread().stopped():
                 return False, False
             return True, True
         else:
-            threadlocal.first_every_invoke = False
+            stack.set_var(var_name, False)
             if threading.current_thread().stopped():
                 return False, False
             return True, True
 
 
 class invoke_callback(Callback.Callback):
-    def callback(
-            self,
-            action=None,
-            target=None,
-            msg=None,  # 执行*次
-            pre_value=None
-        ):
+    def callback(self, action, target, msg, pre_value, stack):
         if pre_value == "while" and not msg is None:
             if not msg.endswith(u'次'):
                 INFO(u"loop not ends with 次")
-                threading.current_thread().waitUtil(0.5) # time gap
                 return True, True
-
-            invoke_time = getattr(threadlocal, 'invoke_time', None)
+            var_name = "invoke_time" + str(stack.cur_layer())
+            invoke_time = stack.get_value(var_name)
             if invoke_time is None:
-                threadlocal.invoke_time = 0
+                stack.set_var(var_name, 0)
+                invoke_time = 0
 
             times = int(Util.cn2dig(msg[:-1]))
             INFO('invoke %s for %d times, current is %d'
-                    % (action, times, threadlocal.invoke_time))
-            if threadlocal.invoke_time < times:
-                threadlocal.invoke_time += 1
+                    % (action, times, invoke_time))
+            if stack.get_value(var_name) < times:
+                threading.current_thread().waitUtil(0.5) # time gap
+                stack.set_var(var_name, invoke_time + 1)
                 return True, True
             else:
                 return True, False

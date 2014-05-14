@@ -29,7 +29,7 @@ class TracePrints(object):
 
 class Home:
     def __init__(self):
-        self._context = {}
+        self._global_context = {}
         self._init_res = Res.init("init.json")
         self._init_subscribable()
         self._init_publisher()
