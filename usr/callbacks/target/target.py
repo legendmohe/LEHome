@@ -35,33 +35,33 @@ class weather_report_callback(Callback.Callback):
         re = re.decode('UTF-8')
         we = json.loads(re)['weatherinfo']
 
-        info = ""
-        info += u'城市：' + we['city'] + "\n"
-        info += u'日期：' + we['date_y'] + "\n"
-        info += u'week：' + we['week'] + "\n"
-        info += u'未来6天天气：' + "\n"
-        info += '\t' + we['temp1'] + '\t' + we['weather1'] + '\t' + we['wind1'] + "\n"
-        info += '\t' + we['temp2'] + '\t' + we['weather2'] + '\t' + we['wind2'] + "\n"
-        info += '\t' + we['temp3'] + '\t' + we['weather3'] + '\t' + we['wind3'] + "\n"
-        info += '\t' + we['temp4'] + '\t' + we['weather4'] + '\t' + we['wind4'] + "\n"
-        info += '\t' + we['temp5'] + '\t' + we['weather5'] + '\t' + we['wind5'] + "\n"
-        info += '\t' + we['temp6'] + '\t' + we['weather6'] + '\t' + we['wind6'] + "\n"
-        info += u'穿衣指数: ' + we['index_d'] + "\n"
-        info += u'紫外线: ' + we['index_uv']
+        # info = ""
+        # info += u'城市：' + we['city'] + "\n"
+        # info += u'日期：' + we['date_y'] + "\n"
+        # info += u'week：' + we['week'] + "\n"
+        # info += u'未来6天天气：' + "\n"
+        # info += '\t' + we['temp1'] + '\t' + we['weather1'] + '\t' + we['wind1'] + "\n"
+        # info += '\t' + we['temp2'] + '\t' + we['weather2'] + '\t' + we['wind2'] + "\n"
+        # info += '\t' + we['temp3'] + '\t' + we['weather3'] + '\t' + we['wind3'] + "\n"
+        # info += '\t' + we['temp4'] + '\t' + we['weather4'] + '\t' + we['wind4'] + "\n"
+        # info += '\t' + we['temp5'] + '\t' + we['weather5'] + '\t' + we['wind5'] + "\n"
+        # info += '\t' + we['temp6'] + '\t' + we['weather6'] + '\t' + we['wind6'] + "\n"
+        # info += u'穿衣指数: ' + we['index_d'] + "\n"
+        # info += u'紫外线: ' + we['index_uv']
 
-        self._home.publish_msg(cmd, info)
 
         content = ""
         if msg == u"明天":
-            content += u'明天天气：' + ',' + we['temp2'] + ',' + we['weather2'] + '.\n'
+            content += u'明天天气：' + we['temp2'] + ', ' + we['weather2'] + '\n'
         elif msg == u"今天":
-            content += u'今天天气：' + ',' + we['temp1'] + ',' + we['weather1'] + '.\n'
+            content += u'今天天气：' + we['temp1'] + ', ' + we['weather1'] + '\n'
         else:
-            content += u'今天天气：' + ',' + we['temp1'] + ',' + we['weather1'] + '.\n'
-            content += u'明天天气：' + ',' + we['temp2'] + ',' + we['weather2'] + '.\n'
-            content += u'后天天气：' + ',' + we['temp3'] + ',' + we['weather3'] + '.\n'
-        content += u'穿衣指数：' + we['index_d'] + '\n'
+            content += u'今天天气：' + we['temp1'] + ', ' + we['weather1'] + '\n'
+            content += u'明天天气：' + we['temp2'] + ', ' + we['weather2'] + '\n'
+            content += u'后天天气：' + we['temp3'] + ', ' + we['weather3'] + '\n'
+        content += u'穿衣指数：' + we['index_d']
 
+        self._home.publish_msg(cmd, content)
         self._speaker.speak(content.split('\n'))
 
         return True, True
