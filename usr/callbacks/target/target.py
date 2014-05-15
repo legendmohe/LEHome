@@ -514,7 +514,7 @@ class switch_callback(Callback.Callback):
         return True
 
 
-class lamp_callback(Callback.Callback):
+class normal_switch_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
         ip = self._home._switch.ip_for_name(target)
         if pre_value == "on":
