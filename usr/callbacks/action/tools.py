@@ -4,7 +4,6 @@ import urllib2
 import urllib
 import json
 import re
-from HTMLParser import HTMLParser
 from lib.command.Command import UserInput
 from util import Util
 from util.log import *

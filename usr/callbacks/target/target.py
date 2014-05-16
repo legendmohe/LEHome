@@ -121,44 +121,53 @@ class douban_callback(Callback.Callback):
 
 class qqfm_callback(Callback.Callback):
 
-    __music_table = {
-        "华语":"1",
-        "欧美":"2",
-        "70":"3",
-        "80":"4",
-        "90":"5",
-        "粤语":"6",
-        "摇滚":"7",
-        "民谣":"8",
-        "轻音乐":"9",
-        "电影原声":"10",
-        "爵士":"13",
-        "电子":"14",
-        "说唱":"15",
-        "R&B":"16",
-        "日语":"17",
-        "韩语":"18",
-        "女声":"20",
-        "特仑苏":"21",
-        "法语":"22",
-        "豆瓣音乐人":"26",
-                }
-    
-    def callback(self,
-            action=None,
-            target = None,
-            msg = None, 
-            pre_value = None):
-        if pre_value == "play":
-            music_id = "9" # 轻音乐
-            if msg in self.__music_table:
-                music_id = self.__music_table[msg]
-            play = self._global_context["player"] 
-            httpConnection = httplib.HTTPConnection('douban.fm')
-            httpConnection.request('GET', '/j/mine/playlist?type=n&channel=' + music_id)
-            song = json.loads(httpConnection.getresponse().read())['song']
-            play(song[0]['url'], inqueue=False)
-        return True, "pass"
+    base_url = 'http://' + Res.get('qqfm/server')
+    channel_url = base_url + '/list'
+    next_url = base_url + '/next'
+    pause_url = base_url + '/pause'
+
+    def init_channcels(self):
+        try:
+            INFO("init qqfm.")
+            self._home.publish_msg(cmd, u"正在初始化电台列表")
+            channels = urllib2.urlopen(qqfm_callback.channel_url).read()
+            self.channels = [channel.decode("utf-8") for channel in channels.split('\n')]
+        except Exception, ex:
+            ERROR("qqfm init error.")
+            ERROR(ex)
+            self._home.publish_msg(cmd, u"连接失败")
+            self.channels = []
+
+    def callback(self, cmd, action, target, msg, pre_value):
+        try:
+            if not hasattr(self, "channels") or len(self.channels) == 0:
+                self.init_channcels()
+            if pre_value == "show":
+                if len(self.channels) == 0:
+                    self._home.publish_msg(cmd, u"无电台列表")
+                else:
+                    info = u"电台列表:\n"
+                    info += u", ".join(self.channels)
+                    self._home.publish_msg(cmd, info)
+            elif pre_value == "play":
+                if msg in self.channels:
+                    play_url = qqfm_callback.next_url \
+                            + "?" + urllib.urlencode(
+                                        {'type':msg.encode('utf-8')}
+                                    )
+                else:
+                    play_url = qqfm_callback.next_url
+                rep = urllib2.urlopen(play_url).read()
+                INFO("qqfm playing state: " + rep)
+                self._home.publish_msg(cmd, u"正在播放:" + rep.decode("utf-8"))
+            elif pre_value == "stop_playing":
+                rep = urllib2.urlopen(qqfm_callback.pause_url).read()
+                INFO("qqfm playing state: " + rep.decode("utf-8"))
+                self._home.publish_msg(cmd, u"停止播放")
+        except Exception, ex:
+            ERROR("qqfm error.")
+            ERROR(ex)
+        return True
 
 
 class message_callback(Callback.Callback):

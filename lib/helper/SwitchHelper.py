@@ -3,6 +3,7 @@
 
 import threading
 import json
+import time
 import zmq
 from util.Res import Res
 from util.log import *
@@ -74,6 +75,7 @@ class SwitchHelper:
         socket = context.socket(zmq.REQ)
         socket.setsockopt(zmq.LINGER, 0)
         socket.connect(self.server_ip)
+        time.sleep(0.5)
         socket.send_string(cmd)
         try:
             poller = zmq.Poller()
