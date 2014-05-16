@@ -32,18 +32,23 @@ class target_callback(Callback.Callback):
 class weather_report_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
         if pre_value == 'show':
-            city_code_url = "http://hao.weidunewtab.com/tianqi/city.php?"
-            if Util.empty_str(msg):
-                city_code = '101280101'  # Guangzhou
-            else:
-                city_code_url += urllib.urlencode({'city': msg.encode('utf8')})
-                city_code = urllib2.urlopen(city_code_url).read()
-                if city_code == 'ERROR':
-                    return True, False
-            url = 'http://hao.weidunewtab.com/myapp/weather/data/index.php?cityID=' + city_code
-            re = urllib2.urlopen(url).read()
-            re = re.decode('utf-8-sig')  # WTF!
-            we = json.loads(re)['weatherinfo']
+            try:
+                city_code_url = "http://hao.weidunewtab.com/tianqi/city.php?"
+                if Util.empty_str(msg):
+                    city_code = '101280101'  # Guangzhou
+                else:
+                    city_code_url += urllib.urlencode({'city': msg.encode('utf8')})
+                    city_code = urllib2.urlopen(city_code_url, timeout=10).read()
+                    if city_code == 'ERROR':
+                        return True, False
+                url = 'http://hao.weidunewtab.com/myapp/weather/data/index.php?cityID=' + city_code
+                re = urllib2.urlopen(url, timeout=10).read()
+                re = re.decode('utf-8-sig')  # WTF!
+                we = json.loads(re)['weatherinfo']
+            except Exception, ex:
+                ERROR(ex)
+                ERROR("weather target faild.")
+                return True
 
             # info = ""
             # info += u'城市：' + we['city'] + "\n"
@@ -74,7 +79,7 @@ class weather_report_callback(Callback.Callback):
             self._home.publish_msg(cmd, content)
             self._speaker.speak(content.split('\n'))
 
-        return True
+        return True, we
 
 
 class douban_callback(Callback.Callback):
@@ -129,13 +134,12 @@ class qqfm_callback(Callback.Callback):
     def init_channcels(self):
         try:
             INFO("init qqfm.")
-            self._home.publish_msg(cmd, u"正在初始化电台列表")
-            channels = urllib2.urlopen(qqfm_callback.channel_url).read()
+            channels = urllib2.urlopen(qqfm_callback.channel_url, timeout=5).read()
             self.channels = [channel.decode("utf-8") for channel in channels.split('\n')]
         except Exception, ex:
             ERROR("qqfm init error.")
             ERROR(ex)
-            self._home.publish_msg(cmd, u"连接失败")
+            self._home.publish_msg("init qqfm", u"连接失败")
             self.channels = []
 
     def callback(self, cmd, action, target, msg, pre_value):
@@ -150,23 +154,27 @@ class qqfm_callback(Callback.Callback):
                     info += u", ".join(self.channels)
                     self._home.publish_msg(cmd, info)
             elif pre_value == "play":
-                if msg in self.channels:
-                    play_url = qqfm_callback.next_url \
-                            + "?" + urllib.urlencode(
-                                        {'type':msg.encode('utf-8')}
-                                    )
+                if len(self.channels) == 0:
+                    self._home.publish_msg(cmd, u"无电台列表")
                 else:
-                    play_url = qqfm_callback.next_url
-                rep = urllib2.urlopen(play_url).read()
-                INFO("qqfm playing state: " + rep)
-                self._home.publish_msg(cmd, u"正在播放:" + rep.decode("utf-8"))
+                    if msg in self.channels:
+                        play_url = qqfm_callback.next_url \
+                                + "?" + urllib.urlencode(
+                                            {'type':msg.encode('utf-8')}
+                                        )
+                    else:
+                        play_url = qqfm_callback.next_url
+                    rep = urllib2.urlopen(play_url, timeout=3).read()
+                    INFO("qqfm playing state: " + rep)
+                    self._home.publish_msg(cmd, u"正在播放:" + rep.decode("utf-8"))
             elif pre_value == "stop_playing":
-                rep = urllib2.urlopen(qqfm_callback.pause_url).read()
+                rep = urllib2.urlopen(qqfm_callback.pause_url, timeout=3).read()
                 INFO("qqfm playing state: " + rep.decode("utf-8"))
                 self._home.publish_msg(cmd, u"停止播放")
         except Exception, ex:
             ERROR("qqfm error.")
             ERROR(ex)
+            self._home.publish_msg(cmd, u"播放失败")
         return True
 
 

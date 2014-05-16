@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 # encoding: utf-8
+
+
+from __future__ import division
+from decimal import Decimal  
 import urllib2
 import urllib
 import json
@@ -164,6 +168,7 @@ class cal_callback(Callback.Callback):
         INFO("expression: " + expression)
         try:
             res = eval(expression)
+            res = Decimal.from_float(res).quantize(Decimal('0.00'))
         except Exception, ex:
             ERROR("cal expression error:", ex)
         return res

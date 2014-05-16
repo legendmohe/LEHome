@@ -427,7 +427,7 @@ class CommandParser:
                     # we found the current buf's token type, so we clean the scene
                     # don't use break here, in case longer mismatch token has same 
                     # prefix with lower weight token 
-                    # break
+                    break
                 # in case that token has shorter token length then the buf
                 elif _temp_str.startswith(match_str):
                     _found_match_in_token_flag_array = True
@@ -438,9 +438,9 @@ class CommandParser:
                     # in case that lower token has short lengh, and it match
                     if self._match_heap[0] == _token_type:
                         del self._match_heap[:]
-                        del self._token_buf[0:len(match_str)] #r
-                        return _temp_str, _token_type[1]
-                    # break
+                        del self._token_buf[0:len(match_str)] #remove match but leave the unknown
+                        return _temp_str[:-1], _token_type[1]
+                    break
 
                 _index += 1
 

@@ -76,11 +76,9 @@ def gap_for_timestring(msg):
     t = 0
     msg = msg[1:]
     is_pm = False
-    if msg.startswith(u"上午"):
-        t = t + 0
+    if msg.startswith(u"上午") or msg.startswith(u"早上"):
         msg = msg[2:]
-    elif msg.startswith(u"下午"):
-        t = t + 12*60*60
+    elif msg.startswith(u"下午") or msg.startswith(u"晚上"):
         is_pm = True
         msg = msg[2:]
 
