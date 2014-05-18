@@ -17,6 +17,11 @@ class SwitchHelper:
         self.name2ip = init_json["switchs"]
 
         self._send_lock = threading.Lock()
+        context = zmq.Context()
+        self.socket = context.socket(zmq.REQ)
+        self.socket.setsockopt(zmq.LINGER, 0)
+        self.socket.connect(self.server_ip)
+        time.sleep(0.5)
         self.init_switchs()
 
     def init_switchs(self):
@@ -71,22 +76,31 @@ class SwitchHelper:
 
         self._send_lock.acquire()
         message = ""
-        context = zmq.Context()
-        socket = context.socket(zmq.REQ)
-        socket.setsockopt(zmq.LINGER, 0)
-        socket.connect(self.server_ip)
-        time.sleep(0.5)
-        socket.send_string(cmd)
+        # self.socket.send_string(cmd)
+        # try:
+        #     poller = zmq.Poller()
+        #     poller.register(self.socket, zmq.POLLIN)
+        #     if poller.poll(30*1000):
+        #         message = self.socket.recv_string()
+        #         INFO("recv msgs:" + message)
+        # except:
+        #     WARN("socket timeout.")
+        # socket.close()
+        # context.term()
+
+        # import pdb
+        # pdb.set_trace()
+        import socket
         try:
-            poller = zmq.Poller()
-            poller.register(socket, zmq.POLLIN)
-            if poller.poll(10*1000):
-                message = socket.recv_string()
-                INFO("recv msgs:" + message)
-        except:
-            WARN("socket timeout.")
-        socket.close()
-        context.term()
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect(('192.168.1.239', 8004))
+            s.send(cmd + '\n')
+            message = s.recv(2048)
+            INFO("recv msgs:" + message)
+            s.close()
+        except Exception, ex:
+            ERROR(ex)
+            ERROR("can't connect to switch server.")
         self._send_lock.release()
         return message
 
