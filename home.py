@@ -15,6 +15,7 @@ from lib.helper.SwitchHelper import SwitchHelper
 from util.Res import Res
 from lib.sound import Sound
 from util.log import *
+from util.thread import TimerThread
 
 
 class TracePrints(object):
@@ -130,6 +131,13 @@ class Home:
         self._pub_sock = _pub_sock
         #  for sending init string too fast
         time.sleep(0.5)
+        self._init_pub_heartbeat()
+
+    def _init_pub_heartbeat(self):
+        def heartbeat():
+            self.publish_msg(None, "", "heartbeat")
+        self.timer = TimerThread(interval=20, target=heartbeat)
+        self.timer.start()
 
     def _init_switch_server(self):
         switch_server_ip = self._init_res["connection"]["switch_server"]
