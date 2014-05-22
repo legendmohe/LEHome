@@ -513,21 +513,40 @@ class script_callback(Callback.Callback):
 class switch_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
         if pre_value == "show":
-            if msg == u"列表" or msg == u"状态":
-                states = self._home._switch.list_state()
-                if states is None:
-                    self._home.publish_msg(cmd, u"内部错误")
-                elif len(states) == 0:
-                    self._home.publish_msg(cmd, target + u"列表为空")
-                else:
-                    info = target + u"列表:"
-                    for switch_ip in states:
-                        switch_name = self._home._switch.name_for_ip(switch_ip)
-                        info += u"\n  名称:" \
-                                + switch_name \
-                                + u" 状态:" \
-                                + states[switch_ip]["state"]
-                    self._home.publish_msg(cmd, info)
+            states = self._home._switch.list_state()
+            if states is None:
+                self._home.publish_msg(cmd, u"内部错误")
+            elif len(states) == 0:
+                self._home.publish_msg(cmd, target + u"列表为空")
+            else:
+                info = target + u"列表:"
+                for switch_ip in states:
+                    switch_name = self._home._switch.name_for_ip(switch_ip)
+                    info += u"\n  名称:" \
+                            + switch_name \
+                            + u" 状态:" \
+                            + states[switch_ip]["state"]
+                self._home.publish_msg(cmd, info)
+        return True
+
+
+class sensor_callback(Callback.Callback):
+    def callback(self, cmd, action, target, msg, pre_value):
+        if pre_value == "show":
+            states = self._home._sensor.list_state()
+            if states is None:
+                self._home.publish_msg(cmd, u"内部错误")
+            elif len(states) == 0:
+                self._home.publish_msg(cmd, target + u"列表为空")
+            else:
+                info = target + u"列表:"
+                for sensor_addr in states:
+                    sensor_name = self._home._sensor.name_for_addr(sensor_addr)
+                    info += u"\n  名称:" \
+                            + sensor_name \
+                            + u"\n  状态:" \
+                            + self._home._sensor.readable_state(states[sensor_addr])
+                self._home.publish_msg(cmd, info)
         return True
 
 
@@ -547,6 +566,38 @@ class normal_switch_callback(Callback.Callback):
                    + target \
                    + u" 状态:" \
                    + state
+            self._home.publish_msg(cmd, info)
+            return True, state
+        else:
+            return False
+
+
+class normal_sensor_callback(Callback.Callback):
+    def callback(self, cmd, action, target, msg, pre_value):
+        addr = self._home._sensor.addr_for_name(target)
+        if pre_value == "show":
+            if msg == u'温度':
+                state = self._home._sensor.get_temp(addr)
+                info = u'当前%s温度为:%s℃' % (target, state)
+                state = int(state)
+            elif msg == u'湿度':
+                state = self._home._sensor.get_humidity(addr)
+                info = u'当前%s湿度为:%%%s' % (target, state)
+                state = int(state)
+            elif msg == u'是否有人' or msg == u'有人':
+                state = self._home._sensor.get_pir(addr)
+                info = u'当前%s%s人' % (target, u'有' if state == u'1' else u'无')
+                state = int(state)
+            elif msg == u'亮度' or msg == u'光照':
+                state = self._home._sensor.get_lig(addr)
+                info = u'当前%s比较%s' % (target, u'明亮' if state == u'0' else u'暗')
+                state = int(state)
+            else:
+                state = self._home._sensor.get_sensor_state(addr)
+                info = self._home._sensor.readable_state(state)
+            if state is None:
+                self._home.publish_msg(cmd, u"内部错误")
+                return False
             self._home.publish_msg(cmd, info)
             return True, state
         else:

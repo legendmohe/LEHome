@@ -4,6 +4,8 @@
 import threading
 import json
 import time
+# import urllib
+# import urllib2
 import zmq
 from util.Res import Res
 from util.log import *
@@ -76,8 +78,16 @@ class SwitchHelper:
 
         self._send_lock.acquire()
         message = ""
+        # try:
+        #     url = self.server_ip + '?'
+        #     url += urllib.urlencode({"json": cmd.encode("utf-8")})
+        #     message = urllib2.urlopen(url, timeout=30).read()
+        #     INFO("recv msgs:" + message)
+        # except Exception, ex:
+        #     ERROR(ex)
+        #     WARN("request timeout.")
+        # ----------------------------
         self.socket.send_string(cmd)
-        print "waiting."
         try:
             poller = zmq.Poller()
             poller.register(self.socket, zmq.POLLIN)
@@ -86,9 +96,7 @@ class SwitchHelper:
                 INFO("recv msgs:" + message)
         except:
             WARN("socket timeout.")
-        # socket.close()
-        # context.term()
-
+        # --------------
         # import pdb
         # pdb.set_trace()
         # import socket

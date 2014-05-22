@@ -42,7 +42,7 @@ class num_value_callback(Callback.Callback):
             ERROR("num_value_callback num is invaild:" + msg)
             return False
         else:
-            return True, num
+            return True, int(num)
 
 
 class str_value_callback(Callback.Callback):

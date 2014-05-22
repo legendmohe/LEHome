@@ -473,6 +473,7 @@ class CommandParser:
             if _token is None:
                 #DEBUG("continue"
                 continue
+            # print _token_type, _token
             if _token_type == "whiles":
                 self._FSM.found_while(self, _token)
                 if not self._FSM.current == "message_state":

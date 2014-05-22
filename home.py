@@ -12,6 +12,7 @@ import zmq
 from lib.command.Command import Command
 from lib.speech.Speech import Text2Speech
 from lib.helper.SwitchHelper import SwitchHelper
+from lib.helper.SensorHelper import SensorHelper
 from util.Res import Res
 from lib.sound import Sound
 from util.log import *
@@ -35,7 +36,7 @@ class Home:
         self._init_subscribable()
         self._init_publisher()
         self._init_audio_server()
-        self._init_switch_server()
+        self._init_helper()
         self._init_speaker()
         self._init_command()
 
@@ -139,10 +140,14 @@ class Home:
         self.timer = TimerThread(interval=20, target=heartbeat)
         self.timer.start()
 
-    def _init_switch_server(self):
+    def _init_helper(self):
         switch_server_ip = self._init_res["connection"]["switch_server"]
         INFO("init switch server: " + switch_server_ip)
         self._switch = SwitchHelper()
+
+        sensor_server_ip = self._init_res["connection"]["sensor_server"]
+        INFO("init sensor server: " + sensor_server_ip)
+        self._sensor = SensorHelper()
 
     def _cmd_begin_callback(self, command):
         INFO("command begin: %s" % (command))
