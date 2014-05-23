@@ -579,16 +579,16 @@ class normal_sensor_callback(Callback.Callback):
         if pre_value == "show" or pre_value == "get":
             if msg == u'温度':
                 state = self._home._sensor.get_temp(addr)
-                info = u'当前%s温度为:%s℃' % (target, state)
+                info = u'当前%s的温度为:%s℃' % (target, state)
             elif msg == u'湿度':
                 state = self._home._sensor.get_humidity(addr)
-                info = u'当前%s湿度为:%s%%' % (target, state)
+                info = u'当前%s的湿度为:%s%%' % (target, state)
             elif msg == u'是否有人' or msg == u'有人':
                 state = self._home._sensor.get_pir(addr)
                 info = u'当前%s%s人' % (target, u'有' if state == u'1' else u'无')
             elif msg == u'亮度' or msg == u'光照':
                 state = self._home._sensor.get_lig(addr)
-                info = u'当前%s比较%s' % (target, u'明亮' if state == u'0' else u'暗')
+                info = u'当前%s的亮度为%s' % (target, state)
             else:
                 state = self._home._sensor.get_sensor_state(addr)
                 info = self._home._sensor.readable_state(state)

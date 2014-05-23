@@ -56,7 +56,10 @@ class SensorHelper:
         return self.get_sensor_value(target_addr, "pir")
 
     def get_lig(self, target_addr):
-        return self.get_sensor_value(target_addr, "lig")
+        lig = self.get_sensor_value(target_addr, "lig")
+        if lig is not None:
+            lig = str(int(lig))
+        return lig
 
     def get_sensor_value(self, target_addr, sensor_type):
         self.list_state()
@@ -131,12 +134,12 @@ class SensorHelper:
     
     def readable_state(self, state):
         try:
-            res = u"温度:%s℃, 湿度:%s%%, 是否有人:%s, 光照:%s" \
+            res = u"温度:%s℃, 湿度:%s%%, 是否有人:%s, 光照:%d" \
                       % (
                          state['temp'],
                          state['hum'],
                          (u'是' if state['pir'] == u'0' else u'否'),
-                         (u'明' if state['lig'] == u'0' else u'暗')
+                         int(state['lig'])
                         )
             return res
         except Exception, ex:
