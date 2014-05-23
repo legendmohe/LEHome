@@ -12,6 +12,8 @@ class logical_callback(Callback.Callback):
 
 class and_callback(Callback.Callback):
     def callback(self, aValue, bValue):
+        # import pdb
+        # pdb.set_trace()
         return aValue and bValue
 
 

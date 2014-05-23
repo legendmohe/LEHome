@@ -16,7 +16,7 @@
         "action" : ["打开", "开启", "关闭", "播放", "停止播放", 
                     "删除", "设置", "每", "执行", "运行", "停止",
                     "结束", "显示", "查看", "新增", "新建", "添加", "增加",
-                    "逻辑", "数值", "字符", "当前",
+                    "逻辑", "数值", "字符", "当前", "获取",
                     "翻译", "百科", "计算"],
         "target" : ["豆瓣电台", "qq电台", "QQ电台", "留言", "提醒", "闹铃",
                     "任务", "待办事项", "脚本",
@@ -64,7 +64,8 @@
             "结束":"action.break_callback",
             "显示":"action.show_callback",
             "查看":"action.show_callback",
-            "当前":"action.show_callback",
+            "当前":"action.get_callback",
+            "获取":"action.get_callback",
             "翻译":"tools.translate_callback",
             "百科":"tools.baidu_wiki_callback",
             "计算":"tools.cal_callback"
@@ -125,7 +126,7 @@
         "台灯":"192.168.1.113"
     },
     "sensors":{
-        "书桌":"12B9"
+        "书桌":"00124B00041183FE"
     },
     "qqfm": {
         "server":"192.168.1.100:8888"

@@ -76,6 +76,10 @@ class Command:
                     self.print_block(command, block, index + 1)
 
     def _finish_callback(self, command, block):
+        # self.print_block(command, block)
+        # import pdb
+        # pdb.set_trace()
+
         Sound.play(Res.get_res_path("sound/com_begin"))
         #  stoppable thread
         t = StoppableThread(
@@ -121,9 +125,10 @@ class Command:
         self._tasklist.remove(tasklist_item)
         self._save_tasklist()
 
-    def _invoke_block(self, block, stack, in_loop=False):
+    def _invoke_block(self, block, stack, pass_value=None, in_loop=False):
+        # import pdb
+        # pdb.set_trace()
         thread = self._local.thread  # break out for thread stopped
-        pass_value = None
         if not in_loop:
             stack.push_context()
         for statement in block.statements:
@@ -134,13 +139,17 @@ class Command:
             if isinstance(statement, Statement):
                 pass_value = self._invoke_statement(statement, pass_value, stack)
             elif isinstance(statement, IfStatement):
-                if self._invoke_block(statement.if_block, stack):
-                    pass_value = self._invoke_block(statement.then_block, stack)
+                if_res = self._invoke_block(statement.if_block, stack, pass_value)
+                if if_res is not False and if_res is not None:
+                    pass_value = self._invoke_block(statement.then_block, stack, pass_value)
                 else:
-                    pass_value = self._invoke_block(statement.else_block, stack)
+                    pass_value = self._invoke_block(statement.else_block, stack, pass_value)
             elif isinstance(statement, WhileStatement):
-                while self._invoke_block(statement.if_block, stack, in_loop=True):
-                    pass_value = self._invoke_block(statement.then_block, stack)
+                while True:
+                    while_res = self._invoke_block(statement.if_block, stack, pass_value, in_loop=True)
+                    if while_res is False or while_res is None:
+                        break
+                    pass_value = self._invoke_block(statement.then_block, stack, pass_value)
             elif isinstance(statement, CompareOperator):
                 bValue = self._invoke_statement(
                                                 statement.statement,
@@ -154,7 +163,7 @@ class Command:
                                                     bValue,
                                                     stack)
             elif isinstance(statement, LogicalOperator):
-                bValue = self._invoke_block(statement.block, stack)
+                bValue = self._invoke_block(statement.block, stack, pass_value)
                 pass_value = self._invoke_operator(
                                                     "logical",
                                                     statement.name,
@@ -162,7 +171,7 @@ class Command:
                                                     bValue,
                                                     stack)
             elif isinstance(statement, Block):
-                pass_value = self._invoke_block(Block, stack)
+                pass_value = self._invoke_block(Block, stack, pass_value)
         if not in_loop:
             stack.pop_context()
         return pass_value

@@ -222,7 +222,8 @@ class invoke_callback(Callback.Callback):
     def callback(self, action, target, msg, pre_value, stack):
         if pre_value == "while" and not msg is None:
             if not msg.endswith(u'次'):
-                INFO(u"loop not ends with 次")
+                WARN(u"loop not ends with 次")
+                threading.current_thread().waitUtil(1)  # time gap
                 return True, True
             var_name = "invoke_time" + str(stack.cur_layer())
             invoke_time = stack.get_value(var_name)
@@ -234,7 +235,7 @@ class invoke_callback(Callback.Callback):
             INFO('invoke %s for %d times, current is %d'
                     % (action, times, invoke_time))
             if stack.get_value(var_name) < times:
-                threading.current_thread().waitUtil(0.5) # time gap
+                threading.current_thread().waitUtil(1) # time gap
                 stack.set_var(var_name, invoke_time + 1)
                 return True, True
             else:
@@ -251,6 +252,11 @@ class break_callback(Callback.Callback):
 class show_callback(Callback.Callback):
     def callback(self, action, msg, target):
         return True, "show"
+
+
+class get_callback(Callback.Callback):
+    def callback(self, action, msg, target):
+        return True, "get"
 
 
 class set_callback(Callback.Callback):

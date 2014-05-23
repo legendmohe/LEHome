@@ -149,7 +149,8 @@ class CommandParser:
             return
 
         self._statement.thens = e.args[1]
-        for index in range(len(self._block_stack)):
+        self._append_statement(self._block_stack[-1])  # add statement to current block
+        for index in range(len(self._block_stack)):  #pop until if_block
             block = self._block_stack.pop()
             if isinstance(block, Block):
                 if len(self._block_stack) < 1:
@@ -157,7 +158,6 @@ class CommandParser:
                 ifs = self._block_stack[-1]
                 if isinstance(ifs, IfStatement) \
                     or isinstance(ifs, WhileStatement):
-                    self._append_statement(block)
                     self._block_stack.append(ifs.then_block)
                     return
         ERROR("single then error.")
@@ -197,15 +197,14 @@ class CommandParser:
             return
 
         self._statement.elses = e.args[1]
+        self._append_statement(self._block_stack[-1])  # add statement to current block
         for index in range(len(self._block_stack)):
             block = self._block_stack.pop()
             if isinstance(block, Block):
                 if len(self._block_stack) < 1:
                     break
                 ifs = self._block_stack[-1]
-                if isinstance(ifs, IfStatement) \
-                    or isinstance(ifs, WhileStatement):
-                    self._append_statement(block)
+                if isinstance(ifs, IfStatement):  # while statement has no else
                     self._block_stack.append(ifs.else_block)
                     return
         ERROR("single else error.")

@@ -557,7 +557,7 @@ class normal_switch_callback(Callback.Callback):
             return True
         elif pre_value == "off":
             return True
-        elif pre_value == "show" and msg == u"状态":
+        elif pre_value == "show" or pre_value == "get" and msg == u"状态":
             state = self._home._switch.show_state(ip)
             if state is None:
                 self._home.publish_msg(cmd, u"内部错误")
@@ -566,7 +566,8 @@ class normal_switch_callback(Callback.Callback):
                    + target \
                    + u" 状态:" \
                    + state
-            self._home.publish_msg(cmd, info)
+            if pre_value == "show":
+                self._home.publish_msg(cmd, info)
             return True, state
         else:
             return False
@@ -575,30 +576,30 @@ class normal_switch_callback(Callback.Callback):
 class normal_sensor_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
         addr = self._home._sensor.addr_for_name(target)
-        if pre_value == "show":
+        if pre_value == "show" or pre_value == "get":
             if msg == u'温度':
                 state = self._home._sensor.get_temp(addr)
                 info = u'当前%s温度为:%s℃' % (target, state)
-                state = int(state)
             elif msg == u'湿度':
                 state = self._home._sensor.get_humidity(addr)
-                info = u'当前%s湿度为:%%%s' % (target, state)
-                state = int(state)
+                info = u'当前%s湿度为:%s%%' % (target, state)
             elif msg == u'是否有人' or msg == u'有人':
                 state = self._home._sensor.get_pir(addr)
                 info = u'当前%s%s人' % (target, u'有' if state == u'1' else u'无')
-                state = int(state)
             elif msg == u'亮度' or msg == u'光照':
                 state = self._home._sensor.get_lig(addr)
                 info = u'当前%s比较%s' % (target, u'明亮' if state == u'0' else u'暗')
-                state = int(state)
             else:
                 state = self._home._sensor.get_sensor_state(addr)
                 info = self._home._sensor.readable_state(state)
+                self._home.publish_msg(cmd, info)
+                return True, state
             if state is None:
                 self._home.publish_msg(cmd, u"内部错误")
                 return False
-            self._home.publish_msg(cmd, info)
+            state = int(state)
+            if pre_value == "show":
+                self._home.publish_msg(cmd, info)
             return True, state
         else:
             return False

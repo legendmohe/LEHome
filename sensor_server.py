@@ -27,16 +27,17 @@ class SensorServer(object):
 
         while True:
             info = self.ser.readline()[:-1]
+            # print info
             infos = info.split('#')
             if len(infos) == 5:
                 sensor = {
-                        'addr': infos[0],
-                        'temp': infos[1],
-                        'hum': infos[2],
-                        'pir': infos[3],
-                        'lig': infos[4]
+                        'temp': infos[0],
+                        'hum': infos[1],
+                        'pir': infos[2],
+                        'lig': infos[3],
+                        'addr': infos[4],
                         }
-                self.endpoints[infos[0]] = sensor
+                self.endpoints[sensor['addr']] = sensor
             else:
                 INFO(str(infos))
 

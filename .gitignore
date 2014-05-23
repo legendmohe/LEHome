@@ -221,3 +221,4 @@ usr/message/
 backup.dat
 noise.*
 *.pcl
+*.swo

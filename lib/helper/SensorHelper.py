@@ -73,7 +73,7 @@ class SensorHelper:
         if cmd is None or len(cmd) == 0:
             ERROR("invaild sensor cmd.")
             return
-        INFO("sending cmd to sensor server:" + cmd)
+        DEBUG("sending cmd to sensor server:" + cmd)
 
         self._send_lock.acquire()
         message = ""
@@ -92,7 +92,7 @@ class SensorHelper:
             poller.register(self.socket, zmq.POLLIN)
             if poller.poll(5*1000):
                 message = self.socket.recv_string()
-                INFO("recv msgs:" + message)
+                DEBUG("recv msgs:" + message)
         except:
             WARN("socket timeout.")
         # --------------
@@ -126,11 +126,12 @@ class SensorHelper:
     def get_sensor_state(self, target_addr):
         if target_addr and not target_addr in self.sensors:
             return None
+        self.list_state()
         return self.sensors[target_addr]
     
     def readable_state(self, state):
         try:
-            res = u"温度:%s℃, 湿度:%%%s, 是否有人:%s, 光照:%s" \
+            res = u"温度:%s℃, 湿度:%s%%, 是否有人:%s, 光照:%s" \
                       % (
                          state['temp'],
                          state['hum'],
