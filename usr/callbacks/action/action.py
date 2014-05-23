@@ -80,7 +80,7 @@ class switch_on_callback(Callback.Callback):
                 self._home.publish_msg(cmd, u"打开" + target + u"失败")
                 return True, False
         elif state == "open":
-            self._home.publish_msg(cmd, u"已打开" + target)
+            # self._home.publish_msg(cmd, u"已打开" + target)
             return True, "on"
         return True, False
 
@@ -111,7 +111,7 @@ class switch_off_callback(Callback.Callback):
                 self._home.publish_msg(cmd, u"关闭" + target + u"失败")
                 return True, False
         elif state == "close":
-            self._home.publish_msg(cmd, u"已关闭" + target)
+            # self._home.publish_msg(cmd, u"已关闭" + target)
             return True, "off"
         return True, False
 
@@ -222,7 +222,7 @@ class invoke_callback(Callback.Callback):
     def callback(self, action, target, msg, pre_value, stack):
         if pre_value == "while" and not msg is None:
             if not msg.endswith(u'次'):
-                WARN(u"loop not ends with 次")
+                DEBUG(u"loop not ends with 次")
                 threading.current_thread().waitUtil(1)  # time gap
                 return True, True
             var_name = "invoke_time" + str(stack.cur_layer())

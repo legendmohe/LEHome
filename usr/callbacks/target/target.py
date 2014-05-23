@@ -583,7 +583,19 @@ class normal_sensor_callback(Callback.Callback):
             elif msg == u'湿度':
                 state = self._home._sensor.get_humidity(addr)
                 info = u'当前%s的湿度为:%s%%' % (target, state)
-            elif msg == u'是否有人' or msg == u'有人':
+            elif msg == u'有人':
+                state = self._home._sensor.get_pir(addr)
+                if state == u'1':
+                    return True, True
+                else:
+                    return True, False
+            elif msg == u'无人':
+                state = self._home._sensor.get_pir(addr)
+                if state == u'0':
+                    return True, True
+                else:
+                    return True, False
+            elif msg == u'是否有人':
                 state = self._home._sensor.get_pir(addr)
                 info = u'当前%s%s人' % (target, u'有' if state == u'1' else u'无')
             elif msg == u'亮度' or msg == u'光照':

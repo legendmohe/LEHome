@@ -74,7 +74,7 @@ class SwitchHelper:
         if cmd is None or len(cmd) == 0:
             ERROR("invaild switch cmd.")
             return
-        INFO("sending cmd to switch server:" + cmd)
+        DEBUG("sending cmd to switch server:" + cmd)
 
         self._send_lock.acquire()
         message = ""
@@ -93,7 +93,7 @@ class SwitchHelper:
             poller.register(self.socket, zmq.POLLIN)
             if poller.poll(30*1000):
                 message = self.socket.recv_string()
-                INFO("recv msgs:" + message)
+                DEBUG("switchhelper recv msgs:" + message)
         except:
             WARN("socket timeout.")
         # --------------

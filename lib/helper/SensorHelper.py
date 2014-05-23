@@ -138,7 +138,7 @@ class SensorHelper:
                       % (
                          state['temp'],
                          state['hum'],
-                         (u'是' if state['pir'] == u'0' else u'否'),
+                         (u'否' if state['pir'] == u'0' else u'是'),
                          int(state['lig'])
                         )
             return res

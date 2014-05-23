@@ -27,7 +27,7 @@ class SensorServer(object):
 
         while True:
             info = self.ser.readline()[:-1]
-            # print info
+            print info
             infos = info.split('#')
             if len(infos) == 5:
                 sensor = {

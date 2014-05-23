@@ -208,6 +208,7 @@ class CommandParser:
                     self._block_stack.append(ifs.else_block)
                     return
         ERROR("single else error.")
+        self._error_occoured = True
 
     def onreset(self, e):
         DEBUG('reset ! = event: %s, src: %s, dst: %s' \
