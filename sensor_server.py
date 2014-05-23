@@ -17,6 +17,17 @@ class SensorServer(object):
         self.server_ip = "tcp://*:8005"
         self.endpoints = {}
         self.ser = None
+        self._init_fliter()
+
+    def _init_fliter(self):
+        self._lig_N = 10
+        self._lig_A = 100.0
+        self._lig_S = self._lig_A*self._lig_N
+
+    def _fliter_data(self, C):  # average fliter
+        self._lig_S = self._lig_S - self._lig_A + C
+        self._lig_A = self._lig_S / self._lig_N
+        return int(self._lig_A)
 
     def _read_serial(self):
         try:
@@ -27,16 +38,16 @@ class SensorServer(object):
 
         while True:
             info = self.ser.readline()[:-1]
-            print info
             infos = info.split('#')
             if len(infos) == 5:
                 sensor = {
                         'temp': infos[0],
                         'hum': infos[1],
                         'pir': infos[2],
-                        'lig': infos[3],
+                        'lig': self._fliter_data(float(infos[3])),
                         'addr': infos[4],
                         }
+                INFO(sensor)
                 self.endpoints[sensor['addr']] = sensor
             else:
                 INFO(str(infos))

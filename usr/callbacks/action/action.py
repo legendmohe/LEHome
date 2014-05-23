@@ -197,6 +197,11 @@ class every_callback(Callback.Callback):
                 t = 60
             else:
                 t = int(Util.cn2dig(msg[:-2]))*60
+        elif msg.endswith(u"秒"):
+            if msg.startswith(u"秒"):
+                t = 1
+            else:
+                t = int(Util.cn2dig(msg[:-1]))
         elif msg.startswith(u'天') and \
              (msg.endswith(u'点') or msg.endswith(u'分')):
             t = Util.gap_for_timestring(msg)
