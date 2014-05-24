@@ -410,6 +410,9 @@ class CommandParser:
 
             for match_str in token_tuple[1]:
                 if match_str.startswith(_temp_str):
+                    # print match_str, _temp_str
+                    # import pdb
+                    # pdb.set_trace()
                     _found_match_in_token_flag_array = True #found match
                     _no_match = False #for no match in each match token
                     if _token_type not in self._match_heap:
@@ -442,7 +445,7 @@ class CommandParser:
                         return _temp_str[:-1], _token_type[1]
                     break
 
-                _index += 1
+            _index += 1  # same token type has same weight
 
             #buf will never match the current token type, so we pop it
             if not _found_match_in_token_flag_array and _token_type in self._match_heap:
@@ -470,10 +473,10 @@ class CommandParser:
                 _token, _token_type = (item, "others")
             else:
                 _token, _token_type = self._parse_token(item)
+            # print _token_type, _token
             if _token is None:
                 #DEBUG("continue"
                 continue
-            # print _token_type, _token
             if _token_type == "whiles":
                 self._FSM.found_while(self, _token)
                 if not self._FSM.current == "message_state":
