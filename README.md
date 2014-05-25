@@ -12,5 +12,6 @@ Dependences
 - pyaudio
 - mplayer
 - sox
+- fysom
 
 
