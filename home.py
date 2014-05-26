@@ -55,8 +55,8 @@ class Home:
                 msg = u'执行命令:'
             # elif info_type == 'end':
             #     msg = u'执行完毕:'
-            info = msg + info
-            self.publish_msg(info, info)
+                info = msg + info
+                self.publish_msg(info, info)
 
         settings = self._init_res
         if settings:

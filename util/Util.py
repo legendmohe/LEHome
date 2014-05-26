@@ -101,6 +101,19 @@ def gap_for_timestring(msg):
     return t
 
 
+def wait_for_period(period):
+    t1 = period[0]
+    t2 = period[1]
+
+    tt1 = gap_for_timestring(t1)
+    tt2 = gap_for_timestring(t2)
+    
+    if tt1 >= tt2:
+        return 0
+    else:
+        return tt1
+
+
 def xunicode(u):
     if u is None:
         return u''
