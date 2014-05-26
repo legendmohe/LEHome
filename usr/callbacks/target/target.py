@@ -393,8 +393,8 @@ class task_callback(Callback.Callback):
         elif pre_value == "break":
             thread_index = Util.cn2dig(msg)
             if thread_index is None or thread_index == '':
-                WARN("invaild thread index %s" % (thread_index, ))
-                self._home.publish_msg(cmd, u"无此任务序号:" + thread_index)
+                WARN("invaild thread index %s" % (msg, ))
+                self._home.publish_msg(cmd, u"无此任务序号:" + msg)
                 return False, None
             else:
                 thread_index = int(thread_index)
@@ -403,6 +403,9 @@ class task_callback(Callback.Callback):
                 thread.stop()
                 self._home.publish_msg(cmd, u"停止执行任务%d" % (thread_index, ))
                 INFO("stop thread: %d with cmd: %s" % (thread_index, cmd))
+            else:
+                WARN("invaild thread index %s" % (thread_index, ))
+                self._home.publish_msg(cmd, u"无此任务序号:" + thread_index)
         return True, True
 
 
@@ -585,13 +588,13 @@ class normal_sensor_callback(Callback.Callback):
                 info = u'当前%s的湿度为:%s%%' % (target, state)
             elif msg == u'有人':
                 state = self._home._sensor.get_pir(addr)
-                if state == u'1':
+                if state == 1:
                     return True, True
                 else:
                     return True, False
             elif msg == u'无人':
                 state = self._home._sensor.get_pir(addr)
-                if state == u'0':
+                if state == 0:
                     return True, True
                 else:
                     return True, False
@@ -609,7 +612,6 @@ class normal_sensor_callback(Callback.Callback):
             if state is None:
                 self._home.publish_msg(cmd, u"内部错误")
                 return False
-            state = int(state)
             if pre_value == "show":
                 self._home.publish_msg(cmd, info)
             return True, state

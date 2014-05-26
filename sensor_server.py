@@ -13,6 +13,8 @@ from util.Res import Res
 
 class SensorServer(object):
 
+    SERIAL_ADDR = '/dev/ttyUSB0'
+
     def __init__(self):
         self.server_ip = "tcp://*:8005"
         self.endpoints = {}
@@ -20,18 +22,29 @@ class SensorServer(object):
         self._init_fliter()
 
     def _init_fliter(self):
-        self._lig_N = 10
-        self._lig_A = 100.0
-        self._lig_S = self._lig_A*self._lig_N
+        self.fliter = {}
+        N = [8, 8, 8, 3]
+        A = [100.0, 40.0, 90.0, 1.0]
+        for index, sensor_type in enumerate(['lig', 'temp', 'hum', 'pir']):
+            self.fliter[sensor_type] = {}
+            self.fliter[sensor_type]['N'] = N[index]
+            self.fliter[sensor_type]['A'] = A[index]
+            self.fliter[sensor_type]['S'] = \
+                    self.fliter[sensor_type]['N']*self.fliter[sensor_type]['A']
 
-    def _fliter_data(self, C):  # average fliter
-        self._lig_S = self._lig_S - self._lig_A + C
-        self._lig_A = self._lig_S / self._lig_N
-        return int(self._lig_A)
+    def _fliter_data(self, sensor_type, C):  # average fliter
+        if sensor_type not in self.fliter:
+            return -1
+        sensor_fliter = self.fliter[sensor_type]
+        if sensor_fliter is None:
+            return -1
+        sensor_fliter['S'] = sensor_fliter['S'] - sensor_fliter['A'] + C
+        sensor_fliter['A'] = sensor_fliter['S']/sensor_fliter['N']
+        return sensor_fliter['A']
 
     def _read_serial(self):
         try:
-            self.ser = serial.Serial('/dev/tty.usbserial', 115200)
+            self.ser = serial.Serial(SensorServer.SERIAL_ADDR, 115200)
         except Exception, ex:
             ERROR(ex)
             return
@@ -41,10 +54,10 @@ class SensorServer(object):
             infos = info.split('#')
             if len(infos) == 5:
                 sensor = {
-                        'temp': infos[0],
-                        'hum': infos[1],
-                        'pir': infos[2],
-                        'lig': self._fliter_data(float(infos[3])),
+                        'temp': int(self._fliter_data('temp', float(infos[0]))),
+                        'hum': int(self._fliter_data('hum', float(infos[1]))),
+                        'pir': int(round(self._fliter_data('pir', float(infos[2])))),
+                        'lig': int(self._fliter_data('lig', float(infos[3]))),
                         'addr': infos[4],
                         }
                 INFO(sensor)

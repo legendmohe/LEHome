@@ -74,7 +74,6 @@ def parse_time(msg):
 
 def gap_for_timestring(msg):
     t = 0
-    msg = msg[1:]
     is_pm = False
     if msg.startswith(u"上午") or msg.startswith(u"早上"):
         msg = msg[2:]
@@ -82,7 +81,10 @@ def gap_for_timestring(msg):
         is_pm = True
         msg = msg[2:]
 
-    t_list = parse_time(msg).split(":")
+    time_string = parse_time(msg)
+    if time_string is None:
+        return None
+    t_list = time_string.split(":")
     target_hour = int(t_list[0])
     if is_pm:
         target_hour = target_hour + 12

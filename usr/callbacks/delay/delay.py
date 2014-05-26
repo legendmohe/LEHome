@@ -39,12 +39,15 @@ class delay_callback(Callback.Callback):
         else:
             self._home.publish_msg(cmd, u"时间格式错误")
             return False
+        if t is None:
+            self._home.publish_msg(cmd, u"时间格式错误")
+            return False, None
         info = delay_time + u"执行: %s%s%s" % (
                                                 Util.xunicode(action),
                                                 Util.xunicode(target),
                                                 Util.xunicode(msg)
                                                 )
-        self._home.publish_msg(cmd, info)
+        # self._home.publish_msg(cmd, info)  # noise
         INFO("thread wait for %d sec" % (t, ))
 
         threading.current_thread().waitUtil(t)

@@ -16,7 +16,7 @@ from util.thread import StoppableThread
 
 
 class Command:
-    def __init__(self, coms, backup_path="backup.dat"):
+    def __init__(self, coms, backup_path="backup.dat", info_sender=None):
         self._lock = threading.Lock()
         self._local = threading.local()
         self._thread_lock = threading.Lock()
@@ -30,6 +30,11 @@ class Command:
 
         self._keep_running = True
         self.backup_path = backup_path
+        self._info = info_sender
+
+    def send_info(self, info_type, info):
+        if self._info is not None:
+            self._info(info_type, info)
 
     def init_tasklist(self):
         backup_path = self.backup_path
@@ -107,12 +112,17 @@ class Command:
             DEBUG("no cmd_begin_callback")
 
         with self._thread_lock:
-            thread_index = len(self.threads)
+            if len(self.threads) == 0:
+                thread_index = 0
+            else:
+                thread_index = max([int(key) for key in self.threads.keys()]) + 1
             self.threads[thread_index] = (command, threading.current_thread())
         self._local.cmd = command
         self._local.thread = threading.current_thread()
         block_stack = Command.BlockStack()
+        self.send_info('begin', command)
         self._invoke_block(block, block_stack)
+        self.send_info('end', command)
         del self._local.cmd
         del self._local.thread
         del self.threads[thread_index]
