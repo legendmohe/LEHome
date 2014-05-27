@@ -218,7 +218,6 @@ output.flac
 output_nf.wav
 output.wav
 usr/message/
-backup.dat
 noise.*
 *.pcl
 *.swo

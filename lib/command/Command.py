@@ -16,7 +16,7 @@ from util.thread import StoppableThread
 
 
 class Command:
-    def __init__(self, coms, backup_path="backup.dat", info_sender=None):
+    def __init__(self, coms, backup_path="data/backup.pcl", info_sender=None):
         self._lock = threading.Lock()
         self._local = threading.local()
         self._thread_lock = threading.Lock()

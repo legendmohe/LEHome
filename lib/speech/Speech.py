@@ -30,7 +30,7 @@ from lib.sound import Sound
 
 def wav_to_flac(wav_data, channels, width, rate, stt_rate):
 
-    filename = 'output'
+    filename = 'data/output'
     wav_data = ''.join(wav_data)
     wf = wave.open(filename + '.wav', 'wb')
     wf.setnchannels(channels)
@@ -41,7 +41,7 @@ def wav_to_flac(wav_data, channels, width, rate, stt_rate):
 
     subprocess.call(
             ['sox', filename + '.wav', filename + '_nf.wav',
-                'noisered', 'noise.prof', '0.10']
+                'data/noisered', 'data/noise.prof', '0.10']
             )
     subprocess.call(
             ['sox', '--norm', filename + '_nf.wav',
@@ -88,12 +88,12 @@ class Speech2Text(object):
         rec = subprocess.Popen(['rec', '-r', '16000',
                                 '-b', '16',
                                 '-c', '1',
-                                'noise.wav'])
+                                'data/noise.wav'])
         sleep(1)
         rec.kill()
 
         subprocess.call(
-                ['sox', 'noise.wav', '-n', 'noiseprof', 'noise.prof']
+                ['sox', 'data/noise.wav', '-n', 'data/noiseprof', 'data/noise.prof']
                 )
         INFO("finish preparing.")
 

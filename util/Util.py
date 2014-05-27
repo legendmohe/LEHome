@@ -105,10 +105,17 @@ def wait_for_period(period):
     t1 = period[0]
     t2 = period[1]
 
+    # t1_list = t1.split(":")
+    # t1_hour = int(t1_list[0])
+    # t1_min = int(t1_list[1])
+    # t2_list = t2.split(":")
+    # t2_hour = int(t2_list[0])
+    # t2_min = int(t2_list[1])
+    #
     tt1 = gap_for_timestring(t1)
     tt2 = gap_for_timestring(t2)
     
-    if tt1 >= tt2:
+    if tt1 >= tt2:  #draw some graphs to understand this
         return 0
     else:
         return tt1

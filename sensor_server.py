@@ -23,7 +23,7 @@ class SensorServer(object):
 
     def _init_fliter(self):
         self.fliter = {}
-        N = [8, 8, 8, 3]
+        N = [5, 5, 5, 2]
         A = [100.0, 40.0, 90.0, 1.0]
         for index, sensor_type in enumerate(['lig', 'temp', 'hum', 'pir']):
             self.fliter[sensor_type] = {}
@@ -53,11 +53,15 @@ class SensorServer(object):
             info = self.ser.readline()[:-1]
             infos = info.split('#')
             if len(infos) == 5:
+                temp = float('%.2f'% self._fliter_data('temp', float(infos[0])))
+                hum = float('%.2f'% self._fliter_data('hum', float(infos[1])))
+                pir = float('%.0f'% self._fliter_data('pir', float(infos[2])))
+                lig = float('%.2f'% self._fliter_data('lig', float(infos[3])))
                 sensor = {
-                        'temp': int(self._fliter_data('temp', float(infos[0]))),
-                        'hum': int(self._fliter_data('hum', float(infos[1]))),
-                        'pir': int(round(self._fliter_data('pir', float(infos[2])))),
-                        'lig': int(self._fliter_data('lig', float(infos[3]))),
+                        'temp': temp,
+                        'hum': hum,
+                        'pir': int(pir),
+                        'lig': lig,
                         'addr': infos[4],
                         }
                 INFO(sensor)

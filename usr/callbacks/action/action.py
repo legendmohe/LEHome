@@ -42,7 +42,7 @@ class num_value_callback(Callback.Callback):
             ERROR("num_value_callback num is invaild:" + msg)
             return False
         else:
-            return True, int(num)
+            return True, float(num)
 
 
 class str_value_callback(Callback.Callback):
@@ -219,7 +219,7 @@ class every_callback(Callback.Callback):
         var_name = "first_every_invoke" + str(stack.cur_layer())
         first_every_invoke = stack.get_value(var_name)
         if first_every_invoke is None:
-            # self._home.publish_msg(cmd, u"循环建立:" + cmd)
+            self._home.publish_msg(cmd, u"循环建立:" + cmd)
             stack.set_var(var_name, True)
 
         if stack.get_value(var_name) is False:

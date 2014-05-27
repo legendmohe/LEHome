@@ -280,7 +280,7 @@ class bell_callback(Callback.Callback):
 
 class todo_callback(Callback.Callback):
 
-    todo_path = "todo.pcl"
+    todo_path = "data/todo.pcl"
 
     def __init__(self):
         super(todo_callback, self).__init__()

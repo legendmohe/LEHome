@@ -51,12 +51,13 @@ class Home:
         INFO('initlizing command...')
         
         def info_sender(info_type, info):
-            if info_type == 'begin':
-                msg = u'执行命令:'
+            pass
+            # if info_type == 'begin':
+            #     msg = u'执行命令:'
             # elif info_type == 'end':
             #     msg = u'执行完毕:'
-                info = msg + info
-                self.publish_msg(info, info)
+            #     info = msg + info
+            # self.publish_msg(info, info)
 
         settings = self._init_res
         if settings:
