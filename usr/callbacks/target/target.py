@@ -31,7 +31,9 @@ class target_callback(Callback.Callback):
 
 class weather_report_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
-        if pre_value == 'show':
+        if pre_value == 'show' or pre_value == 'get':
+            if pre_value == 'show':
+                self._home.publish_msg(cmd, u'正在获取天气讯息...')
             try:
                 city_code_url = "http://hao.weidunewtab.com/tianqi/city.php?"
                 if Util.empty_str(msg):
@@ -76,8 +78,9 @@ class weather_report_callback(Callback.Callback):
                 content += u'后天天气：' + we['temp3'] + ', ' + we['weather3'] + '\n'
             content += u'穿衣指数：' + we['index_d']
 
-            self._home.publish_msg(cmd, content)
-            self._speaker.speak(content.split('\n'))
+            if pre_value == 'show':
+                self._home.publish_msg(cmd, content)
+                self._speaker.speak(content.split('\n'))
 
         return True, we
 
@@ -600,7 +603,7 @@ class normal_sensor_callback(Callback.Callback):
                     return True, False
             elif msg == u'是否有人':
                 state = self._home._sensor.get_pir(addr)
-                info = u'当前%s%s人' % (target, u'有' if state == u'1' else u'无')
+                info = u'当前%s%s人' % (target, u'有' if state == 1 else u'无')
             elif msg == u'亮度' or msg == u'光照':
                 state = self._home._sensor.get_lig(addr)
                 info = u'当前%s的亮度为%s' % (target, state)

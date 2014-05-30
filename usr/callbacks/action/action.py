@@ -175,7 +175,13 @@ class every_callback(Callback.Callback):
             return False, pre_value
 
 
-        INFO("every_callback invoke:%s" % (msg, ))
+        var_name = "first_every_invoke" + str(stack.cur_layer())
+        first_every_invoke = stack.get_value(var_name)
+        if first_every_invoke is None:
+            self._home.publish_msg(cmd, u"循环建立:" + cmd)
+            stack.set_var(var_name, True)
+
+        DEBUG("every_callback invoke:%s" % (msg, ))
         if msg.endswith(u"天"):
             if msg.startswith(u"天"):
                 t = 24*60*60
@@ -204,7 +210,7 @@ class every_callback(Callback.Callback):
                 if t == 0:
                     return True, True
                 else:
-                    INFO("thread wait for %d sec" % (t, ))
+                    DEBUG("thread wait for %d sec" % (t, ))
                     threading.current_thread().waitUtil(t)
                     if threading.current_thread().stopped():
                         return False, False
@@ -212,18 +218,12 @@ class every_callback(Callback.Callback):
             else:
                 t = Util.gap_for_timestring(msg[1:])
             if t > 0:
-                INFO("thread wait for %d sec" % (t, ))
+                DEBUG("thread wait for %d sec" % (t, ))
                 threading.current_thread().waitUtil(t)
             t = 24*60*60
 
-        var_name = "first_every_invoke" + str(stack.cur_layer())
-        first_every_invoke = stack.get_value(var_name)
-        if first_every_invoke is None:
-            self._home.publish_msg(cmd, u"循环建立:" + cmd)
-            stack.set_var(var_name, True)
-
         if stack.get_value(var_name) is False:
-            INFO("thread wait for %d sec" % (t, ))
+            DEBUG("thread wait for %d sec" % (t, ))
             threading.current_thread().waitUtil(t)
             if threading.current_thread().stopped():
                 return False, False

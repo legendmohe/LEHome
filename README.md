@@ -10,7 +10,7 @@ Dependences
 - numpy
 - scipy
 - pyaudio
-- mplayer
+- mplayer.py
 - sox
 - fysom
 

@@ -48,15 +48,9 @@ class delay_callback(Callback.Callback):
                                                 Util.xunicode(msg)
                                                 )
         # self._home.publish_msg(cmd, info)  # noise
-        INFO("thread wait for %d sec" % (t, ))
+        DEBUG("thread wait for %d sec" % (t, ))
 
         threading.current_thread().waitUtil(t)
         if threading.current_thread().stopped():
             return False
-
-        self._home.setResume(True)
-        Sound.play(
-            Res.get_res_path("sound/com_stop")
-        )
-        self._home.setResume(False)
         return True
