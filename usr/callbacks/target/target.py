@@ -372,7 +372,7 @@ class todo_callback(Callback.Callback):
                 else:
                     self._home.publish_msg(cmd, u"删除失败")
             else:
-                self._home.publish_msg(cmd, u"删除失败")
+                self._home.publish_msg(cmd, u"编号出错")
         return True
 
 

@@ -467,7 +467,7 @@ class CommandParser:
             elif item == CommandParser.ESCAPE_END:
                 in_escape = False
                 continue
-            elif item in self._stopwords:
+            elif item.isspace() or item in self._stopwords:
                 continue
             if in_escape:
                 _token, _token_type = (item, "others")
@@ -554,9 +554,6 @@ class CommandParser:
         with open('usr/stopwords.txt') as stopwords:
             for word in stopwords.readlines():
                 self._stopwords.add(word)
-        self._stopwords.add('\n')
-        self._stopwords.add('\r')
-        self._stopwords.add(' ')
 
 if __name__ == '__main__':
 

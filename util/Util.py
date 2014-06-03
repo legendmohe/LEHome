@@ -29,7 +29,7 @@ UTIL_CN_UNIT = {
 
 def cn2dig(src):
     if src == "":
-        return ""
+        return None
     m = re.match("\d+", src)
     if m:
         return m.group(0)

@@ -164,6 +164,7 @@ class remove_callback(Callback.Callback):
         if is_cfm:
             return True, "remove"
         else:
+            self._home.publish_msg(cmd, u'取消删除')
             INFO("cancel")
             return False
 
@@ -221,6 +222,9 @@ class every_callback(Callback.Callback):
                 DEBUG("thread wait for %d sec" % (t, ))
                 threading.current_thread().waitUtil(t)
             t = 24*60*60
+        else:
+            self._home.publish_msg(cmd, u"时间格式有误")
+            return False, False
 
         if stack.get_value(var_name) is False:
             DEBUG("thread wait for %d sec" % (t, ))
