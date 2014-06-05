@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 
+import os
 import threading
 import time
 import json
@@ -13,7 +14,7 @@ from util.Res import Res
 
 class SensorServer(object):
 
-    SERIAL_ADDR = '/dev/ttyUSB0'
+    SERIAL_ADDR = '/dev/ttyUSB'
 
     def __init__(self):
         self.server_ip = "tcp://*:8005"
@@ -43,31 +44,39 @@ class SensorServer(object):
         return sensor_fliter['A']
 
     def _read_serial(self):
-        try:
-            self.ser = serial.Serial(SensorServer.SERIAL_ADDR, 115200)
-        except Exception, ex:
-            ERROR(ex)
-            return
-
         while True:
-            info = self.ser.readline()[:-1]
-            infos = info.split('#')
-            if len(infos) == 5:
-                temp = float('%.2f'% self._fliter_data('temp', float(infos[0])))
-                hum = float('%.2f'% self._fliter_data('hum', float(infos[1])))
-                pir = float('%.0f'% self._fliter_data('pir', float(infos[2])))
-                lig = float('%.2f'% self._fliter_data('lig', float(infos[3])))
-                sensor = {
-                        'temp': temp,
-                        'hum': hum,
-                        'pir': int(pir),
-                        'lig': lig,
-                        'addr': infos[4],
-                        }
-                INFO(sensor)
-                self.endpoints[sensor['addr']] = sensor
+            serial_path = None
+            for i in range(3):
+                if os.path.exists(SensorServer.SERIAL_ADDR + str(i)):
+                    serial_path = SensorServer.SERIAL_ADDR + str(i)
+            
+            if serial_path is not None:
+                try:
+                    self.ser = serial.Serial(serial_path, 115200)
+                    while True:
+                        info = self.ser.readline()[:-1]
+                        infos = info.split('#')
+                        if len(infos) == 5:
+                            temp = float('%.2f'% self._fliter_data('temp', float(infos[0])))
+                            hum = float('%.2f'% self._fliter_data('hum', float(infos[1])))
+                            pir = float('%.0f'% self._fliter_data('pir', float(infos[2])))
+                            lig = float('%.2f'% self._fliter_data('lig', float(infos[3])))
+                            sensor = {
+                                    'temp': temp,
+                                    'hum': hum,
+                                    'pir': int(pir),
+                                    'lig': lig,
+                                    'addr': infos[4],
+                                    }
+                            INFO(sensor)
+                            self.endpoints[sensor['addr']] = sensor
+                        else:
+                            INFO(str(infos))
+                except Exception, ex:
+                    ERROR(ex)
             else:
-                INFO(str(infos))
+                WARN('serial_path is None.')
+            time.sleep(5)
 
     def _handle_cmd(self, target, cmd):
         if cmd == 'list':

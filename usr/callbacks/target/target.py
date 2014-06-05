@@ -593,14 +593,20 @@ class normal_sensor_callback(Callback.Callback):
                 state = self._home._sensor.get_pir(addr)
                 if state == 1:
                     return True, True
+                elif state == 0:
+                    return True, False
                 else:
+                    INFO(u'无法获取状态：' + msg)
                     return True, False
             elif msg == u'无人':
                 state = self._home._sensor.get_pir(addr)
                 if state == 0:
                     return True, True
-                else:
+                elif state == 1:
                     return True, False
+                else:
+                    INFO(u'无法获取状态：' + msg)
+                    return True, True
             elif msg == u'是否有人':
                 state = self._home._sensor.get_pir(addr)
                 info = u'当前%s%s人' % (target, u'有' if state == 1 else u'无')
@@ -610,9 +616,15 @@ class normal_sensor_callback(Callback.Callback):
             else:
                 state = self._home._sensor.get_sensor_state(addr)
                 info = self._home._sensor.readable_state(state)
-                self._home.publish_msg(cmd, info)
-                return True, state
+                if state is None:
+                    INFO(u'无法获取状态：' + msg)
+                    self._home.publish_msg(cmd, u"内部错误")
+                    return False
+                else:
+                    self._home.publish_msg(cmd, info)
+                    return True, state
             if state is None:
+                INFO(u'无法获取状态：' + msg)
                 self._home.publish_msg(cmd, u"内部错误")
                 return False
             if pre_value == "show":

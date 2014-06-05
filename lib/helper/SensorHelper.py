@@ -19,11 +19,6 @@ class SensorHelper:
         self.name2addr = init_json["sensors"]
 
         self._send_lock = threading.Lock()
-        context = zmq.Context()
-        self.socket = context.socket(zmq.REQ)
-        self.socket.setsockopt(zmq.LINGER, 0)
-        self.socket.connect(self.server_ip)
-        time.sleep(0.5)
         self.init_sensors()
 
     def init_sensors(self):
@@ -89,6 +84,10 @@ class SensorHelper:
         #     ERROR(ex)
         #     WARN("request timeout.")
         # ----------------------------
+        context = zmq.Context()
+        self.socket = context.socket(zmq.REQ)
+        self.socket.setsockopt(zmq.LINGER, 0)
+        self.socket.connect(self.server_ip)
         self.socket.send_string(cmd)
         try:
             poller = zmq.Poller()
@@ -112,6 +111,7 @@ class SensorHelper:
         # except Exception, ex:
         #     ERROR(ex)
         #     ERROR("can't connect to sensor server.")
+        self.socket.close()
         self._send_lock.release()
         return message
 
@@ -119,11 +119,10 @@ class SensorHelper:
         try:
             cmd = self.get_vaild_cmd("", "list")
             response = self.send_cmd(cmd)
-            sensors = json.loads(response)["res"]
+            self.sensors = json.loads(response)["res"]
         except Exception, e:
             ERROR("error: " + str(e))
-            return
-        self.sensors = sensors
+            self.sensors = []
         return self.sensors
 
     def get_sensor_state(self, target_addr):
