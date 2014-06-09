@@ -307,7 +307,7 @@ class todo_callback(Callback.Callback):
                     pickle.dump(self.todos, f, True)
             except Exception, e:
                 ERROR(e)
-                ERROR("invaild save todo path:%s", self.todo_path)
+                ERROR("invaild save todo path:%s", todo_callback.todo_path)
 
     def todo_at_index(self, index):
         if index < 0 or index >= len(self.todos):
@@ -318,7 +318,7 @@ class todo_callback(Callback.Callback):
 
     def add_todo(self, content):
         if content is None or len(content) == 0:
-            ERROR("empty ecript content.")
+            ERROR("empty todo content.")
             return False
         self.todos.append(content)
         return True
@@ -414,7 +414,7 @@ class task_callback(Callback.Callback):
 
 class script_callback(Callback.Callback):
 
-    script_path = "scripts.pcl"
+    script_path = "data/scripts.pcl"
 
     def __init__(self):
         super(script_callback, self).__init__()
@@ -438,7 +438,7 @@ class script_callback(Callback.Callback):
                     pickle.dump(self.scripts, f, True)
             except Exception, e:
                 ERROR(e)
-                ERROR("invaild save script path:%s", self.script_path)
+                ERROR("invaild save script path:%s", script_callback.script_path)
 
     def script_by_name(self, name):
         if name in self.scripts:
@@ -450,7 +450,7 @@ class script_callback(Callback.Callback):
             ERROR("empty script name.")
             return False
         if content is None or len(content) == 0:
-            ERROR("empty ecript content.")
+            ERROR("empty script content.")
             return False
         self.scripts[name] = content
         return True
@@ -513,6 +513,116 @@ class script_callback(Callback.Callback):
             elif pre_value == "run":
                 self._home.publish_msg(cmd, u"执行脚本:" + script_name)
                 self.run_script(script_name)
+        return True
+
+
+class var_callback(Callback.Callback):
+
+    var_path = "data/vars.pcl"
+
+    def __init__(self):
+        super(var_callback, self).__init__()
+        self._lock = threading.Lock()
+        self.load_vars()
+
+    def load_vars(self):
+        self.vars = {}
+        with self._lock:
+            try:
+                with open(var_callback.var_path, "rb") as f:
+                    self.vars = pickle.load(f)
+            except:
+                INFO("empty var list.")
+        return self.vars
+
+    def save_vars(self):
+        with self._lock:
+            try:
+                with open(var_callback.var_path, "wb") as f:
+                    pickle.dump(self.vars, f, True)
+            except Exception, e:
+                ERROR(e)
+                ERROR("invaild save var path:%s", var_callback.var_path)
+
+    def var_by_name(self, name):
+        if name in self.vars:
+            return self.vars[name]
+        return None
+
+    def add_var(self, name, content):
+        if Util.empty_str(name):
+            ERROR("empty var name.")
+            return False
+        if content is None:
+            ERROR("empty var content.")
+            return False
+        self.vars[name] = content
+        return True
+
+    def remove_var_by_name(self, name):
+        if name in self.vars:
+            del self.vars[name]
+            self.save_vars()
+            return True
+        return False
+
+    def callback(self, cmd, action, msg, pre_value):
+        if pre_value == "show":
+            info = ""
+            self.load_vars()
+            if Util.empty_str(msg):
+                for var_name in self.vars:
+                    info += u"名称: " + var_name  \
+                            + u"\n    内容: " + unicode(self.vars[var_name])  \
+                            + "\n"
+                if len(info) == 0:
+                    info = u"当前无变量列表"
+                else:
+                    info = info[:-1]
+            else:
+                if msg not in self.vars:
+                    info = u"无变量:" + msg
+                else:
+                    info = u"内容为:" + unicode(self.vars[msg])
+            self._home.publish_msg(cmd, info)
+            INFO(info)
+        elif pre_value == "get":
+            self.load_vars()
+            if Util.empty_str(msg):
+                self._home.publish_msg(cmd, u"缺少变量名称")
+                return False
+            if msg not in self.vars:
+                self._home.publish_msg(cmd, u"无变量:" + msg)
+                return False
+            else:
+                INFO(u'变量:' + unicode(self.vars[msg]))
+                return True, self.vars[msg]
+        else:
+            if Util.empty_str(msg):
+                self._home.publish_msg(cmd, u"缺少变量名称")
+                return False
+            if pre_value == "new" or pre_value == "set":
+                spos = msg.find(u'为')
+                if spos == -1:
+                    info = u"格式错误"
+                    ERROR(info)
+                    self._home.publish_msg(cmd, info)
+                    return False
+                var_name = msg[:spos]
+                var_value = msg[spos + 1:]
+                parse_value = Util.var_parse_value(var_value)
+                if parse_value is None:
+                    ERROR("var_parse_value error.")
+                if not self.add_var(var_name, parse_value):
+                    self._home.publish_msg(cmd, u"新建变量失败")
+                else:
+                    self._home.publish_msg(cmd, u"成功新建变量")
+                    self.save_vars()
+            elif pre_value == "remove":
+                var_name = msg
+                if self.remove_var_by_name(var_name):
+                    INFO("remove var: " + var_name)
+                    self._home.publish_msg(cmd, u"删除变量:" + var_name)
         return True
 
 

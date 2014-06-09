@@ -121,6 +121,32 @@ def wait_for_period(period):
         return tt1
 
 
+def var_parse_value(var_value):
+    if empty_str(var_value):
+        return None
+    if var_value.startswith(u'逻辑'):
+        if var_value.endswith(u'真'):
+            return True
+        elif var_value.endswith(u'假'):
+            return False
+        else:
+            return None
+    elif var_value.startswith(u'数值'):
+        try:
+            value = int(var_value[2:])
+        except:
+            return None
+        return value
+    elif var_value.startswith(u'字符'):
+        try:
+            value = unicode(var_value[2:])
+        except:
+            return None
+        return value
+    else:
+        return None
+
+
 def xunicode(u):
     if u is None:
         return u''
