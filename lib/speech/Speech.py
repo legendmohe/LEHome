@@ -60,7 +60,7 @@ class Speech2Text(object):
     CHANNELS = 1
     RATE = 16000
     STT_RATE = 16000
-    CHUNK_SIZE = 256  # !!!!!
+    CHUNK_SIZE = 512  # !!!!!
     SAMPLE_WIDTH = 0
 
     BEGIN_THRESHOLD = 5
@@ -276,7 +276,7 @@ class Speech2Text(object):
                     frames_per_buffer=Speech2Text.CHUNK_SIZE)
         Speech2Text.SAMPLE_WIDTH = p.get_sample_size(Speech2Text.FORMAT)
         # Speech2Text.RATE = p.get_device_info_by_index(0)['defaultSampleRate']
-        INFO("default rate:", Speech2Text.RATE)
+        INFO("default rate: %d" % (Speech2Text.RATE,))
 
         self.queue = self._queue(self.callback, rate=Speech2Text.STT_RATE)
         self.queue.start()
@@ -287,7 +287,7 @@ class Speech2Text(object):
             try:
                 snd_data = stream.read(Speech2Text.CHUNK_SIZE)
             except IOError as ex:
-                print "OverflowError"
+                print "OverflowError" + str(ex)
                 if ex[1] != pyaudio.paInputOverflowed:
                     raise
                 snd_data = '\x00' * Speech2Text.CHUNK_SIZE

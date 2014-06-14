@@ -3,6 +3,8 @@
 
 
 import sys
+import argparse
+import time
 from util.log import *
 from lib.speech.Speech import Speech2Text
 import zmq
