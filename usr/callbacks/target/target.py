@@ -42,6 +42,7 @@ class weather_report_callback(Callback.Callback):
                     city_code_url += urllib.urlencode({'city': msg.encode('utf8')})
                     city_code = urllib2.urlopen(city_code_url, timeout=10).read()
                     if city_code == 'ERROR':
+                        ERROR("weather-city code error.")
                         return True, False
                 url = 'http://hao.weidunewtab.com/myapp/weather/data/index.php?cityID=' + city_code
                 re = urllib2.urlopen(url, timeout=10).read()
@@ -470,7 +471,7 @@ class script_callback(Callback.Callback):
         else:
             self._home.parse_cmd(script)
 
-    def callback(self, cmd, action, msg, pre_value):
+    def callback(self, cmd, action, target, msg, pre_value):
         if pre_value == "show":
             info = ""
             self.load_scripts()

@@ -19,11 +19,6 @@ class SwitchHelper:
         self.name2ip = init_json["switchs"]
 
         self._send_lock = threading.Lock()
-        context = zmq.Context()
-        self.socket = context.socket(zmq.REQ)
-        self.socket.setsockopt(zmq.LINGER, 0)
-        self.socket.connect(self.server_ip)
-        time.sleep(0.5)
         self.init_switchs()
 
     def init_switchs(self):
@@ -87,6 +82,17 @@ class SwitchHelper:
         #     ERROR(ex)
         #     WARN("request timeout.")
         # ----------------------------
+        context = zmq.Context()
+        self.socket = context.socket(zmq.REQ)
+        self.socket.setsockopt(zmq.LINGER, 0)
+        try:
+            self.socket.connect(self.server_ip)
+            # time.sleep(0.5)
+        except Exception, ex:
+            ERROR("can't connect to switch server.")
+            self._send_lock.release()
+            return message
+
         self.socket.send_string(cmd)
         try:
             poller = zmq.Poller()
