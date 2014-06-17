@@ -56,7 +56,7 @@ class Command:
             try:
                 with open(self._tasklist_path, "rb") as f:
                     return pickle.load(f)
-            except:
+            except Exception, e:
                 INFO("no unfinished task list.")
                 return []
 

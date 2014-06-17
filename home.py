@@ -13,6 +13,7 @@ from lib.command.Command import Command
 from lib.speech.Speech import Text2Speech
 from lib.helper.SwitchHelper import SwitchHelper
 from lib.helper.SensorHelper import SensorHelper
+from lib.helper.MessageHelper import MessageHelper
 from util.Res import Res
 from lib.sound import Sound
 from util.log import *
@@ -31,12 +32,10 @@ class TracePrints(object):
 
 class Home:
     def __init__(self):
-        self._info_lock = threading.Lock()
 
         self._global_context = {}
         self._init_res = Res.init("init.json")
         self._init_subscribable()
-        self._init_publisher()
         self._init_audio_server()
         self._init_helper()
         self._init_speaker()
@@ -134,24 +133,11 @@ class Home:
         #  for receiving init string too fast
         time.sleep(0.5)
 
-    def _init_publisher(self):
-        context = zmq.Context()
-        publisher = self._init_res["connection"]["publisher"]
-        _pub_sock = context.socket(zmq.PUB)
-        INFO("bind to : %s " % (publisher))
-        _pub_sock.bind(publisher)
-        self._pub_sock = _pub_sock
-        #  for sending init string too fast
-        time.sleep(0.5)
-        self._init_pub_heartbeat()
-
-    def _init_pub_heartbeat(self):
-        def heartbeat():
-            self.publish_msg(None, "", "heartbeat")
-        self.timer = TimerThread(interval=20, target=heartbeat)
-        self.timer.start()
-
     def _init_helper(self):
+        publisher_ip = self._init_res["connection"]["publisher"]
+        INFO("init message publisher: " + publisher_ip)
+        self._msg_sender = MessageHelper(publisher_ip)
+
         switch_server_ip = self._init_res["connection"]["switch_server"]
         INFO("init switch server: " + switch_server_ip)
         self._switch = SwitchHelper()
@@ -169,13 +155,7 @@ class Home:
         # self.publish_msg(command, "end: " + command)
 
     def publish_msg(self, sub_id, msg, cmd_type="normal"):
-        with self._info_lock:
-            def send_msg():
-                msg_string = json.dumps({"type": cmd_type, "msg": msg})
-                # INFO("public msg:" + msg_string)
-                self._pub_sock.send_string(msg_string)
-            t = threading.Thread(target=send_msg)
-            t.start()
+        self._msg_sender.publish_msg(sub_id, msg, cmd_type)
 
     def parse_cmd(self, cmd):
         if not self._resume:
