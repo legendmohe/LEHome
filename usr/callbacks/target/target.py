@@ -467,9 +467,10 @@ class script_callback(Callback.Callback):
         script = self.script_by_name(name)
         if script is None or len(script) == 0:
             ERROR("empty script content or invaild script name.")
-            return
+            return False
         else:
             self._home.parse_cmd(script)
+            return True
 
     def callback(self, cmd, action, target, msg, pre_value):
         if pre_value == "show":
@@ -512,8 +513,10 @@ class script_callback(Callback.Callback):
                     INFO("remove script: " + script_name)
                     self._home.publish_msg(cmd, u"删除脚本:" + script_name)
             elif pre_value == "run":
-                self._home.publish_msg(cmd, u"执行脚本:" + script_name)
-                self.run_script(script_name)
+                if self.run_script(script_name) is False:
+                    self._home.publish_msg(cmd, u"无效脚本")
+                else:
+                    self._home.publish_msg(cmd, u"执行脚本:" + script_name)
         return True
 
 
