@@ -13,8 +13,9 @@ from util.thread import TimerThread
 
 class MessageHelper(object):
 
-    def __init__(self, pub_address):
+    def __init__(self, pub_address, cmd_address):
         self.pub_address = pub_address
+        self.cmd_address = cmd_address
         self._msg_lock = threading.Lock()
         self._msg_queue = Queue()
 
@@ -60,6 +61,15 @@ class MessageHelper(object):
             self._pub_sock.send_string(msg_string)
             self._msg_queue.task_done()
 
+    def _cmd_worker(self):
+        context = zmq.Context()
+        socket = context.socket(zmq.REP)
+        socket.bind(self.cmd_address)
+        while True:
+            cmd = socket.recv_string()
+            res = self._handle_cmd(cmd)
+            socket.send_string(res)
+
     def _put_msg(self, msg):
         self._msg_queue.put(msg)
 
@@ -69,6 +79,20 @@ class MessageHelper(object):
                                 ) # block!
         return msg
 
+    def _handle_cmd(self, cmd):
+        try:
+            cmd_object = json.loads(cmd)
+            cmd_type = cmd_object["type"]
+            cmd_from = cmd_object["from"]
+            cmd_to = cmd_object["to"]
+            if cmd_type == "load":
+                msgs = self.msg_for_range(cmd_from, cmd_to)
+                res_string = json.dumps({"res": msgs})
+        except Exception, e:
+            ERROR(e)
+            res_string = json.dumps({"res": "error"})
+        return res_string
+
     def _init_pub_heartbeat(self):
         def heartbeat():
             self.publish_msg(None, "", "heartbeat")
@@ -76,13 +100,21 @@ class MessageHelper(object):
         self.timer.start()
 
     def _init_worker(self):
-        self.worker_thread = threading.Thread(target=self._msg_worker)
-        self.worker_thread.daemon = True
-        self.worker_thread.start()
+        self._cmd_thread = threading.Thread(target=self._cmd_worker)
+        self._cmd_thread.daemon = True
+        self._cmd_thread.start()
+
+        self._msg_thread = threading.Thread(target=self._msg_worker)
+        self._msg_thread.daemon = True
+        self._msg_thread.start()
 
     def publish_msg(self, sub_id, msg, cmd_type="normal"):
         with self._msg_lock:
-            msg_dict = {"type": cmd_type, "msg": msg}
+            msg_dict = {
+                            "maxseq": self._sequence_num,
+                            "type": cmd_type,
+                            "msg": msg
+                        }
             # INFO("public msg:" + msg_string)
 
             if cmd_type != "heartbeat":

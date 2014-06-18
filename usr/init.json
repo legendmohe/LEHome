@@ -2,6 +2,7 @@
     "connection":{
         "subscribable" : ["tcp://localhost:8000", "tcp://localhost:7999"],
         "publisher" : "tcp://*:9000",
+        "msg_cmd_bind" : "tcp://*:9001",
         "audio_server" : "http://localhost:8001",
         "switch_server" : "tcp://192.168.1.102:8004",
         "sensor_server" : "tcp://localhost:8005"

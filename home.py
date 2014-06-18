@@ -135,8 +135,10 @@ class Home:
 
     def _init_helper(self):
         publisher_ip = self._init_res["connection"]["publisher"]
-        INFO("init message publisher: " + publisher_ip)
-        self._msg_sender = MessageHelper(publisher_ip)
+        msg_cmd_bind = self._init_res["connection"]["msg_cmd_bind"]
+        INFO("init message publisher: %s, cmd bind: %s" %
+                                            (publisher_ip, msg_cmd_bind))
+        self._msg_sender = MessageHelper(publisher_ip, msg_cmd_bind)
 
         switch_server_ip = self._init_res["connection"]["switch_server"]
         INFO("init switch server: " + switch_server_ip)
