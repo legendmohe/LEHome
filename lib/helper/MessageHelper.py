@@ -38,7 +38,7 @@ class MessageHelper(object):
 
     def _init_subscriber(self):
         self._backup_dict = {}
-        self._sequence_num = 0
+        self._seq_num = 0
         self._subscribers = set()
 
     def add_subscribers(self, new_sub):
@@ -83,11 +83,23 @@ class MessageHelper(object):
         try:
             cmd_object = json.loads(cmd)
             cmd_type = cmd_object["type"]
-            cmd_from = cmd_object["from"]
-            cmd_to = cmd_object["to"]
             if cmd_type == "load":
+                cmd_from = cmd_object["from"]
+                cmd_to = cmd_object["to"]
                 msgs = self.msg_for_range(cmd_from, cmd_to)
                 res_string = json.dumps({"res": msgs})
+            elif cmd_type == "login":
+                user_id = cmd_object["id"]
+                self.add_subscribers(user_id)
+                res_string = json.dumps({"res": "ok", "maxseq": self._seq_num})
+            elif cmd_type == "logout":
+                user_id = cmd_object["id"]
+                self.remove_subscribers(user_id)
+                res_string = json.dumps({"res": "ok"})
+            elif cmd_type == "done":
+                seq = cmd_object["seq"]
+                self.done_msg(seq)
+                res_string = json.dumps({"res": "ok"})
         except Exception, e:
             ERROR(e)
             res_string = json.dumps({"res": "error"})
@@ -111,19 +123,21 @@ class MessageHelper(object):
     def publish_msg(self, sub_id, msg, cmd_type="normal"):
         with self._msg_lock:
             msg_dict = {
-                            "maxseq": self._sequence_num,
                             "type": cmd_type,
                             "msg": msg
                         }
             # INFO("public msg:" + msg_string)
 
             if cmd_type != "heartbeat":
-                self._sequence_num += 1
-                msg_dict["seq"] = self._sequence_num
+                self._seq_num += 1
+                msg_dict["seq"] = self._seq_num
+                msg_dict["maxseq"] = self._seq_num
                 msg_string = json.dumps(msg_dict)
-                self._backup_dict[self._sequence_num] = (
+                self._backup_dict[self._seq_num] = (
                                             msg_string, len(self._subscribers))
             else:
+                msg_dict["seq"] = -1
+                msg_dict["maxseq"] = self._seq_num
                 msg_string = json.dumps(msg_dict)
             self._put_msg(msg_string)
 
@@ -145,4 +159,4 @@ class MessageHelper(object):
         return msgs
 
     def cur_seq(self):
-        return self._sequence_num
+        return self._seq_num
