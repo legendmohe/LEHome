@@ -371,7 +371,7 @@ class todo_callback(Callback.Callback):
                     self._home.publish_msg(cmd
                             , u"删除" + target + ": " + msg)
                 else:
-                    self._home.publish_msg(cmd, u"删除失败")
+                    self._home.publish_msg(cmd, u"无此编号:" + index)
             else:
                 self._home.publish_msg(cmd, u"编号出错")
         return True
@@ -767,6 +767,8 @@ class speech_callback(Callback.Callback):
                     return True
                 else:
                     self._speaker.speak(userinput)
+                    self._home.publish_msg(cmd, u"播放语音:" + userinput)
             else:
                 self._speaker.speak(msg)
+                self._home.publish_msg(cmd, u"播放语音:" + msg)
         return True

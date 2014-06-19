@@ -60,6 +60,7 @@ class MessageHelper(object):
             msg_string = self._get_msg()
             self._pub_sock.send_string(msg_string)
             self._msg_queue.task_done()
+            time.sleep(0.3)
 
     def _cmd_worker(self):
         context = zmq.Context()

@@ -389,6 +389,8 @@ class CommandParser:
         self.finish_callback = None
         self.stop_callback = None
 
+        self._in_escape = False
+
         self._load_stopwords()
 
     def _reset(self):
@@ -459,17 +461,18 @@ class CommandParser:
     def put_into_parse_stream(self, stream_term):
         # if self.DEBUG :
         #     DEBUG("parse: %s" %(stream_term)
-        in_escape = False
         for item in list(stream_term):
-            if item == CommandParser.ESCAPE_BEGIN:
-                in_escape = True
+            # escape for confilct items
+            if not self._in_escape is True and item == CommandParser.ESCAPE_BEGIN:
+                self._in_escape = True
                 continue
-            elif item == CommandParser.ESCAPE_END:
-                in_escape = False
+            elif self._in_escape is True and item == CommandParser.ESCAPE_END:
+                self._in_escape = False
                 continue
             elif item.isspace() or item in self._stopwords:
                 continue
-            if in_escape:
+
+            if self._in_escape is True:
                 _token, _token_type = (item, "others")
             else:
                 _token, _token_type = self._parse_token(item)
