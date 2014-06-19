@@ -31,26 +31,34 @@ def try_exit():
 # proxy
 
 
-def initialize(port):
-    global SOCK
-    if not port is None:
-        INFO("bind to %s " % (port))
+def initialize(address):
+    global SOCK, POLLER
+    if not address is None:
+        INFO("connect to server: %s " % (address))
         context = zmq.Context()
-        _sock = context.socket(zmq.PUB)
-        _sock.bind("tcp://*:" + port)
+        _sock = context.socket(zmq.REQ)
+        _sock.setsockopt(zmq.LINGER, 0)
+        poller = zmq.Poller()
+        poller.register(_sock, zmq.POLLIN)
+        _sock.connect(address)
         SOCK = _sock
+        POLLER = poller
     else:
-        ERROR("port is empty")
+        ERROR("address is empty")
 
 
 class CmdHandler(tornado.web.RequestHandler):
 
     def get(self, cmd):
-        global SOCK
+        global SOCK, POLLER
         if not cmd is None and not cmd == "":
             INFO("send cmd %s to home." % (cmd, ))
             SOCK.send_string(cmd)
-            self.write("ok")
+            if POLLER.poll(10*1000): # 10s timeout in milliseconds
+                rep = SOCK.recv_string()
+                self.write(rep)
+            else:
+                self.write("error")
         else:
             self.write("error")
 
@@ -68,11 +76,11 @@ class CmdListHandler(tornado.web.RequestHandler):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-                    description='cmd_http_server.py -p port -b http_server_port')
-    parser.add_argument('-p',
+                    description='cmd_http_server.py -a address -b http_server_port')
+    parser.add_argument('-a',
                         action="store",
-                        dest="port",
-                        default="7999",
+                        dest="address",
+                        default="tcp://localhost:8000",
                         )
     parser.add_argument('-b',
                         action="store",
@@ -80,12 +88,12 @@ if __name__ == "__main__":
                         default="8002",
                         )
     args = parser.parse_args()
-    port = args.port
+    address = args.address
     http_port = args.http_port
     signal.signal(signal.SIGINT, signal_handler)
 
     INFO("http command server is activate.")
-    initialize(port)
+    initialize(address)
     application = tornado.web.Application([
                 (r"/cmd/([^/]*)", CmdHandler),
                 (r"/cmdlist", CmdListHandler),

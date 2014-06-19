@@ -133,7 +133,8 @@ class MessageHelper(object):
                 msg_dict["seq"] = self._seq_num
                 msg_dict["maxseq"] = self._seq_num
                 msg_string = json.dumps(msg_dict)
-                self._backup_dict[self._seq_num] = (
+                if len(self._subscribers) > 0:
+                    self._backup_dict[self._seq_num] = (
                                             msg_string, len(self._subscribers))
             else:
                 msg_dict["seq"] = -1

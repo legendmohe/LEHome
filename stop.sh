@@ -3,8 +3,8 @@
 echo 'kill home.py...'
 ps -ef | awk '/python home\.py/ {print $2}' | xargs kill
 
-echo 'kill cmd_http_proxy.py...'
-ps -ef | awk '/python cmd_http_proxy\.py/ {print $2}' | xargs kill
+# echo 'kill cmd_http_proxy.py...'
+# ps -ef | awk '/python cmd_http_proxy\.py/ {print $2}' | xargs kill
 
 echo 'kill sensor_server.py...'
 ps -ef | awk '/python sensor_server\.py/ {print $2}' | xargs kill

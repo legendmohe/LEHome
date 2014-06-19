@@ -1,6 +1,6 @@
 {
     "connection":{
-        "subscribable" : ["tcp://localhost:8000", "tcp://localhost:7999"],
+        "cmd_bind_address" : "tcp://*:8000",
         "publisher" : "tcp://*:9000",
         "msg_cmd_bind" : "tcp://*:9001",
         "audio_server" : "http://localhost:8001",

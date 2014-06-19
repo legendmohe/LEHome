@@ -35,7 +35,7 @@ class Home:
 
         self._global_context = {}
         self._init_res = Res.init("init.json")
-        self._init_subscribable()
+        self._init_cmd_socket()
         self._init_audio_server()
         self._init_helper()
         self._init_speaker()
@@ -117,21 +117,14 @@ class Home:
         Sound.AUDIO_SERVER_ADDRESS = self._init_res["connection"]["audio_server"]
         INFO("connect to audio server: %s " % (Sound.AUDIO_SERVER_ADDRESS))
 
-    def _init_subscribable(self):
+    def _init_cmd_socket(self):
+        cmd_bind_address = self._init_res["connection"]["cmd_bind_address"]
+        INFO("initlizing cmd socket, bing to:" + cmd_bind_address)
+
         context = zmq.Context()
-        _sub_sock = context.socket(zmq.SUB)
-        subscribables = self._init_res["connection"]["subscribable"]
-        for subscribable in subscribables:
-            try:
-                _sub_sock.connect(subscribable)
-                INFO("connect to subscribable: %s " % (subscribable))
-            except Exception, e:
-                ERROR("connection faild: %s" % (subscribable, ))
-                ERROR(e)
-        _sub_sock.setsockopt(zmq.SUBSCRIBE, '')
-        self._sub_sock = _sub_sock
-        #  for receiving init string too fast
-        time.sleep(0.5)
+        self._cmd_socket = context.socket(zmq.REP)
+        self._cmd_socket.setsockopt(zmq.LINGER, 0)
+        self._cmd_socket.bind(cmd_bind_address)
 
     def _init_helper(self):
         publisher_ip = self._init_res["connection"]["publisher"]
@@ -172,8 +165,13 @@ class Home:
 
         while True:
             INFO("waiting for command...")
-            cmd = self._sub_sock.recv_string()
-            home.parse_cmd(cmd)
+            req = self._cmd_socket.recv_string()
+            if req == "":
+                rep = "error"
+            else:
+                rep = "ok"
+            self._cmd_socket.send_string(rep)
+            home.parse_cmd(req)
 
     def deactivate(self):
         self._spk.stop()
