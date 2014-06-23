@@ -52,8 +52,6 @@ class SensorHelper:
 
     def get_lig(self, target_addr):
         lig = self.get_sensor_value(target_addr, "lig")
-        if lig is not None:
-            lig = str(int(lig))
         return lig
 
     def get_sensor_value(self, target_addr, sensor_type):

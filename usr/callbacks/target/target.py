@@ -387,13 +387,28 @@ class task_callback(Callback.Callback):
                 INFO(info)
                 self._home.publish_msg(cmd, info)
             else:
-                info += u"任务列表:"
-                for thread_index in threads:
-                    if threads[thread_index][0] == cmd:
-                        continue
-                    info += u"\n  序号：%d 内容：%s" % (thread_index, threads[thread_index][0])
-                INFO(info)
-                self._home.publish_msg(cmd, info)
+                if msg is None or len(msg) == 0:
+                    info += u"任务列表:"
+                    for thread_index in threads:
+                        if threads[thread_index][0] == cmd:
+                            continue
+                        info += u"\n  序号：%d 内容：%s" % (thread_index, threads[thread_index][0])
+                    INFO(info)
+                    self._home.publish_msg(cmd, info)
+                else:
+                    thread_index = Util.cn2dig(msg)
+                    if thread_index is None or thread_index == '':
+                        WARN("invaild thread index %s" % (msg, ))
+                        self._home.publish_msg(cmd, u"任务序号格式错误:" + msg)
+                    else:
+                        thread_index = int(thread_index)
+                        if thread_index in threads:
+                            info += u"内容：%s" % (threads[thread_index][0], )
+                            INFO(info)
+                            self._home.publish_msg(cmd, info)
+                        else:
+                            WARN("invaild thread index %s" % (msg, ))
+                            self._home.publish_msg(cmd, u"无此任务序号:" + msg)
         elif pre_value == "break":
             thread_index = Util.cn2dig(msg)
             if thread_index is None or thread_index == '':
@@ -599,7 +614,7 @@ class var_callback(Callback.Callback):
                 self._home.publish_msg(cmd, u"无变量:" + msg)
                 return False
             else:
-                INFO(u'变量:' + unicode(self.vars[msg]))
+                # INFO(u'变量:' + unicode(self.vars[msg]))
                 return True, self.vars[msg]
         else:
             if Util.empty_str(msg):

@@ -20,19 +20,6 @@ class MessageHelper(object):
         self._msg_queue = Queue()
 
         self._init_subscriber()
-        self._init_publisher()
-
-    def _init_publisher(self):
-        context = zmq.Context()
-        publisher = self.pub_address
-        _pub_sock = context.socket(zmq.PUB)
-        INFO("pub bind to : %s " % (publisher))
-        _pub_sock.bind(publisher)
-        self._pub_sock = _pub_sock
-
-        #  for sending init string too fast
-        time.sleep(0.5)
-
         self._init_pub_heartbeat()
         self._init_worker()
 
@@ -56,10 +43,18 @@ class MessageHelper(object):
         return True
 
     def _msg_worker(self):
+        context = zmq.Context()
+        publisher = self.pub_address
+        _pub_sock = context.socket(zmq.PUB)
+        INFO("pub bind to : %s " % (publisher))
+        _pub_sock.bind(publisher)
+        self._pub_sock = _pub_sock
+
+        #  for sending init string too fast
+        time.sleep(0.5)
         while True:
             msg_string = self._get_msg()
             self._pub_sock.send_string(msg_string)
-            self._msg_queue.task_done()
             time.sleep(0.3)
 
     def _cmd_worker(self):
@@ -78,6 +73,7 @@ class MessageHelper(object):
         msg = self._msg_queue.get(
                                 block=True,
                                 ) # block!
+        self._msg_queue.task_done()
         return msg
 
     def _handle_cmd(self, cmd):

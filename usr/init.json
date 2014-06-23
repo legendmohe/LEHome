@@ -3,7 +3,7 @@
         "cmd_bind_address" : "tcp://*:8000",
         "publisher" : "tcp://*:9000",
         "msg_cmd_bind" : "tcp://*:9001",
-        "audio_server" : "http://192.168.1.122:8001",
+        "audio_server" : "http://192.168.1.101:8001",
         "switch_server" : "tcp://192.168.1.102:8004",
         "sensor_server" : "tcp://localhost:8005"
     },
@@ -131,6 +131,6 @@
         "书桌":"00124B00041183FE"
     },
     "qqfm": {
-        "server":"192.168.1.100:8888"
+        "server":"192.168.1.101:8888"
     }
 }
