@@ -23,22 +23,25 @@ def signal_handler(signum, frame):
 
 
 def try_exit():
-    global is_closing
+    global is_closing, mp_context
     if is_closing:
         # clean up here
         tornado.ioloop.IOLoop.instance().stop()
         logging.info('exit success')
+        for url in mp_context:
+            mp = mp_context[url]
+            mp.exit()
 
 
 # handlers
 
 
 class RETURNCODE:
-    SUCCESS = 1
-    ERROR   = 2
-    FAIL    = 3
-    EMPTY   = 4
-    NO_RES  = 5
+    SUCCESS = '1'
+    ERROR   = '2'
+    FAIL    = '3'
+    EMPTY   = '4'
+    NO_RES  = '5'
 
 
 class StopHandler(tornado.web.RequestHandler):
@@ -104,21 +107,25 @@ class PauseHandler(tornado.web.RequestHandler):
 def wait_util_player_finished(mp):
     while mp.time_pos < mp.length or mp.paused:
         print mp.time_pos
-        sleep(0.5)
+        sleep(0.2)
 
 
 def play_audio(url, loop=-1):
     global mp_context
 
-    def worker():
+    def worker(play_url):
         # turl = "-http-header-fields 'Cookie: pgv_pvid=9151698519; qqmusic_uin=12345678; qqmusic_key=12345678; qqmusic_fromtag=0;\' " + url
-        aUrl = url
-        mp.loadfile(aUrl)
-        INFO("%s is playing." % (aUrl,))
+        mp = Player()
+        mp_context[play_url] = mp
+        mp.loop = loop
+        mp.loadfile(play_url)
+        INFO("playing %s." % (play_url,))
         wait_util_player_finished(mp)
         mp.loop = -1
-        if aUrl in mp_context:
-            del mp_context[aUrl]
+        if play_url in mp_context:
+            del mp_context[play_url]
+        print "play finished:%s" % (play_url,)
+        mp.exit()
 
     if url in mp_context:
         mp = mp_context[url]
@@ -127,10 +134,7 @@ def play_audio(url, loop=-1):
             mp.loadfile(url)
             INFO("%s is playing." % (url,))
     else:
-        mp = Player()
-        mp.loop = loop
-        mp_context[url] = mp
-        t = threading.Thread(target=worker)
+        t = threading.Thread(target=worker, args=(url, ))
         t.setDaemon(True)
         t.start()
 
@@ -198,6 +202,7 @@ def queue_worker():
         wait_util_player_finished(mp)
         mp.loop = -1
         mp_queue.task_done()
+    mp.exit()
 
 
 def init_queue_player():

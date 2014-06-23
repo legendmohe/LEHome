@@ -137,7 +137,7 @@ class qqfm_callback(Callback.Callback):
 
     def init_channcels(self):
         try:
-            INFO("init qqfm.")
+            INFO("init qqfm:" + qqfm_callback.channel_url)
             channels = urllib2.urlopen(qqfm_callback.channel_url, timeout=5).read()
             self.channels = [channel.decode("utf-8") for channel in channels.split('\n')]
         except Exception, ex:
@@ -157,7 +157,7 @@ class qqfm_callback(Callback.Callback):
                     info = u"电台列表:\n"
                     info += u", ".join(self.channels)
                     self._home.publish_msg(cmd, info)
-            elif pre_value == "play":
+            elif pre_value == "run":
                 if len(self.channels) == 0:
                     self._home.publish_msg(cmd, u"无电台列表")
                 else:
@@ -168,10 +168,11 @@ class qqfm_callback(Callback.Callback):
                                         )
                     else:
                         play_url = qqfm_callback.next_url
-                    rep = urllib2.urlopen(play_url, timeout=3).read()
+                    INFO("qqfm playing:%s" % (play_url,))
+                    rep = urllib2.urlopen(play_url, timeout=5).read()
                     INFO("qqfm playing state: " + rep)
                     self._home.publish_msg(cmd, u"正在播放:" + rep.decode("utf-8"))
-            elif pre_value == "stop_playing":
+            elif pre_value == "break":
                 rep = urllib2.urlopen(qqfm_callback.pause_url, timeout=3).read()
                 INFO("qqfm playing state: " + rep.decode("utf-8"))
                 self._home.publish_msg(cmd, u"停止播放")
@@ -491,14 +492,20 @@ class script_callback(Callback.Callback):
         if pre_value == "show":
             info = ""
             self.load_scripts()
-            for script_name in self.scripts:
-                info += u"名称: " + script_name  \
-                        + u"\n    内容: " + self.scripts[script_name]  \
-                        + "\n"
-            if len(info) == 0:
-                info = u"当前无" + target
+            if msg is None or len(msg) == 0:
+                for script_name in self.scripts:
+                    info += u"名称: " + script_name  \
+                            + u"\n    内容: " + self.scripts[script_name]  \
+                            + "\n"
+                if len(info) == 0:
+                    info = u"当前无" + target
+                else:
+                    info = info[:-1]
             else:
-                info = info[:-1]
+                if msg in self.scripts:
+                    info = u'内容：' + self.scripts[msg]
+                else:
+                    info = u"无此脚本：" + msg
             self._home.publish_msg(cmd, info)
             INFO(info)
         else:
