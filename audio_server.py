@@ -3,6 +3,8 @@
 
 
 import threading
+import subprocess
+import os
 import signal
 from Queue import Queue
 from time import sleep
@@ -32,6 +34,26 @@ def try_exit():
             mp = mp_context[url]
             mp.exit()
 
+
+
+#
+# class RunCmd(threading.Thread):
+#     def __init__(self, cmd, timeout):
+#         threading.Thread.__init__(self)
+#         self.cmd = cmd
+#         self.timeout = timeout
+#
+#     def run(self):
+#         self.p = sub.Popen(self.cmd)
+#         self.p.wait()
+#
+#     def Run(self):
+#         self.start()
+#         self.join(self.timeout)
+#
+#         if self.is_alive():
+#             self.p.terminate()      #use self.p.kill() if process needs a kill -9
+#             self.join()
 
 # handlers
 
@@ -88,55 +110,66 @@ class PlayHandler(tornado.web.RequestHandler):
 
 class PauseHandler(tornado.web.RequestHandler):
     def get(self):
-        url = self.get_argument("url", None)
-        if url is None or url == "":
-            if pause_audio(url):
-                self.write(str(RETURNCODE.SUCCESS))
-            else:
-                self.write(str(RETURNCODE.ERROR))
+        # url = self.get_argument("url", None)
+        # if url is None or url == "":
+        if pause_audio_queue():
+            self.write(str(RETURNCODE.SUCCESS))
         else:
-            if pause_audio_queue():
-                self.write(str(RETURNCODE.SUCCESS))
-            else:
-                self.write(str(RETURNCODE.ERROR))
+            self.write(str(RETURNCODE.ERROR))
+        # else:
+        #     if pause_audio(url):
+        #         self.write(str(RETURNCODE.SUCCESS))
+        #     else:
+        #         self.write(str(RETURNCODE.ERROR))
 
 
-# functions
+# ============== functions ============
 
 
 def wait_util_player_finished(mp):
-    while mp.time_pos < mp.length or mp.paused:
-        print mp.time_pos
-        sleep(0.2)
+    while (mp.length <= 0 and mp.time_pos is not None) \
+                        or mp.time_pos < mp.length \
+                        or mp.paused:
+        # print mp.time_pos
+        sleep(0.1)
+
+
+def worker(play_url, loop):
+    global mp_context
+
+    # mp = Player()
+    # mp.loop = loop
+    # try:
+    #     mp.loadfile(play_url)
+    #     INFO("playing %s." % (play_url,))
+    #     wait_util_player_finished(mp)
+    # except Exception, ex:
+    #     print ex
+    # mp.loop = -1
+    # mp.exit()
+    # if play_url in mp_context:
+    #     del mp_context[play_url]
+    cmd = ['mplayer', play_url, '-loop', str(loop)]
+    with open(os.devnull, 'w') as tempf:
+        player = subprocess.Popen(cmd, stdout=tempf, stderr=tempf)
+        mp_context[play_url] = player
+        print "player create: " + str(player.pid)
+        player.wait()
+    if play_url in mp_context:
+        del mp_context[play_url]
+    print "play finished:%s" % (play_url,)
 
 
 def play_audio(url, loop=-1):
     global mp_context
 
-    def worker(play_url):
-        # turl = "-http-header-fields 'Cookie: pgv_pvid=9151698519; qqmusic_uin=12345678; qqmusic_key=12345678; qqmusic_fromtag=0;\' " + url
-        mp = Player()
-        mp_context[play_url] = mp
-        mp.loop = loop
-        mp.loadfile(play_url)
-        INFO("playing %s." % (play_url,))
-        wait_util_player_finished(mp)
-        mp.loop = -1
-        if play_url in mp_context:
-            del mp_context[play_url]
-        print "play finished:%s" % (play_url,)
-        mp.exit()
-
     if url in mp_context:
         mp = mp_context[url]
         if not mp is None:  # for thread-safe
-            mp.loop = loop
-            mp.loadfile(url)
-            INFO("%s is playing." % (url,))
-    else:
-        t = threading.Thread(target=worker, args=(url, ))
-        t.setDaemon(True)
-        t.start()
+            mp.terminate()
+    t = threading.Thread(target=worker, args=(url, loop))
+    t.setDaemon(True)
+    t.start()
 
     return True
 
@@ -154,22 +187,23 @@ def stop_audio(url):
         return False
     else:
         mp = mp_context[url]
-        mp.stop()
-        if mp in mp_context:
-            del mp_context[url]
+        if not mp is None:  # for thread-safe
+            mp.terminate()
+            if url in mp_context:
+                del mp_context[url]
         return True
 
 
-def pause_audio(url):
-    global mp_context
-    if not url in mp_context:
-        WARN("%s is not playing" % (url, ))
-        return False
-    else:
-        INFO("pause: " + url)
-        mp = mp_context[url]
-        mp.pause()
-        return True
+# def pause_audio(url):
+#     global mp_context
+#     if not url in mp_context:
+#         WARN("%s is not playing" % (url, ))
+#         return False
+#     else:
+#         INFO("pause: " + url)
+#         mp = mp_context[url]
+#         mp.pause()
+#         return True
 
 
 def pause_audio_queue():
@@ -194,19 +228,21 @@ def queue_worker():
     global mp_context
     global mp_queue
 
+    mp_context["queue"] = Player()
     mp = mp_context["queue"]
     while True:
         url, loop = mp_queue.get()
+        print "get from queue:" + str(url)
         mp.loop = loop
         mp.loadfile(url)
         wait_util_player_finished(mp)
         mp.loop = -1
         mp_queue.task_done()
     mp.exit()
+    sleep(1)
 
 
 def init_queue_player():
-    mp_context["queue"] = Player()
     t = threading.Thread(target=queue_worker)
     t.setDaemon(True)
     t.start()

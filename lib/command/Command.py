@@ -85,7 +85,7 @@ class Command:
         # import pdb
         # pdb.set_trace()
 
-        Sound.play(Res.get_res_path("sound/com_begin"))
+        Sound.play(Res.get_res_path("sound/com_begin"), inqueue=True)
         #  stoppable thread
         t = StoppableThread(
                             target=self._execute,
@@ -95,7 +95,7 @@ class Command:
         t.start()
 
     def _stop_callback(self, command, stop):
-        Sound.play(Res.get_res_path("sound/com_stop"))
+        Sound.play(Res.get_res_path("sound/com_stop"), inqueue=True)
         if "stop" in self._registered_callbacks:
             callbacks = self._registered_callbacks["stop"]
             if stop in callbacks:

@@ -125,8 +125,6 @@ class stop_play_callback(Callback.Callback):
             INFO("clear audio queue.")
             Sound.clear_queue()
             del self._global_context["player"]
-            if "playlist" in self._global_context:
-                del self._global_context["playlist"]
         return True, "stop_playing"
 
 
@@ -137,14 +135,8 @@ class play_callback(Callback.Callback):
             def play(path = None, inqueue=True, loop=-1):
                 if not path:
                     return
-                if not "playlist" in self._global_context:
-                    self._global_context["playlist"] = []
-                playlist = self._global_context["playlist"]
-                if not path in playlist:
-                    playlist.append(path)
-                    Sound.play(path, inqueue, loop)
-                else:
-                    INFO("%s was already in audio queue." % (path, ))
+                Sound.play(path, inqueue, loop)
+                INFO("%s going to audio queue." % (path, ))
             if not "player" in self._global_context:
                 self._global_context["player"] = play
             return True, "play"
