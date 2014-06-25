@@ -1,6 +1,22 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+# Copyright 2014 Xinyu, He <legendmohe@foxmail.com>
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#   http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+import threading
 from fysom import Fysom
 from heapq import heappush, heapify
 from lib.model.Elements import Statement, IfStatement, WhileStatement, Block, LogicalOperator, CompareOperator
@@ -35,6 +51,7 @@ class CommandParser:
         if e.src == "initial_state":
             self._last_cmd = ''
             self._is_cmd_triggered = True
+            self._lock.acquire()
         self._statement.trigger = e.args[1]
 
     def onfound_target(self, e):
@@ -354,6 +371,7 @@ class CommandParser:
 
     def __init__(self, coms):
         self.flag = []
+        self._lock = threading.Lock()
 
         flags = ['whiles', 'ifs', 'thens', 'elses', 'delay', 'trigger', 'stop', 'finish',
                 'action', 'target', 'nexts', 'logical', 'compare']
@@ -548,6 +566,7 @@ class CommandParser:
     def _reset_element(self):
         self._statement = Statement()
         self._block_stack = [Block()]
+        self._lock.release()
 
     def reset(self):
         self._reset()

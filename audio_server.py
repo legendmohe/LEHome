@@ -12,7 +12,6 @@ import argparse
 import tornado.ioloop
 import tornado.web
 from util.log import *
-from mplayer import Player
 
 
 # http://stackoverflow.com/questions/17101502/how-to-stop-the-tornado-web-server-with-ctrlc
