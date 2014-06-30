@@ -100,7 +100,7 @@ class Command:
         # import pdb
         # pdb.set_trace()
 
-        Sound.play(Res.get_res_path("sound/com_begin"), inqueue=True)
+        # Sound.play(Res.get_res_path("sound/com_begin"), inqueue=True)
         #  stoppable thread
         t = StoppableThread(
                             target=self._execute,

@@ -274,11 +274,8 @@ class bell_callback(Callback.Callback):
             else:
                 count = int(Util.cn2dig(msg[:-1]))
             self._home.setResume(True)
-            url = Sound.get_play_request_url(
-                                            Res.get_res_path("sound/com_bell")
-                                            , loop=count)
             play = self._global_context["player"]
-            play(url)
+            play(Res.get_res_path("sound/com_bell"), loop=count)
             self._home.setResume(False)
         return True
 

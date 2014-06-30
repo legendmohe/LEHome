@@ -1,6 +1,21 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+# Copyright 2014 Xinyu, He <legendmohe@foxmail.com>
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#   http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 
 import threading
 import subprocess
@@ -149,6 +164,7 @@ def worker(play_url, loop):
     # if play_url in mp_context:
     #     del mp_context[play_url]
     cmd = ['mplayer', play_url, '-loop', str(loop)]
+    # print cmd
     with open(os.devnull, 'w') as tempf:
         player = subprocess.Popen(cmd, stdout=tempf, stderr=tempf)
         mp_context[play_url] = player
@@ -159,7 +175,7 @@ def worker(play_url, loop):
     print "play finished:%s" % (play_url,)
 
 
-def play_audio(url, loop=-1):
+def play_audio(url, loop=1):
     global mp_context
 
     if url in mp_context:
@@ -173,7 +189,7 @@ def play_audio(url, loop=-1):
     return True
 
 
-def play_audio_inqueue(url, loop=-1):
+def play_audio_inqueue(url, loop=1):
     global mp_queue
     mp_queue.put((url, loop))
     INFO("%s was added to queue." % (url,))
@@ -231,6 +247,7 @@ def queue_worker():
         url, loop = mp_queue.get()
         print "get from queue:" + str(url)
         cmd = ['mplayer', url, '-loop', str(loop)]
+        # print cmd
         with open(os.devnull, 'w') as tempf:
             player = subprocess.Popen(cmd, stdout=tempf, stderr=tempf)
             mp_context["queue"] = player
