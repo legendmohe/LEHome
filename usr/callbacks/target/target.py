@@ -810,52 +810,34 @@ class normal_tag_callback(Callback.Callback):
         if addr is None:
             self._home.publish_msg(cmd, u"无此目标：" + target)
             return False
-        if not msg.beginswith(u'在'):
+        if msg.startswith(u'在'):
+            here = True
+            msg = msg[1:]
+        elif msg.startswith(u'不在'):
+            here = False
+            msg = msg[2:]
+        else:
             self._home.publish_msg(cmd, u"格式错误：" + cmd)
             return False
-        place = self._home._tag.place_ip_for_name(msg[1:])
+        place = self._home._tag.place_ip_for_name(msg)
         if place is None or len(place) == 0:
             self._home.publish_msg(cmd, u"无此处所：" + msg)
             return False
+
         if pre_value == "show" or pre_value == "get":
-            if msg == u'有人':
-                state = self._home._tag.get_pir(addr)
-                if state == 1:
-                    return True, True
-                elif state == 0:
-                    return True, False
-                else:
-                    INFO(u'无法获取状态：' + msg)
-                    return True, False
-            elif msg == u'无人' or msg == u'没人':
-                state = self._home._tag.get_pir(addr)
-                if state == 0:
-                    return True, True
-                elif state == 1:
-                    return True, False
-                else:
-                    INFO(u'无法获取状态：' + msg)
-                    return True, True
-            elif msg == u'是否有人':
-                state = self._home._tag.get_pir(addr)
-                info = u'当前%s%s人' % (target, u'有' if state == 1 else u'无')
-            else:
-                state = self._home._tag.get_tag_state(addr)
-                info = self._home._tag.readable_state(state)
-                if state is None:
-                    INFO(u'无法获取状态：' + msg)
-                    self._home.publish_msg(cmd, u"内部错误")
-                    return False
-                else:
-                    self._home.publish_msg(cmd, info)
-                    return True, state
-            if state is None:
-                INFO(u'无法获取状态：' + msg)
+            res = self._home._tag.near(addr, place)
+            if res is None:
+                INFO(u'无法获取位置：' + cmd)
                 self._home.publish_msg(cmd, u"内部错误")
                 return False
+            else:
+                status = u"在" if res else u"不在"
+                info = target + status + msg
+                if here is False:
+                    res = not res
             if pre_value == "show":
                 self._home.publish_msg(cmd, info)
-            return True, state
+            return True, res
         else:
             return False
 

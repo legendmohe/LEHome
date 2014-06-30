@@ -23,5 +23,46 @@ from util.Res import Res
 from util.log import *
 
 class TagHelper(object):
-    def __init__(self):
-        pass
+    def __init__(self, name_to_place_ip, name_to_addr):
+        self._name_to_place_ip = name_to_place_ip
+        self._name_to_addr = name_to_addr
+
+    def addr_for_name(self, name):
+        if name in self._name_to_addr:
+            return self._name_to_addr[name]
+        else:
+            return None
+
+    def place_ip_for_name(self, name):
+        if name in self._name_to_place_ip:
+            return self._name_to_place_ip[name]
+        else:
+            return None
+
+    def near(self, addr, place_ip):
+        rep = self._send_request(addr, place_ip)
+        if rep is None:
+            return None
+        res = json.loads(rep)["res"]
+        if res == "error":
+            INFO('tag server error.')
+            return None
+        distance = res['distance']
+        return True if distance > 0.0 else False
+
+    def _send_request(self, addr, place_ip):
+        context = zmq.Context()
+        socket = context.socket(zmq.REQ)
+        socket.setsockopt(zmq.LINGER, 0)
+        socket.connect(place_ip)
+        socket.send_string(addr)
+        rep = None
+        try:
+            poller = zmq.Poller()
+            poller.register(socket, zmq.POLLIN)
+            if poller.poll(5*1000):
+                rep = socket.recv_string()
+                DEBUG("recv msgs:" + rep)
+        except:
+            WARN("socket timeout.")
+        return rep

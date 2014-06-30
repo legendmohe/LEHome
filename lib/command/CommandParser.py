@@ -283,7 +283,7 @@ class CommandParser:
                     {'name': 'found_then', 'src': 'trigger_state',  'dst': 'error_state'},
                     {'name': 'found_else', 'src': 'trigger_state',  'dst': 'error_state'},
                     {'name': 'found_delay', 'src': 'trigger_state',  'dst': 'delay_state'},
-                    {'name': 'found_trigger', 'src': 'trigger_state',  'dst': 'trigger_state'},
+                    {'name': 'found_trigger', 'src': 'trigger_state',  'dst': 'error_state'},
                     {'name': 'found_action', 'src': 'trigger_state',  'dst': 'action_state'},
                     {'name': 'found_target', 'src': 'trigger_state',  'dst': 'error_state'},
                     {'name': 'found_others', 'src': 'trigger_state',  'dst': 'error_state'},
