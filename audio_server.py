@@ -235,8 +235,9 @@ def clear_audio_queue():
 
     with mp_queue.mutex:
         mp_queue.queue.clear()
-    mp = mp_context["queue"]
-    mp.terminate()
+    if "queue" in  mp_context:
+        mp_context["queue"].terminate()
+        del mp_context["queue"]
 
 
 def queue_worker():
