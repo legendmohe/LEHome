@@ -488,6 +488,7 @@ class CommandParser:
                 self._in_escape = False
                 continue
             elif item.isspace() or item in self._stopwords:
+                INFO(u"stopword:" + item)
                 continue
 
             if self._in_escape is True:
@@ -575,7 +576,7 @@ class CommandParser:
         self._stopwords = set()
         with open('usr/stopwords.txt') as stopwords:
             for word in stopwords.readlines():
-                self._stopwords.add(word)
+                self._stopwords.add(word.strip().decode('utf-8'))
 
 if __name__ == '__main__':
 
