@@ -167,7 +167,6 @@ class every_callback(Callback.Callback):
             WARN("every callback must in a 'while'")
             return False, pre_value
 
-
         var_name = "first_every_invoke" + str(stack.cur_layer())
         first_every_invoke = stack.get_value(var_name)
         if first_every_invoke is None:
@@ -195,14 +194,25 @@ class every_callback(Callback.Callback):
                 t = 1
             else:
                 t = int(Util.cn2dig(msg[:-1]))
-        elif msg.startswith(u'天') and \
+        elif (msg.startswith(u'天') or msg.startswith(u'工作日')) and \
              (msg.endswith(u'点') or msg.endswith(u'分')):
-            period = msg[1:].split(u'到')
+            is_weekend = False
+            if msg.startswith(u'工作日'):
+                weekday = Util.what_day_is_today()
+                if weekday > 5:
+                    is_weekend = True
+                msg = msg[3:]
+            else:
+                msg = msg[1:]
+
+            period = msg.split(u'到')
             if len(period) == 2:
                 t = Util.wait_for_period(period)
                 if t == 0:
                     return True, True
                 else:
+                    if is_weekend is True:
+                        t += (6-weekday)*24*60*60
                     DEBUG("thread wait for %d sec" % (t, ))
                     threading.current_thread().waitUtil(t)
                     if threading.current_thread().stopped():
@@ -210,7 +220,9 @@ class every_callback(Callback.Callback):
                     return True, True
             else:
                 t = Util.gap_for_timestring(msg[1:])
-            if t > 0:
+            if t >= 1:
+                if is_weekend is True:
+                    t += (6-weekday)*24*60*60
                 DEBUG("thread wait for %d sec" % (t, ))
                 threading.current_thread().waitUtil(t)
             t = 24*60*60

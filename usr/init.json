@@ -25,7 +25,7 @@
         "target" : ["豆瓣电台", "qq电台", "QQ电台", "新闻电台", "留言",
                     "提醒", "闹铃", "铃声",
                     "任务", "待办事项", "脚本", "变量",
-                    "开关", "传感器", "台灯", "风扇", "书桌",
+                    "开关", "传感器", "台灯", "电饭煲", "风扇", "书桌",
                     "我",
                     "天气", "录音", "语音"],
         "stop" : ["算了", "取消"],
@@ -96,6 +96,7 @@
             "传感器":"target.sensor_callback",
             "语音":"target.speech_callback",
             "台灯":"target.normal_switch_callback",
+            "电饭煲":"target.normal_switch_callback",
             "风扇":"target.normal_switch_callback",
             "书桌":"target.normal_sensor_callback",
             "我":"target.normal_tag_callback"
@@ -136,6 +137,7 @@
     "switchs":{
         "风扇":"192.168.1.126",
         "台灯":"192.168.1.113"
+        "电饭煲":"192.168.1.113"
     },
     "sensors":{
         "书桌":"00124B00041183FE"
