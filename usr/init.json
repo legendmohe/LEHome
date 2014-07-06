@@ -128,6 +128,7 @@
     "sound":{
         "com_finish":"com_finish.mp3",
         "com_knock":"com_knock.mp3",
+        "com_warn":"com_warning.mp3",
         "com_stop":"com_stop.mp3",
         "com_begin":"com_begin.mp3",
         "com_bell":"com_bell.mp3",
