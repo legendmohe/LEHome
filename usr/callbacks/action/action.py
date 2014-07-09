@@ -1,5 +1,20 @@
 #!/usr/bin/env python
 # encoding: utf-8
+
+# Copyright 2014 Xinyu, He <legendmohe@foxmail.com>
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#   http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import subprocess
 import urllib2
 import urllib
@@ -173,7 +188,7 @@ class every_callback(Callback.Callback):
             self._home.publish_msg(cmd, u"循环建立:" + cmd)
             stack.set_var(var_name, True)
 
-        DEBUG("every_callback invoke:%s" % (msg, ))
+        INFO("every_callback invoke:%s" % (msg, ))
         if msg.endswith(u"天"):
             if msg.startswith(u"天"):
                 t = 24*60*60
@@ -196,11 +211,10 @@ class every_callback(Callback.Callback):
                 t = int(Util.cn2dig(msg[:-1]))
         elif (msg.startswith(u'天') or msg.startswith(u'工作日')) and \
              (msg.endswith(u'点') or msg.endswith(u'分')):
-            is_weekend = False
+            # import pdb; pdb.set_trace()
+            is_weekday = False
             if msg.startswith(u'工作日'):
-                weekday = Util.what_day_is_today()
-                if weekday > 5:
-                    is_weekend = True
+                is_weekday = True
                 msg = msg[3:]
             else:
                 msg = msg[1:]
@@ -211,27 +225,31 @@ class every_callback(Callback.Callback):
                 if t == 0:
                     return True, True
                 else:
-                    if is_weekend is True:
-                        t += (6-weekday)*24*60*60
-                    DEBUG("thread wait for %d sec" % (t, ))
+                    INFO("thread wait for %d sec" % (t, ))
                     threading.current_thread().waitUtil(t)
+                    weekday = Util.what_day_is_today()
+                    if weekday > 4 and is_weekday is True:
+                        t = (7-weekday)*24*60*60
+                        threading.current_thread().waitUtil(t)
                     if threading.current_thread().stopped():
                         return False, False
                     return True, True
             else:
-                t = Util.gap_for_timestring(msg[1:])
+                t = Util.gap_for_timestring(msg)
             if t >= 1:
-                if is_weekend is True:
-                    t += (6-weekday)*24*60*60
-                DEBUG("thread wait for %d sec" % (t, ))
+                INFO("thread wait for %d sec" % (t, ))
                 threading.current_thread().waitUtil(t)
+                weekday = Util.what_day_is_today()
+                if weekday > 4 and is_weekday is True:
+                    t = (7-weekday)*24*60*60
+                    threading.current_thread().waitUtil(t)
             t = 24*60*60
         else:
             self._home.publish_msg(cmd, u"时间格式有误")
             return False, False
 
         if stack.get_value(var_name) is False:
-            DEBUG("thread wait for %d sec" % (t, ))
+            INFO("thread wait for %d sec" % (t, ))
             threading.current_thread().waitUtil(t)
             if threading.current_thread().stopped():
                 return False, False
@@ -247,7 +265,7 @@ class invoke_callback(Callback.Callback):
     def callback(self, action, target, msg, pre_value, stack):
         if pre_value == "while" and not msg is None:
             if not msg.endswith(u'次'):
-                DEBUG(u"loop not ends with 次")
+                INFO(u"loop not ends with 次")
                 threading.current_thread().waitUtil(1)  # time gap
                 return True, True
             var_name = "invoke_time" + str(stack.cur_layer())

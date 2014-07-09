@@ -89,7 +89,7 @@ def parse_time(msg):
 def parse_datetime(msg):
     if msg is None or len(msg) == 0:
         return None
-    m = re.match(ur"([0-9零一二两三四五六七八九十]+年)?([0-9一二两三四五六七八九十]+月)?([0-9一二两三四五六七八九十]+[号日])?([上下]午)?([0-9零一二两三四五六七八九十百]+[点:\.时])?([0-9零一二三四五六七八九十百]+分)?([0-9零一二三四五六七八九十百]+秒)?", msg)
+    m = re.match(ur"([0-9零一二两三四五六七八九十]+年)?([0-9一二两三四五六七八九十]+月)?([0-9一二两三四五六七八九十]+[号日])?([上下午晚早]+)?([0-9零一二两三四五六七八九十百]+[点:\.时])?([0-9零一二三四五六七八九十百]+分)?([0-9零一二三四五六七八九十百]+秒)?", msg)
     if m.group(0) is not None:
         res = {
             "year": m.group(1),
@@ -107,9 +107,10 @@ def parse_datetime(msg):
         target_date = datetime.datetime.today().replace(**params)
         is_pm = m.group(4)
         if is_pm is not None:
-            hour = target_date.time().hour
-            if hour < 12:
-                target_date = target_date.replace(hour=hour+12)
+            if is_pm == u'下午' or is_pm == u'晚上':
+                hour = target_date.time().hour
+                if hour < 12:
+                    target_date = target_date.replace(hour=hour+12)
         return target_date 
     else:
         return None
