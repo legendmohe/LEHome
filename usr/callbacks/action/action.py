@@ -225,7 +225,7 @@ class every_callback(Callback.Callback):
                 if t == 0:
                     return True, True
                 else:
-                    INFO("thread wait for %d sec" % (t, ))
+                    INFO("period wait for %d sec" % (t, ))
                     threading.current_thread().waitUtil(t)
                     weekday = Util.what_day_is_today()
                     if weekday > 4 and is_weekday is True:
@@ -237,19 +237,23 @@ class every_callback(Callback.Callback):
             else:
                 t = Util.gap_for_timestring(msg)
             if t >= 1:
-                INFO("thread wait for %d sec" % (t, ))
+                INFO("gap wait for %d sec" % (t, ))
                 threading.current_thread().waitUtil(t)
                 weekday = Util.what_day_is_today()
                 if weekday > 4 and is_weekday is True:
                     t = (7-weekday)*24*60*60
+                    INFO("weekday task, wait for %d sec" % (t, ))
                     threading.current_thread().waitUtil(t)
-            t = 24*60*60
+                threading.current_thread().waitUtil(t)
+                if threading.current_thread().stopped():
+                    return False, False
+            return True, True
         else:
             self._home.publish_msg(cmd, u"时间格式有误")
             return False, False
 
         if stack.get_value(var_name) is False:
-            INFO("thread wait for %d sec" % (t, ))
+            INFO("new loop for %d sec" % (t, ))
             threading.current_thread().waitUtil(t)
             if threading.current_thread().stopped():
                 return False, False

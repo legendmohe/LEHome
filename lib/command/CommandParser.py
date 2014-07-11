@@ -487,8 +487,9 @@ class CommandParser:
             elif self._in_escape is True and item == CommandParser.ESCAPE_END:
                 self._in_escape = False
                 continue
-            elif item.isspace() or item in self._stopwords:
-                INFO(u"stopword:" + item)
+            elif not self._in_escape and \
+                    (item.isspace() or item in self._stopwords):
+                INFO(u"ignore:" + item)
                 continue
 
             if self._in_escape is True:

@@ -149,3 +149,15 @@ class SwitchHelper:
             res[ip]["state"] = switch["state"]
         self.switchs = res
         return self.switchs
+
+    def _send_socket(cmd):
+        pass
+
+    def _get_heartbeat_package():
+        pass
+
+    def _heartbeat_send():
+        pass
+
+    def _heartbeat_recv():
+        pass
