@@ -244,7 +244,6 @@ class every_callback(Callback.Callback):
                     t = (7-weekday)*24*60*60
                     INFO("weekday task, wait for %d sec" % (t, ))
                     threading.current_thread().waitUtil(t)
-                threading.current_thread().waitUtil(t)
                 if threading.current_thread().stopped():
                     return False, False
             return True, True
