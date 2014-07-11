@@ -1,30 +1,66 @@
 #!/usr/bin/env python
 # encoding: utf-8
+# Copyright 2014 Xinyu, He <legendmohe@foxmail.com>
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#   http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 
 import threading
 import json
 import time
 # import urllib
 # import urllib2
-import zmq
+# import zmq
+import socket
+from util.thread import TimerThread
 from util.Res import Res
 from util.log import *
 
 
 class SwitchHelper:
 
+    HEARTBEAT_RATE = 3
+    SCAN_PORT = 48899
+    SWITCH_PORT = 8899
+
     def __init__(self):
         init_json = Res.init("init.json")
-        self.server_ip = init_json["connection"]["switch_server"]
+        self.scan_ip = init_json["connection"]["switch_scan"]
         self.name2ip = init_json["switchs"]
 
         self._send_lock = threading.Lock()
-        self.init_switchs()
+        self.switchs = {}
+        self._init_heartbeat()
 
-    def init_switchs(self):
-        self.switchs = self.list_state()
-        if self.switchs is None:
-            self.switchs = []
+    def _init_heartbeat(self):
+        self._init_heartbeat_socket()
+        self._send_hb_thread = threading.Thread(target=self._heartbeat_recv)
+        self._send_hb_thread.daemon = True
+        self._send_hb_thread.start()
+
+        self._heartbeat_thread = TimerThread(
+                                    interval=SwitchHelper.HEARTBEAT_RATE,
+                                    target=self._heartbeat_send
+                                    )
+        self._heartbeat_thread.start()
+
+    def _init_heartbeat_socket(self):
+        self._hb_sock = self._get_udp_socket()
+        bind_address = ('0.0.0.0', SwitchHelper.SCAN_PORT)
+        self._hb_sock.bind(bind_address)
+        self._hb_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
+        self._hb_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
+        # self._hb_sock.settimeout(SwitchHelper.HEARTBEAT_RATE/2)
 
     def ip_for_name(self, name):
         return self.name2ip.get(name, None)
@@ -35,129 +71,83 @@ class SwitchHelper:
                 return name
         return None
 
-    def get_vaild_cmd(self, target_ip, cmd):
-        if target_ip and not target_ip in self.switchs:
-            return None
-        vaild_cmd = json.dumps({"cmd": cmd, "target": target_ip})
-        return vaild_cmd
-
     def send_open(self, target_ip):
-        self.list_state()
-        cmd = self.get_vaild_cmd(target_ip, "open")
-        rep = self.send_cmd(cmd)
-        try:
-            rep = json.loads(rep)["res"]
-        except:
-            ERROR("error: invaild switch response")
+        if not target_ip in self.switchs:
+            ERROR("target_ip not exist: " + target_ip)
             return
-        self.show_state(target_ip)
-        return rep
+        cmd = self._get_switch_cmd("ON")
+        self.switchs[target_ip]['status'] = "on"
+        return self._send_cmd(target_ip, cmd);
 
     def send_close(self, target_ip):
-        self.list_state()
-        cmd = self.get_vaild_cmd(target_ip, "close")
-        rep = self.send_cmd(cmd)
-        try:
-            rep = json.loads(rep)["res"]
-        except:
-            ERROR("error: invaild switch response")
+        if not target_ip in self.switchs:
+            ERROR("target_ip not exist: " + target_ip)
             return
-        self.show_state(target_ip)
-        return rep
-
-    def send_cmd(self, cmd):
-        if cmd is None or len(cmd) == 0:
-            ERROR("invaild switch cmd.")
-            return
-        DEBUG("sending cmd to switch server:" + cmd)
-
-        self._send_lock.acquire()
-        message = ""
-        # try:
-        #     url = self.server_ip + '?'
-        #     url += urllib.urlencode({"json": cmd.encode("utf-8")})
-        #     message = urllib2.urlopen(url, timeout=30).read()
-        #     INFO("recv msgs:" + message)
-        # except Exception, ex:
-        #     ERROR(ex)
-        #     WARN("request timeout.")
-        # ----------------------------
-        context = zmq.Context()
-        self.socket = context.socket(zmq.REQ)
-        self.socket.setsockopt(zmq.LINGER, 0)
-        try:
-            self.socket.connect(self.server_ip)
-            # time.sleep(0.5)
-        except Exception, ex:
-            ERROR("can't connect to switch server.")
-            self._send_lock.release()
-            return message
-
-        self.socket.send_string(cmd)
-        try:
-            poller = zmq.Poller()
-            poller.register(self.socket, zmq.POLLIN)
-            if poller.poll(30*1000):
-                message = self.socket.recv_string()
-                DEBUG("switchhelper recv msgs:" + message)
-        except:
-            WARN("socket timeout.")
-        # --------------
-        # import pdb
-        # pdb.set_trace()
-        # import socket
-        # try:
-        #     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #     s.connect(('192.168.1.239', 8004))
-        #     s.send(cmd + '\n')
-        #     message = s.recv(2048)
-        #     INFO("recv msgs:" + message)
-        #     s.close()
-        # except Exception, ex:
-        #     ERROR(ex)
-        #     ERROR("can't connect to switch server.")
-        self._send_lock.release()
-        return message
+        cmd = self._get_switch_cmd("OFF")
+        self.switchs[target_ip]['status'] = "off"
+        return self._send_cmd(target_ip, cmd);
 
     def show_state(self, target_ip):
         if not target_ip in self.switchs:
             ERROR("target_ip not exist: " + target_ip)
             return
-        cmd = self.get_vaild_cmd(target_ip, "check")
-        try:
-            state = json.loads(self.send_cmd(cmd))["res"]
-        except:
-            ERROR("error: invaild switch response")
+        return self.switchs[target_ip]["status"]
+
+    def _format_time(self):
+        return time.strftime("%Y%m%d%H%M%S", time.localtime())
+
+    def _get_udp_socket(self):
+        return socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    def _get_cmd_socket(self):
+        return socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    def _get_switch_cmd(self, action):
+        return "AT+YZSWITCH=1,%s,%s\r\n" % (action, self._format_time())
+
+    def _get_heartbeat_cmd(self):
+        return 'YZ-RECOSCAN'
+
+    def _send_cmd(self, target_ip, cmd):
+        if target_ip is None or len(target_ip) == 0:
+            ERROR("invaild target_ip.")
             return
-        self.switchs[target_ip]["state"] = state
-        return state
-
-    def list_state(self):
-        res = {}
-        try:
-            cmd = self.get_vaild_cmd("", "list")
-            response = self.send_cmd(cmd)
-            switchs = json.loads(response)["res"]["switchs"]
-        except Exception, e:
-            ERROR("error: " + str(e))
+        if cmd is None or len(cmd) == 0:
+            ERROR("invaild switch cmd.")
             return
-        for switch in switchs:
-            ip = switch["ip"]
-            res[ip] = {}
-            res[ip]["name"] = self.name_for_ip(ip)
-            res[ip]["mac"] = switch["mac"]
-            res[ip]["state"] = switch["state"]
-        self.switchs = res
-        return self.switchs
 
-    def _send_socket(cmd):
-        pass
+        with self._send_lock:
+            sock = self._get_cmd_socket()
+            sock.connect((target_ip, SwitchHelper.SWITCH_PORT))
+            sock.send(cmd)
+            recv = sock.recv(512)
+            sock.close()
+            return recv.strip()
 
-    def _get_heartbeat_package():
-        pass
+    def _heartbeat_send(self):
+        for ip in self.switchs:
+            self.switchs[ip]["status"] = "-1"
 
-    def _heartbeat_send():
-        pass
+        sock = self._hb_sock
+        address = (self.scan_ip, SwitchHelper.SCAN_PORT)
+        sock.sendto(self._get_heartbeat_cmd(), address)
 
-    def _heartbeat_recv():
-        pass
+    def _heartbeat_recv(self):
+        sock = self._hb_sock
+        while True:
+            try:
+                recv, address = sock.recvfrom(512)
+                status = recv.strip().split(',')
+                if len(status) < 5:
+                    continue
+
+                switch = {}
+                switch["ip"] = status[0]
+                switch["mac"] = status[1]
+                switch["name"] = self.name_for_ip(status[0])
+                switch["status"] = "on" if status[4] == "1" else "off"
+                self.switchs[switch["ip"]] = switch
+
+            except socket.timeout:
+                WARN("heartbeat timeout. ")
+

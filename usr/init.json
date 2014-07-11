@@ -4,7 +4,7 @@
         "publisher" : "tcp://*:9000",
         "msg_cmd_bind" : "tcp://*:9001",
         "audio_server" : "http://192.168.1.101:8001",
-        "switch_server" : "tcp://192.168.1.102:8004",
+        "switch_scan" : "192.168.1.255",
         "sensor_server" : "tcp://localhost:8005",
         "tag_server":{
             "家里":"tcp://192.168.1.101:8006"
@@ -136,7 +136,7 @@
         "com_trash":"com_trash.mp3"
     },
     "switchs":{
-        "风扇":"192.168.1.126",
+        "风扇":"192.168.1.103",
         "台灯":"192.168.1.113",
         "电饭煲":"192.168.1.113"
     },

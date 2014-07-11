@@ -83,18 +83,18 @@ class switch_on_callback(Callback.Callback):
         if state is None:
             self._home.publish_msg(cmd, u"内部错误")
             return True, False
-        elif state == "close":
+        elif state == "off":
             res = self._home._switch.send_open(ip)
             if res is None:
                 self._home.publish_msg(cmd, u"打开" + target + u"失败")
                 return True, False
-            elif res == "open":
+            elif res == "+OK":
                 self._home.publish_msg(cmd, u"已打开" + target)
                 return True, "on"
             else:
                 self._home.publish_msg(cmd, u"打开" + target + u"失败")
                 return True, False
-        elif state == "open":
+        elif state == "on":
             # self._home.publish_msg(cmd, u"已打开" + target)
             return True, "on"
         return True, False
@@ -114,18 +114,18 @@ class switch_off_callback(Callback.Callback):
         if state is None:
             self._home.publish_msg(cmd, u"内部错误")
             return True, False
-        elif state == "open":
+        elif state == "on":
             res = self._home._switch.send_close(ip)
             if res is None:
                 self._home.publish_msg(cmd, u"关闭" + target + u"失败")
                 return True, False
-            elif res == "close":
+            elif res == "+OK":
                 self._home.publish_msg(cmd, u"已关闭" + target)
                 return True, "off"
             else:
                 self._home.publish_msg(cmd, u"关闭" + target + u"失败")
                 return True, False
-        elif state == "close":
+        elif state == "off":
             # self._home.publish_msg(cmd, u"已关闭" + target)
             return True, "off"
         return True, False

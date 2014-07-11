@@ -714,19 +714,17 @@ class var_callback(Callback.Callback):
 class switch_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
         if pre_value == "show":
-            states = self._home._switch.list_state()
-            if states is None:
-                self._home.publish_msg(cmd, u"内部错误")
-            elif len(states) == 0:
+            switchs = self._home._switch.switchs
+            if len(switchs) == 0:
                 self._home.publish_msg(cmd, target + u"列表为空")
             else:
                 info = target + u"列表:"
-                for switch_ip in states:
+                for switch_ip in switchs:
                     switch_name = self._home._switch.name_for_ip(switch_ip)
                     info += u"\n  名称:" \
                             + switch_name \
                             + u" 状态:" \
-                            + states[switch_ip]["state"]
+                            + switchs[switch_ip]["state"]
                 self._home.publish_msg(cmd, info)
         return True
 

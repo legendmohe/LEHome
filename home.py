@@ -149,8 +149,8 @@ class Home:
                                             (publisher_ip, msg_cmd_bind))
         self._msg_sender = MessageHelper(publisher_ip, msg_cmd_bind)
 
-        switch_server_ip = self._init_res["connection"]["switch_server"]
-        INFO("init switch server: " + switch_server_ip)
+        switch_scan = self._init_res["connection"]["switch_scan"]
+        INFO("init switch scan: " + switch_scan)
         self._switch = SwitchHelper()
 
         sensor_server_ip = self._init_res["connection"]["sensor_server"]

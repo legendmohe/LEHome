@@ -254,7 +254,8 @@ def queue_worker():
             mp_context["queue"] = player
             player.wait()
             print url + u" stopped."
-        del mp_context["queue"]
+            if "queue" in  mp_context:
+                del mp_context["queue"]
         mp_queue.task_done()
     sleep(1)
 
