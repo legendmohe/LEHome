@@ -720,11 +720,15 @@ class switch_callback(Callback.Callback):
             else:
                 info = target + u"列表:"
                 for switch_ip in switchs:
+                    infos = self._home._switch.show_info(switch_ip)
+                    readable_info = self._home._switch.readable_info(infos)
                     switch_name = self._home._switch.name_for_ip(switch_ip)
                     info += u"\n  名称:" \
                             + switch_name \
                             + u" 状态:" \
-                            + switchs[switch_ip]["state"]
+                            + self._home._switch.show_state(switch_ip) \
+                            + u"\n  " \
+                            + readable_info
                 self._home.publish_msg(cmd, info)
         return True
 
@@ -761,10 +765,14 @@ class normal_switch_callback(Callback.Callback):
             if state is None:
                 self._home.publish_msg(cmd, u"内部错误")
                 return False
+            infos = self._home._switch.show_info(ip)
+            readable_info = self._home._switch.readable_info(infos)
             info = u"名称:" \
                    + target \
                    + u" 状态:" \
-                   + state
+                   + state  \
+                   + u"\n  " \
+                   + readable_info
             if pre_value == "show":
                 self._home.publish_msg(cmd, info)
             return True, state

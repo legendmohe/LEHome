@@ -93,6 +93,45 @@ class SwitchHelper:
             return
         return self.switchs[target_ip]["status"]
 
+    def show_info(self, target_ip):
+        if not target_ip in self.switchs:
+            ERROR("target_ip not exist: " + target_ip)
+            return
+        cmd = self._get_info_cmd()
+        recv = self._send_cmd(target_ip, cmd)
+        if recv is None or len(recv) == 0:
+            return None
+        info = recv[5:-1].split(",")
+        return  {
+                "I": info[0] if len(info[0]) != 0 else "0",
+                "U": info[1] if len(info[1]) != 0 else "0",
+                "F": info[2] if len(info[2]) != 0 else "0",
+                "P": info[3] if len(info[3]) != 0 else "0",
+                "PQ": info[4] if len(info[4]) != 0 else "0",
+                "E": info[5] if len(info[5]) != 0 else "0",
+                "EQ": info[6] if len(info[6]) != 0 else "0",
+                }
+
+    def readable_info(self, info):
+        if info is None or len(info) == 0:
+            return ""
+        I = "%.2f" % (float(info["I"])/100.0) + "A"
+        U = "%.2f" % (float(info["U"])/100.0) + "V"
+        F = "%.2f" % (float(info["F"])/100.0) + "Hz"
+        P = "%.2f" % (float(info["P"])/10.0) + "W"
+        PQ = info["P"] + "W"
+        E = info["E"] + "WH"
+        EQ = info["EQ"] + "WH"
+        return "".join([
+                u"电流:%s " % I,
+                u"电压:%s " % U,
+                u"频率:%s " % F,
+                u"有功功率:%s " % P,
+                u"无功功率:%s " % PQ,
+                u"有功能量值:%s " % E,
+                u"无功能量值:%s" % EQ,
+                ])
+
     def _format_time(self):
         return time.strftime("%Y%m%d%H%M%S", time.localtime())
 
@@ -104,6 +143,9 @@ class SwitchHelper:
 
     def _get_switch_cmd(self, action):
         return "AT+YZSWITCH=1,%s,%s\r\n" % (action, self._format_time())
+
+    def _get_info_cmd(self):
+        return "AT+YZOUT\r\n"
 
     def _get_heartbeat_cmd(self):
         return 'YZ-RECOSCAN'
