@@ -90,7 +90,7 @@ def parse_datetime(msg):
     if msg is None or len(msg) == 0:
         return None
     m = re.match(ur"([0-9零一二两三四五六七八九十]+年)?([0-9一二两三四五六七八九十]+月)?([0-9一二两三四五六七八九十]+[号日])?([上下午晚早]+)?([0-9零一二两三四五六七八九十百]+[点:\.时])?([0-9零一二三四五六七八九十百]+分)?([0-9零一二三四五六七八九十百]+秒)?", msg)
-    if m.group(0) is not None:
+    if m.group(0) is not None and len(m.group(0).strip()) != 0:
         res = {
             "year": m.group(1),
             "month": m.group(2),
