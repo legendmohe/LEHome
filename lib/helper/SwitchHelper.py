@@ -18,9 +18,6 @@
 import threading
 import json
 import time
-# import urllib
-# import urllib2
-# import zmq
 import socket
 from util.thread import TimerThread
 from util.Res import Res
@@ -32,10 +29,11 @@ class SwitchHelper:
     HEARTBEAT_RATE = 3
     SCAN_PORT = 48899
     SWITCH_PORT = 8899
+    BOARDCAST_ADDRESS = "255.255.255.255"
 
     def __init__(self):
         init_json = Res.init("init.json")
-        self.scan_ip = init_json["connection"]["switch_scan"]
+        self.scan_ip = SwitchHelper.BOARDCAST_ADDRESS
         self.name2ip = init_json["switchs"]
 
         self._send_lock = threading.Lock()
@@ -161,6 +159,7 @@ class SwitchHelper:
         with self._send_lock:
             sock = self._get_cmd_socket()
             sock.connect((target_ip, SwitchHelper.SWITCH_PORT))
+            time.sleep(0.5)
             sock.send(cmd)
             recv = sock.recv(512)
             sock.close()

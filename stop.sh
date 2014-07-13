@@ -3,8 +3,8 @@
 echo 'kill home.py...'
 ps -ef | awk '/python home\.py/ {print $2}' | xargs kill
 
-# echo 'kill cmd_http_proxy.py...'
-# ps -ef | awk '/python cmd_http_proxy\.py/ {print $2}' | xargs kill
+echo 'kill qqfm.py...'
+ps -ef | awk '/sudo python ..\/qqfm\/qqfm.py/ {print $2}' | sudo xargs kill
 
 echo 'kill audio_server.py...'
 ps -ef | awk '/sudo python audio_server\.py/ {print $2}' | sudo xargs kill

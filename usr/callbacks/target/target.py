@@ -26,6 +26,7 @@ import os
 import threading
 import errno
 from datetime import datetime
+from bs4 import BeautifulSoup
 from lib.command.Command import UserInput
 from util.Res import Res
 from util import Util
@@ -310,6 +311,7 @@ class bell_callback(Callback.Callback):
 
 class alarm_callback(Callback.Callback):
     def callback(self,
+            cmd,
             action=None,
             target=None,
             msg=None, 
@@ -320,7 +322,7 @@ class alarm_callback(Callback.Callback):
                 return False, None
 
             if msg.endswith(u'点') or \
-               msg.endswith(u'分'):
+                msg.endswith(u'分'):
                 t = Util.gap_for_timestring(msg)
             else:
                 self._home.publish_msg(cmd, u"时间格式错误")
@@ -329,7 +331,7 @@ class alarm_callback(Callback.Callback):
                 self._home.publish_msg(cmd, u"时间格式错误")
                 return False, None
 
-            DEBUG("thread wait for %d sec" % (t, ))
+            INFO("alarm wait for %d sec" % (t, ))
             self._home.publish_msg(cmd, action + target + msg)
 
             threading.current_thread().waitUtil(t)
@@ -897,3 +899,86 @@ class speech_callback(Callback.Callback):
                 self._speaker.speak(msg)
                 self._home.publish_msg(cmd, u"播放语音:" + msg)
         return True
+
+
+class bus_callback(Callback.Callback):
+    REQUEST_URL = "http://gzbusnow.sinaapp.com/index.php?"
+    REQUEST_TIMEOUT = 10
+
+    def _request_info(self, msg):
+        url = bus_callback.REQUEST_URL + \
+                urllib.urlencode({
+                    'keyword': msg.encode('utf8'),
+                    'a': 'query',
+                    'c': 'busrunningv2'
+                    })
+        try:
+            rep = urllib2.urlopen(
+                    url,
+                    timeout=bus_callback.REQUEST_TIMEOUT) \
+                .read()
+            return rep
+        except:
+            return None
+
+    def _parse_info(self, rep):
+        res = []
+        soup = BeautifulSoup(rep)
+        for status in soup.find_all(class_='bus_direction'):
+            current = {
+                    'status': unicode(status.string).strip(),
+                    'nodes': []}
+            # WTF?!
+            begin_node = status.next_sibling.next_sibling.table.tbody
+            for child in begin_node.children:
+                if type(child) != type(begin_node):
+                    continue
+                node = {}
+                if child.get('class') is None:
+                    node['in'] = False
+                else:
+                    node['in'] = True
+                # WTF?!
+                node['name'] = unicode(child.contents[3].contents[0].string.strip())
+                current['nodes'].append(node)
+            res.append(current)
+        return res
+
+    def _bus_info(self, bus_number):
+        info = self._request_info(bus_number)
+        if info is None:
+            return None
+        else:
+            parse_res = self._parse_info(info)
+            if parse_res is None or len(parse_res) == 0:
+                return None
+            return parse_res
+
+    def _readable_info(self, info):
+        res = ""
+        for direction in info:
+            res += direction['status'] + u'\n'
+            for node in direction['nodes']:
+                line = u'|' if node['in'] is False else u'*'
+                line += u" %s" % node['name']
+                res += line + u'\n'
+            res += u'\n'
+        return res[:-2]
+
+    def callback(self, cmd, action, target, msg, pre_value):
+        if pre_value == "show" or pre_value == "get":
+            if msg is None or len(msg) == 0:
+                self._home.publish_msg(cmd, u"请输入公交线路名称")
+                return False
+            self._home.publish_msg(cmd, u"正在查询...")
+            info = self._bus_info(msg)
+            if info is None:
+                self._home.publish_msg(cmd, u"请输入正确的公交线路名称")
+                return False
+            else:
+                readable_info = self._readable_info(info)
+                print readable_info
+                self._home.publish_msg(cmd, readable_info)
+        return True
+
+

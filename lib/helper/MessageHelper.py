@@ -1,8 +1,23 @@
 #!/usr/bin/env python
 # encoding: utf-8
+# Copyright 2014 Xinyu, He <legendmohe@foxmail.com>
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#   http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 
 
 import threading
+import socket
 import time
 import json
 import zmq
@@ -12,6 +27,9 @@ from util.thread import TimerThread
 
 
 class MessageHelper(object):
+
+    LOCAL_SCAN_PORT = 9002
+    LOCAL_HEARTBEAT_RATE = 2
 
     def __init__(self, pub_address, cmd_address):
         self.pub_address = pub_address
@@ -105,8 +123,20 @@ class MessageHelper(object):
     def _init_pub_heartbeat(self):
         def heartbeat():
             self.publish_msg(None, "", "heartbeat")
-        self.timer = TimerThread(interval=20, target=heartbeat)
-        self.timer.start()
+        timer = TimerThread(interval=20, target=heartbeat)
+        timer.start()
+
+        local_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        local_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
+        local_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
+        def local_heartbeat():
+            address = ("255.255.255.255", MessageHelper.LOCAL_SCAN_PORT)
+            local_sock.sendto("ok", address)
+        local_heartbeat_thread = TimerThread(
+                            interval=MessageHelper.LOCAL_HEARTBEAT_RATE,
+                            target=local_heartbeat
+                            )
+        local_heartbeat_thread.start()
 
     def _init_worker(self):
         self._cmd_thread = threading.Thread(target=self._cmd_worker)

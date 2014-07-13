@@ -7,12 +7,12 @@ if [[ $rc != 0 ]] ; then
     exit $rc
 fi
 
-# echo 'running cmd_http_proxy.py...'
-# python cmd_http_proxy.py > log/cmd_http_proxy.log 2>&1 &
-# rc=$?
-# if [[ $rc != 0 ]] ; then
-#     exit $rc
-# fi
+echo 'running qqfm.py...'
+sudo python ../qqfm/qqfm.py > log/qqfm.log 2>&1 &
+rc=$?
+if [[ $rc != 0 ]] ; then
+    exit $rc
+fi
 
 echo 'running audio server.py...'
 sudo python audio_server.py > /dev/null 2>&1 &

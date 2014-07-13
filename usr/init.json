@@ -4,7 +4,6 @@
         "publisher" : "tcp://*:9000",
         "msg_cmd_bind" : "tcp://*:9001",
         "audio_server" : "http://192.168.1.101:8001",
-        "switch_scan" : "192.168.1.255",
         "sensor_server" : "tcp://localhost:8005",
         "tag_server":{
             "家里":"tcp://192.168.1.101:8006"
@@ -23,7 +22,7 @@
                     "逻辑", "数值", "字符", "当前", "获取",
                     "翻译", "百科", "计算", "计时"],
         "target" : ["豆瓣电台", "qq电台", "QQ电台", "新闻电台", "留言",
-                    "提醒", "闹铃", "铃声",
+                    "提醒", "闹铃", "铃声", "公交",
                     "任务", "待办事项", "脚本", "变量",
                     "开关", "传感器", "台灯", "电饭煲", "风扇", "书桌",
                     "我",
@@ -87,6 +86,7 @@
             "新闻电台":"target.newsfm_callback",
             "天气":"target.weather_report_callback",
             "留言":"target.message_callback",
+            "公交":"target.bus_callback",
             "待办事项":"target.todo_callback",
             "提醒":"target.todo_callback",
             "脚本":"target.script_callback",

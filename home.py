@@ -149,7 +149,7 @@ class Home:
                                             (publisher_ip, msg_cmd_bind))
         self._msg_sender = MessageHelper(publisher_ip, msg_cmd_bind)
 
-        switch_scan = self._init_res["connection"]["switch_scan"]
+        switch_scan = SwitchHelper.BOARDCAST_ADDRESS
         INFO("init switch scan: " + switch_scan)
         self._switch = SwitchHelper()
 
