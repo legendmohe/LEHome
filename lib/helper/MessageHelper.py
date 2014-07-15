@@ -18,6 +18,7 @@
 
 import threading
 import socket
+import pickle
 import time
 import json
 import zmq
@@ -30,21 +31,47 @@ class MessageHelper(object):
 
     LOCAL_SCAN_PORT = 9002
     LOCAL_HEARTBEAT_RATE = 2
+    MESSAGE_DB = "./data/msg.pcl"
 
     def __init__(self, pub_address, cmd_address):
         self.pub_address = pub_address
         self.cmd_address = cmd_address
+        self._data_lock = threading.Lock()
         self._msg_lock = threading.Lock()
         self._msg_queue = Queue()
 
+        self._init_data()
         self._init_subscriber()
         self._init_pub_heartbeat()
         self._init_worker()
 
+    def _init_data(self):
+        self._load_data()
+        if 'seq' not in self._context:
+            self._context['seq'] = 1
+
     def _init_subscriber(self):
         self._backup_dict = {}
-        self._seq_num = 0
         self._subscribers = set()
+
+    def _load_data(self):
+        self._context = {}
+        with self._data_lock:
+            try:
+                with open(MessageHelper.MESSAGE_DB, "rb") as f:
+                    self._context = pickle.load(f)
+            except:
+                INFO("empty todo list.")
+        return self._context
+
+    def _save_data(self):
+        with self._data_lock:
+            try:
+                with open(MessageHelper.MESSAGE_DB, "wb") as f:
+                    pickle.dump(self._context, f, True)
+            except Exception, e:
+                ERROR(e)
+                ERROR("invaild MessageHelp data path:%s", MessageHelper.MESSAGE_DB)
 
     def add_subscribers(self, new_sub):
         if new_sub is Null or len(new_sub) == 0:
@@ -106,7 +133,7 @@ class MessageHelper(object):
             elif cmd_type == "login":
                 user_id = cmd_object["id"]
                 self.add_subscribers(user_id)
-                res_string = json.dumps({"res": "ok", "maxseq": self._seq_num})
+                res_string = json.dumps({"res": "ok", "maxseq": self._context['seq']})
             elif cmd_type == "logout":
                 user_id = cmd_object["id"]
                 self.remove_subscribers(user_id)
@@ -132,6 +159,7 @@ class MessageHelper(object):
         def local_heartbeat():
             address = ("255.255.255.255", MessageHelper.LOCAL_SCAN_PORT)
             local_sock.sendto("ok", address)
+
         local_heartbeat_thread = TimerThread(
                             interval=MessageHelper.LOCAL_HEARTBEAT_RATE,
                             target=local_heartbeat
@@ -156,18 +184,19 @@ class MessageHelper(object):
             # INFO("public msg:" + msg_string)
 
             if cmd_type != "heartbeat":
-                self._seq_num += 1
-                msg_dict["seq"] = self._seq_num
-                msg_dict["maxseq"] = self._seq_num
+                self._context['seq'] += 1
+                msg_dict["seq"] = self._context['seq']
+                msg_dict["maxseq"] = self._context['seq']
                 msg_string = json.dumps(msg_dict)
                 if len(self._subscribers) > 0:
-                    self._backup_dict[self._seq_num] = (
+                    self._backup_dict[self._context['seq']] = (
                                             msg_string, len(self._subscribers))
             else:
                 msg_dict["seq"] = -1
-                msg_dict["maxseq"] = self._seq_num
+                msg_dict["maxseq"] = self._context['seq']
                 msg_string = json.dumps(msg_dict)
             self._put_msg(msg_string)
+            self._save_data()
 
     def done_msg(self, seq):
         if seq in self._backup_dict:
@@ -187,4 +216,4 @@ class MessageHelper(object):
         return msgs
 
     def cur_seq(self):
-        return self._seq_num
+        return self._context['seq']

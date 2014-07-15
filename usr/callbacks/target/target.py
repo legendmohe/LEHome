@@ -58,6 +58,7 @@ class weather_report_callback(Callback.Callback):
                     city_code_url += urllib.urlencode({'city': msg.encode('utf8')})
                     city_code = urllib2.urlopen(city_code_url, timeout=10).read()
                     if city_code == 'ERROR':
+                        self._home.publish_msg(cmd, u'城市代码无效')
                         ERROR("weather-city code error.")
                         return True, False
                 url = 'http://hao.weidunewtab.com/myapp/weather/data/index.php?cityID=' + city_code
@@ -68,20 +69,6 @@ class weather_report_callback(Callback.Callback):
                 ERROR(ex)
                 ERROR("weather target faild.")
                 return True
-
-            # info = ""
-            # info += u'城市：' + we['city'] + "\n"
-            # info += u'日期：' + we['date_y'] + "\n"
-            # info += u'week：' + we['week'] + "\n"
-            # info += u'未来6天天气：' + "\n"
-            # info += '\t' + we['temp1'] + '\t' + we['weather1'] + '\t' + we['wind1'] + "\n"
-            # info += '\t' + we['temp2'] + '\t' + we['weather2'] + '\t' + we['wind2'] + "\n"
-            # info += '\t' + we['temp3'] + '\t' + we['weather3'] + '\t' + we['wind3'] + "\n"
-            # info += '\t' + we['temp4'] + '\t' + we['weather4'] + '\t' + we['wind4'] + "\n"
-            # info += '\t' + we['temp5'] + '\t' + we['weather5'] + '\t' + we['wind5'] + "\n"
-            # info += '\t' + we['temp6'] + '\t' + we['weather6'] + '\t' + we['wind6'] + "\n"
-            # info += u'穿衣指数: ' + we['index_d'] + "\n"
-            # info += u'紫外线: ' + we['index_uv']
 
             content = ""
             content += u'城市：' + we['city'] + "\n"
@@ -97,7 +84,7 @@ class weather_report_callback(Callback.Callback):
 
             if pre_value == 'show':
                 self._home.publish_msg(cmd, content)
-                self._speaker.speak(content.split('\n'))
+                # self._speaker.speak(content.split('\n'))
 
         return True, we
 
@@ -290,7 +277,6 @@ class record_callback(Callback.Callback):
             self._home.setResume(False)
         return True
 
-
 class bell_callback(Callback.Callback):
     def callback(self,
             action=None,
@@ -305,6 +291,24 @@ class bell_callback(Callback.Callback):
             self._home.setResume(True)
             play = self._global_context["player"]
             play(Res.get_res_path("sound/com_bell"), loop=count)
+            self._home.setResume(False)
+        return True
+
+
+class warning_bell_callback(Callback.Callback):
+    def callback(self,
+            action=None,
+            target=None,
+            msg=None, 
+            pre_value=None):
+        if pre_value == "play":
+            if msg is None or not msg.endswith(u"次"):
+                count = 1
+            else:
+                count = int(Util.cn2dig(msg[:-1]))
+            self._home.setResume(True)
+            play = self._global_context["player"]
+            play(Res.get_res_path("sound/com_warn"), loop=count)
             self._home.setResume(False)
         return True
 
@@ -969,16 +973,92 @@ class bus_callback(Callback.Callback):
         if pre_value == "show" or pre_value == "get":
             if msg is None or len(msg) == 0:
                 self._home.publish_msg(cmd, u"请输入公交线路名称")
-                return False
+                return True, None
             self._home.publish_msg(cmd, u"正在查询...")
             info = self._bus_info(msg)
             if info is None:
                 self._home.publish_msg(cmd, u"请输入正确的公交线路名称")
-                return False
+                return True, None
             else:
                 readable_info = self._readable_info(info)
-                print readable_info
                 self._home.publish_msg(cmd, readable_info)
-        return True
+        return True, info
+
+
+class bus_station_callback(Callback.Callback):
+    REQUEST_URL = "http://gzbusnow.sinaapp.com/index.php?"
+    REQUEST_TIMEOUT = 10
+
+    def _request_info(self, msg):
+        url = bus_callback.REQUEST_URL + \
+                urllib.urlencode({
+                    'keyword': msg.encode('utf8'),
+                    'a': 'query',
+                    'c': 'station'
+                    })
+        try:
+            rep = urllib2.urlopen(
+                    url,
+                    timeout=bus_callback.REQUEST_TIMEOUT) \
+                .read()
+            return rep
+        except:
+            return None
+
+    def _parse_info(self, rep):
+        res = []
+        soup = BeautifulSoup(rep, from_encoding='utf-8')
+        in_head = True
+        for bus in soup.find_all('tr'):
+            tds = bus.contents
+            cur = {}
+            if in_head:
+                # cur['name'] = unicode(tds[0].string.strip())
+                # cur['distance'] = unicode(tds[2].string.strip())
+                # cur['info'] = unicode(tds[4].string.strip())
+                in_head = False
+                continue # escape header
+            elif tds[3].string is not None:
+                cur['name'] = unicode(tds[1].a.string.strip())
+                cur['distance'] = unicode(tds[3].string.strip())
+                cur['info'] = unicode(tds[5].string.strip())
+            else:
+                continue
+            res.append(cur)
+        return res
+
+    def _bus_info(self, bus_number):
+        info = self._request_info(bus_number)
+        if info is None:
+            return None
+        else:
+            parse_res = self._parse_info(info)
+            if parse_res is None or len(parse_res) == 0:
+                return None
+            return parse_res
+
+    def _readable_info(self, info):
+        res = u""
+        for bus in info:
+            res += u"%s:\n  离本站%s站, 方向:%s\n\n" % (
+                    bus['name'],
+                    bus['distance'],
+                    bus['info'])
+        return res[:-2]
+
+    def callback(self, cmd, action, target, msg, pre_value):
+        if pre_value == "show" or pre_value == "get":
+            if msg is None or len(msg) == 0:
+                self._home.publish_msg(cmd, u"请输入公交站牌名称")
+                return True, None
+            self._home.publish_msg(cmd, u"正在查询...")
+            info = self._bus_info(msg)
+            if info is None:
+                self._home.publish_msg(cmd, u"请输入正确的公交站牌名称")
+                return True, None
+            else:
+                readable_info = self._readable_info(info)
+                self._home.publish_msg(cmd, readable_info)
+        return True, info
 
 

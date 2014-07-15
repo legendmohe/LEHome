@@ -96,6 +96,7 @@ class Home:
             self._cmd.cmd_begin_callback = self._cmd_begin_callback
             self._cmd.cmd_end_callback = self._cmd_end_callback
 
+            module_cache = {}
             cb_json = settings["callback"]
             for com_name in cb_json.keys():
                 cbs = cb_json[com_name]
@@ -109,8 +110,12 @@ class Home:
                         module_name = token[:dpos]
                         class_name = token[dpos + 1:]
                         cb_module_name = "usr.callbacks.%s.%s" % (com_name, module_name)
-                        cb_module = importlib.import_module(cb_module_name)
-                        cb_object = getattr(cb_module, class_name)()
+                        cb_object = module_cache.get("%s.%s" % \
+                                            (cb_module_name, class_name)
+                                        )
+                        if cb_object is None:
+                            cb_module = importlib.import_module(cb_module_name)
+                            cb_object = getattr(cb_module, class_name)()
                         cb_object._global_context = self._global_context
                         cb_object._class_context = {}
                         cb_object._speaker = self._spk
