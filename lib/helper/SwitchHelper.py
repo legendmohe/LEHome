@@ -27,6 +27,8 @@ from util.log import *
 class SwitchHelper:
 
     HEARTBEAT_RATE = 3
+    SOCKET_TIMEOUT = 3
+    RETRY_TIME = 3
     SCAN_PORT = 48899
     SWITCH_PORT = 8899
     BOARDCAST_ADDRESS = "255.255.255.255"
@@ -157,13 +159,21 @@ class SwitchHelper:
             return
 
         with self._send_lock:
-            sock = self._get_cmd_socket()
-            sock.connect((target_ip, SwitchHelper.SWITCH_PORT))
-            time.sleep(0.5)
-            sock.send(cmd)
-            recv = sock.recv(512)
-            sock.close()
-            return recv.strip()
+            # sock = self._get_cmd_socket()
+            # sock.connect()
+            for i in range(0, SwitchHelper.RETRY_TIME):
+                try:
+                    sock = socket.create_connection(
+                            (target_ip, SwitchHelper.SWITCH_PORT),
+                            SwitchHelper.SOCKET_TIMEOUT)
+                    time.sleep(0.5)
+                    sock.send(cmd)
+                    recv = sock.recv(512)
+                    sock.close()
+                    return recv.strip()
+                except socket.timeout:
+                    ERROR("SwitchHelper cmd socket timeout.")
+            return None
 
     def _heartbeat_send(self):
         for ip in self.switchs:

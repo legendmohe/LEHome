@@ -694,26 +694,34 @@ class var_callback(Callback.Callback):
                 return False
             if pre_value == "new" or pre_value == "set":
                 spos = msg.find(u'为')
-                if spos == -1:
+                if spos != -1:
+                    var_name = msg[:spos]
+                    var_value = msg[spos + 1:]
+                    parse_value = Util.var_parse_value(var_value)
+                    if parse_value is None:
+                        ERROR("var_parse_value error.")
+                        return False
+                elif pre_value != None:
+                    var_name = msg
+                    parse_value = pre_value
+                else:
                     info = u"格式错误"
                     ERROR(info)
                     self._home.publish_msg(cmd, info)
                     return False
-                var_name = msg[:spos]
-                var_value = msg[spos + 1:]
-                parse_value = Util.var_parse_value(var_value)
-                if parse_value is None:
-                    ERROR("var_parse_value error.")
                 if not self.add_var(var_name, parse_value):
                     self._home.publish_msg(cmd, u"新建变量失败")
                 else:
-                    self._home.publish_msg(cmd, u"成功新建变量")
+                    self._home.publish_msg(cmd,
+                            u"成功新建变量:" + var_name)
                     self.save_vars()
             elif pre_value == "remove":
                 var_name = msg
                 if self.remove_var_by_name(var_name):
                     INFO("remove var: " + var_name)
                     self._home.publish_msg(cmd, u"删除变量:" + var_name)
+                else:
+                    self._home.publish_msg(cmd, u"删除变量失败:" + var_name)
         return True
 
 
