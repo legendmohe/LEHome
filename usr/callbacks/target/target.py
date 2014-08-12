@@ -682,6 +682,7 @@ class var_callback(Callback.Callback):
             if Util.empty_str(msg):
                 self._home.publish_msg(cmd, u"缺少变量名称")
                 return False
+            # import pdb; pdb.set_trace()
             if msg not in self.vars:
                 self._home.publish_msg(cmd, u"无变量:" + msg)
                 return False
@@ -712,8 +713,9 @@ class var_callback(Callback.Callback):
                 if not self.add_var(var_name, parse_value):
                     self._home.publish_msg(cmd, u"新建变量失败")
                 else:
-                    self._home.publish_msg(cmd,
-                            u"成功新建变量:" + var_name)
+                    if pre_value == "new":
+                        self._home.publish_msg(cmd,
+                                u"成功新建变量:" + var_name)
                     self.save_vars()
             elif pre_value == "remove":
                 var_name = msg
