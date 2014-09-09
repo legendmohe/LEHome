@@ -27,6 +27,7 @@ import zmq
 from lib.command.Command import Command
 from lib.speech.Speech import Text2Speech
 from lib.helper.SwitchHelper import SwitchHelper
+from lib.helper.RilHelper import RilHelper
 from lib.helper.SensorHelper import SensorHelper
 from lib.helper.MessageHelper import MessageHelper
 from lib.helper.TagHelper import TagHelper
@@ -157,6 +158,9 @@ class Home:
         switch_scan = SwitchHelper.BOARDCAST_ADDRESS
         INFO("init switch scan: " + switch_scan)
         self._switch = SwitchHelper()
+
+        INFO("init ril helper")
+        self._ril = RilHelper()
 
         sensor_server_ip = self._init_res["connection"]["sensor_server"]
         INFO("init sensor server: " + sensor_server_ip)

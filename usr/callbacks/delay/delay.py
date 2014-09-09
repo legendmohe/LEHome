@@ -62,7 +62,7 @@ class delay_callback(Callback.Callback):
                                                 Util.xunicode(msg)
                                                 )
         # self._home.publish_msg(cmd, info)  # noise
-        INFO("delay wait for %d sec" % (t, ))
+        DEBUG("delay wait for %d sec" % (t, ))
 
         threading.current_thread().waitUtil(t)
         if threading.current_thread().stopped():

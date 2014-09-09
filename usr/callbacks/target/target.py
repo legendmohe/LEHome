@@ -617,8 +617,8 @@ class var_callback(Callback.Callback):
         self.load_vars()
 
     def load_vars(self):
-        self.vars = {}
         with self._lock:
+            self.vars = {}
             try:
                 with open(var_callback.var_path, "rb") as f:
                     self.vars = pickle.load(f)
@@ -794,6 +794,18 @@ class normal_switch_callback(Callback.Callback):
             return True, state
         else:
             return False
+
+
+class normal_ril_callback(Callback.Callback):
+    def callback(self, cmd, action, target, msg, pre_value):
+        if pre_value != None and len(pre_value) != 0:
+            if pre_value == "on" or pre_value == "off":
+                res = self._home._ril.send_cmd("\x2a")
+            if res == '\x05':
+                self._home.publish_msg(cmd, u"发送红外指令失败")
+            else:
+                self._home.publish_msg(cmd, u"发送红外指令成功")
+        return True, True
 
 
 class normal_sensor_callback(Callback.Callback):

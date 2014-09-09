@@ -161,6 +161,7 @@ class SwitchHelper:
         with self._send_lock:
             # sock = self._get_cmd_socket()
             # sock.connect()
+            INFO("Switch send command:%s to:%s" % (cmd, target_ip))
             for i in range(0, SwitchHelper.RETRY_TIME):
                 try:
                     sock = socket.create_connection(
@@ -182,12 +183,14 @@ class SwitchHelper:
         sock = self._hb_sock
         address = (self.scan_ip, SwitchHelper.SCAN_PORT)
         sock.sendto(self._get_heartbeat_cmd(), address)
+        DEBUG("send switch heartbeat to:%s" % (address, ))
 
     def _heartbeat_recv(self):
         sock = self._hb_sock
         while True:
             try:
                 recv, address = sock.recvfrom(512)
+                DEBUG("recv switch heartbeat:%s from:%s" % (recv, address))
                 status = recv.strip().split(',')
                 if len(status) < 5:
                     continue

@@ -77,8 +77,9 @@ class switch_on_callback(Callback.Callback):
         ip = self._home._switch.ip_for_name(target)
         if ip is None:
             WARN("invaild switch on target:" + target)
-            self._home.publish_msg(cmd, target + u"不存在")
-            return True, False
+            WARN("try ril:" + target)
+            # self._home.publish_msg(cmd, target + u"不存在")
+            return True, "on"
         state = self._home._switch.show_state(ip)
         if state is None:
             self._home.publish_msg(cmd, u"内部错误")
@@ -108,8 +109,9 @@ class switch_off_callback(Callback.Callback):
         ip = self._home._switch.ip_for_name(target)
         if ip is None:
             WARN("invaild switch off target:" + target)
-            self._home.publish_msg(cmd, target + u"不存在")
-            return True, False
+            WARN("try ril:" + target)
+            # self._home.publish_msg(cmd, target + u"不存在")
+            return True, "off"
         state = self._home._switch.show_state(ip)
         if state is None:
             self._home.publish_msg(cmd, u"内部错误")
@@ -225,7 +227,7 @@ class every_callback(Callback.Callback):
                 if t == 0:
                     return True, True
                 else:
-                    INFO("period wait for %d sec" % (t, ))
+                    DEBUG("period wait for %d sec" % (t, ))
                     threading.current_thread().waitUtil(t)
                     weekday = Util.what_day_is_today()
                     if weekday > 4 and is_weekday is True:
