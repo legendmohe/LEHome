@@ -32,6 +32,7 @@ from util.thread import StoppableThread
 
 class Command:
     def __init__(self, coms, backup_path="data/backup.pcl", info_sender=None):
+        DEBUG("Command __init__.")
         self._lock = threading.Lock()
         self._local = threading.local()
         self._thread_lock = threading.Lock()
@@ -68,6 +69,7 @@ class Command:
 
     def _load_tasklist(self):
         with self._lock:
+            DEBUG("_load_tasklist: %d" % len(self._tasklist))
             try:
                 with open(self._tasklist_path, "rb") as f:
                     return pickle.load(f)
@@ -77,6 +79,7 @@ class Command:
 
     def _save_tasklist(self):
         with self._lock:
+            DEBUG("_save_tasklist: %d" % len(self._tasklist))
             try:
                 with open(self._tasklist_path, "wb") as f:
                     pickle.dump(self._tasklist, f, True)
@@ -96,6 +99,7 @@ class Command:
                     self.print_block(command, block, index + 1)
 
     def _finish_callback(self, command, block):
+        DEBUG(" _finish_callback: %s" % command)
         # self.print_block(command, block)
         # import pdb
         # pdb.set_trace()
@@ -110,6 +114,7 @@ class Command:
         t.start()
 
     def _stop_callback(self, command, stop):
+        DEBUG(" _stop_callback: %s" % command)
         Sound.play(Res.get_res_path("sound/com_stop"), inqueue=True)
         if "stop" in self._registered_callbacks:
             callbacks = self._registered_callbacks["stop"]
@@ -117,6 +122,7 @@ class Command:
                 callbacks[stop](stop=stop)
 
     def _execute(self, block, command):
+        INFO("start _execute: %s" % command)
         tasklist_item = (block, command)
         self._tasklist.append(tasklist_item)
         self._save_tasklist()
@@ -140,15 +146,18 @@ class Command:
         self.send_info('end', command)
         del self._local.cmd
         del self._local.thread
-        del self.threads[thread_index]
+
+        with self._thread_lock:
+            del self.threads[thread_index]
+            self._tasklist.remove(tasklist_item)
+            self._save_tasklist()
 
         try:
             self.cmd_end_callback(command)
         except AttributeError:
             DEBUG("no cmd_end_callback")
 
-        self._tasklist.remove(tasklist_item)
-        self._save_tasklist()
+        INFO("finish _execute: %s" % command)
 
     def _invoke_block(self, block, stack, pass_value=None, in_loop=False):
         # import pdb

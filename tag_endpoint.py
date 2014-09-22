@@ -44,9 +44,7 @@ class tag_endpoint(object):
         self.name = name
         self.tags = {}
         self._queues = {}
-
         self._init_fliter()
-
 
     def _init_fliter(self):
         self.fliter = {}
@@ -111,6 +109,7 @@ class tag_endpoint(object):
                     self._queues[addr].put(datas)
             except Exception, ex:
                 ERROR(ex)
+                time.sleep(3)
 
     def _parse_rssi(self, addr):
         queue = self._queues[addr]
@@ -128,6 +127,7 @@ class tag_endpoint(object):
             except Exception, ex:
                 self.tags[addr] = -1.0
                 ERROR(ex)
+                time.sleep(3)
             INFO("addr:%s, distance:%f" % (addr, self.tags[addr]))
 
     def start(self):
@@ -182,6 +182,7 @@ class tag_endpoint(object):
                 raise
             except Exception, ex:
                 ERROR(ex)
+                time.sleep(3)
 
     def stop(self):
         subprocess.call(

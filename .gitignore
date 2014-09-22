@@ -218,6 +218,7 @@ output.flac
 output_nf.wav
 output.wav
 usr/message/
+usr/memo/
 noise.*
 *.pcl
 *.swo

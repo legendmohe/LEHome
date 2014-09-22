@@ -13,6 +13,12 @@
 # limitations under the License.
 
 import logging
+import logging.handlers
+
+file_name = 'f_log.log'
+file_logger = logging.getLogger('FileLog')
+handler = logging.handlers.RotatingFileHandler(file_name, maxBytes=50*1024*1024)
+file_logger.addHandler(handler)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
 
@@ -21,3 +27,9 @@ INFO = logging.info
 WARN = logging.warning
 ERROR = logging.error
 CRITICAL = logging.critical
+
+FDEBUG = file_logger.debug
+FINFO = file_logger.info
+FWARN = file_logger.warning
+FERROR = file_logger.error
+FCRITICAL = file_logger.critical

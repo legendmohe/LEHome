@@ -207,6 +207,7 @@ class newsfm_callback(Callback.Callback):
 class message_callback(Callback.Callback):
     def callback(
             self,
+            cmd,
             action=None,
             target=None,
             msg=None, 
@@ -223,9 +224,11 @@ class message_callback(Callback.Callback):
                     return False
 
             self._home.setResume(True)
-            filepath = path + datetime.now().strftime("%m-%d_%H:%M") + ".mp3"
+            filepath = path + datetime.now().strftime("%m_%d_%H_%M") + ".mp3"
             record = self._global_context["recorder"]
+            self._home.publish_msg(cmd, u"录音开始...")
             record(filepath)
+            self._home.publish_msg(cmd, u"录音结束")
             Sound.play(
                         Res.get_res_path("sound/com_stop")
                         )
@@ -235,12 +238,13 @@ class message_callback(Callback.Callback):
 
             play = self._global_context["player"]
             for idx, filepath in enumerate(glob.glob("usr/message/*.mp3")):
-                self._speaker.speak(u'第%d条留言' % (idx + 1))
+                # self._speaker.speak(u'第%d条留言' % (idx + 1))
+                INFO(u'第%d条留言:%s' % (idx + 1, filepath))
                 play(filepath)
 
-            Sound.play(
-                        Res.get_res_path("sound/com_stop")
-                        )
+            play(
+                Res.get_res_path("sound/com_stop")
+                )
 
             self._home.setResume(False)
         elif pre_value == "remove":
@@ -256,6 +260,7 @@ class message_callback(Callback.Callback):
 
 class record_callback(Callback.Callback):
     def callback(self,
+            cmd,
             action=None,
             target=None,
             msg=None, 
@@ -270,12 +275,15 @@ class record_callback(Callback.Callback):
                     pass
                 else:
                     ERROR(exc)
+                    self._home.publish_msg(cmd, u"录音错误")
                     return False
 
             self._home.setResume(True)
-            filepath = path + datetime.now().strftime("%m-%d_%H:%M") + ".mp3"
+            filepath = path + datetime.now().strftime("%m_%d_%H_%M") + ".mp3"
             record = self._global_context["recorder"]
+            self._home.publish_msg(cmd, u"录音开始...")
             record(filepath)
+            self._home.publish_msg(cmd, u"录音结束")
             Sound.play(
                         Res.get_res_path("sound/com_stop")
                         )

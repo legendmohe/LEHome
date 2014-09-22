@@ -1,7 +1,7 @@
 #!/bin/bash
 
-echo 'running home.py...'
-python home.py > log/home.log 2>&1 &
+echo 'running tag_endpoint.py'
+python tag_endpoint.py > /dev/null 2>&1 &
 rc=$?
 if [[ $rc != 0 ]] ; then
     exit $rc
@@ -9,6 +9,13 @@ fi
 
 echo 'running audio server.py...'
 sudo python audio_server.py > /dev/null 2>&1 &
+rc=$?
+if [[ $rc != 0 ]] ; then
+    exit $rc
+fi
+
+echo 'running home.py...'
+python home.py > log/home.log 2>&1 &
 rc=$?
 if [[ $rc != 0 ]] ; then
     exit $rc
