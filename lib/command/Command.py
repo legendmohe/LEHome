@@ -20,8 +20,10 @@ from collections import OrderedDict
 from Queue import Queue, Empty
 from types import MethodType
 import threading
-import pickle
+# import pickle
+# import json
 import sys
+import io
 from CommandParser import CommandParser
 from lib.model.Elements import Statement, Block, IfStatement, WhileStatement, LogicalOperator, CompareOperator
 from lib.sound import Sound
@@ -58,22 +60,29 @@ class Command:
         self._tasklist = []
         tasklist = self._load_tasklist()  # don't self._tasklist
         if not tasklist is None:
-            for (block, command) in tasklist:
+            for command in tasklist:
                 INFO("exec backup task:%s" % (command, ))
-                t = StoppableThread(
-                                    target=self._execute,
-                                    args=(block, command)
-                                    )
-                t.daemon = True
-                t.start()
+                self._fsm.put_cmd_into_parse_stream(command)
+            # for (block, command) in tasklist:
+            #     INFO("exec backup task:%s" % (command, ))
+            #     t = StoppableThread(
+            #                         target=self._execute,
+            #                         args=(block, command)
+            #                         )
+            #     t.daemon = True
+            #     t.start()
 
     def _load_tasklist(self):
         with self._lock:
-            DEBUG("_load_tasklist: %d" % len(self._tasklist))
             try:
-                with open(self._tasklist_path, "rb") as f:
-                    return pickle.load(f)
+                with io.open(self._tasklist_path, "r", encoding="utf-8") as f:
+                    res = f.read().split()
+                    DEBUG("_load_tasklist: %d" % len(res))
+                    return res
+                    # return Decoder().decode(f)
+                    # return json.load(f) #  not loads()
             except Exception, e:
+                ERROR(e)
                 INFO("no unfinished task list.")
                 return []
 
@@ -81,9 +90,12 @@ class Command:
         with self._lock:
             DEBUG("_save_tasklist: %d" % len(self._tasklist))
             try:
-                with open(self._tasklist_path, "wb") as f:
-                    pickle.dump(self._tasklist, f, True)
-            except:
+                with io.open(self._tasklist_path, "w", encoding="utf-8") as f:
+                    f.write(u"\n".join(self._tasklist))
+                    # f.write(Encoder().encode(self._tasklist))
+                    # json.dump(self._tasklist, f)
+            except Exception, e:
+                ERROR(e)
                 ERROR("invaild tasklist path:%s", self._tasklist_path)
 
     def print_block(self, command, block, index=1):
@@ -123,7 +135,7 @@ class Command:
 
     def _execute(self, block, command):
         INFO("start _execute: %s" % command)
-        tasklist_item = (block, command)
+        tasklist_item = command
         self._tasklist.append(tasklist_item)
         self._save_tasklist()
 
@@ -493,10 +505,11 @@ class Command:
             return
 
     def parse(self, word_stream):
-        if not self._keep_running:
-            WARN("parser is not running.")
-            return
-        self._fsm.put_into_parse_stream(word_stream)
+        with self._lock:
+            if not self._keep_running:
+                WARN("parser is not running.")
+                return
+            self._fsm.put_into_parse_stream(word_stream)
 
     def start(self):
         self._keep_running = True

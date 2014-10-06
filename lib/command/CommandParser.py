@@ -476,6 +476,21 @@ class CommandParser:
 
         return None, None
 
+    def put_cmd_into_parse_stream(self, cmd):
+        trigger = self.flag[5]
+        if trigger[0] == "trigger":
+            cmd = trigger[1][0] + cmd
+        else :
+            ERROR("put_cmd_into_parse_stream has no trigger words")
+            return
+        finish = self.flag[7]
+        if finish[0] == "finish":
+            cmd = cmd + finish[1][0]
+        else :
+            ERROR("put_cmd_into_parse_stream has no finish words")
+            return
+        self.put_into_parse_stream(cmd)
+
     def put_into_parse_stream(self, stream_term):
         # if self.DEBUG :
         #     DEBUG("parse: %s" %(stream_term)

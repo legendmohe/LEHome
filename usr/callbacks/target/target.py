@@ -23,6 +23,7 @@ import pickle
 import glob
 import httplib
 import os
+import io
 import threading
 import errno
 from datetime import datetime
@@ -154,6 +155,9 @@ class qqfm_callback(Callback.Callback):
         try:
             if not hasattr(self, "channels") or len(self.channels) == 0:
                 self.init_channcels()
+            if len(self.channels) == 0:
+                self._home.publish_msg(cmd, u"电台列表初始化失败")
+                return True
             if pre_value == "show":
                 if len(self.channels) == 0:
                     self._home.publish_msg(cmd, u"无电台列表")
@@ -161,7 +165,7 @@ class qqfm_callback(Callback.Callback):
                     info = u"电台列表:\n"
                     info += u", ".join(self.channels)
                     self._home.publish_msg(cmd, info)
-            elif pre_value == "run":
+            elif pre_value == "run" or pre_value == "on":
                 if len(self.channels) == 0:
                     self._home.publish_msg(cmd, u"无电台列表")
                 else:
@@ -177,7 +181,7 @@ class qqfm_callback(Callback.Callback):
                     INFO("qqfm playing state: " + rep)
                     self._home.publish_msg(cmd, u"正在播放:" + rep.decode("utf-8"))
                     self._fm_state = 1
-            elif pre_value == "break":
+            elif pre_value == "break" or pre_value == "off":
                 rep = urllib2.urlopen(qqfm_callback.pause_url, timeout=3).read().decode("utf-8")
                 INFO("qqfm playing state: " + rep)
                 if rep == "pause":
@@ -225,13 +229,11 @@ class message_callback(Callback.Callback):
 
             self._home.setResume(True)
             filepath = path + datetime.now().strftime("%m_%d_%H_%M") + ".mp3"
+            Sound.play(Res.get_res_path("sound/com_stop"))
             record = self._global_context["recorder"]
             self._home.publish_msg(cmd, u"录音开始...")
             record(filepath)
             self._home.publish_msg(cmd, u"录音结束")
-            Sound.play(
-                        Res.get_res_path("sound/com_stop")
-                        )
             self._home.setResume(False)
         elif pre_value == "play":
             self._home.setResume(True)
@@ -241,10 +243,7 @@ class message_callback(Callback.Callback):
                 # self._speaker.speak(u'第%d条留言' % (idx + 1))
                 INFO(u'第%d条留言:%s' % (idx + 1, filepath))
                 play(filepath)
-
-            play(
-                Res.get_res_path("sound/com_stop")
-                )
+                play(Res.get_res_path("sound/com_stop"))
 
             self._home.setResume(False)
         elif pre_value == "remove":
@@ -255,7 +254,7 @@ class message_callback(Callback.Callback):
             Sound.play(
                         Res.get_res_path("sound/com_trash")
                         )
-        return True, "pass"
+        return True
 
 
 class record_callback(Callback.Callback):
@@ -517,11 +516,17 @@ class script_callback(Callback.Callback):
         self.load_scripts()
 
     def load_scripts(self):
-        self.scripts = {}
         with self._lock:
+            self.scripts = {}
             try:
-                with open(script_callback.script_path, "rb") as f:
-                    self.scripts = pickle.load(f)
+                with io.open(script_callback.script_path,
+                                "r",
+                                encoding="utf-8") as f:
+                    # self.scripts = pickle.load(f)
+                    for line in f.readlines():
+                        script_token = line.split()
+                        if(len(script_token) == 2):
+                            self.scripts[script_token[0]] = script_token[1]
             except:
                 INFO("empty script list.")
         return self.scripts
@@ -529,8 +534,12 @@ class script_callback(Callback.Callback):
     def save_scripts(self):
         with self._lock:
             try:
-                with open(script_callback.script_path, "wb") as f:
-                    pickle.dump(self.scripts, f, True)
+                with io.open(script_callback.script_path,
+                        "w", 
+                        encoding="utf-8") as f:
+                    for key in self.scripts:
+                        f.write("%s %s\n" % (key, self.scripts[key]))
+                    # pickle.dump(self.scripts, f, True)
             except Exception, e:
                 ERROR(e)
                 ERROR("invaild save script path:%s", script_callback.script_path)
