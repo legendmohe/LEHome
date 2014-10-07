@@ -16,7 +16,6 @@
 # limitations under the License.
 
 
-import os
 import threading
 import time
 import subprocess
@@ -44,7 +43,7 @@ class tag_endpoint(object):
         self.server_ip = "tcp://*:8006"
         self.name = name
         self.tags = {}
-        self._queue = Queue()
+        self._queues = {}
         self._init_fliter()
 
     def _init_fliter(self):
@@ -109,22 +108,20 @@ class tag_endpoint(object):
                     break
                 datas = data.split()
                 addr = datas[0]
-                if addr in tag_endpoint.tag_addrs:
+                if addr in self._queues:
                     # 将收集的数据放进缓冲队列里
-                    self._queue.put(datas)
+                    self._queues[addr].put(datas)
             except Exception, ex:
                 ERROR(ex)
                 time.sleep(3)
 
-    def _parse_rssi(self):
+    def _parse_rssi(self, addr):
+        queue = self._queues[addr]
         while True:
             try:
                 # 从缓冲队列里取出数据
-                queue = self._queue
                 datas = queue.get(timeout=10)
-                addr = datas[0]
                 queue.task_done()
-
                 txPower = int(datas[3])
                 rssi = int(datas[4])
                 rssi = self.rssi_fliter(addr, rssi)
@@ -149,11 +146,17 @@ class tag_endpoint(object):
         fetch_t.daemon = True
         fetch_t.start()
 
-        parse_t = threading.Thread(
-                    target=self._parse_rssi
-                    )
-        parse_t.daemon = True
-        parse_t.start()
+        # 当其中一个ibeacon广播超时的时候，要在程序里标记这个状态。若只用一个
+        # 线程来统一处理接受到的广播包，那么对某一个ibeacon的超时检测的逻辑就
+        # 会比较复杂。所以分开几条线程来处理，每条线程负责管理某个ibeacon的状态
+        for addr in tag_endpoint.tag_addrs:
+            self._queues[addr] = Queue() #  queue for each tag
+            parse_t = threading.Thread(
+                        target=self._parse_rssi,
+                        args=(addr, )
+                        )
+            parse_t.daemon = True
+            parse_t.start()
 
         context = zmq.Context()
         self.socket = context.socket(zmq.REP)
