@@ -22,7 +22,7 @@ import time
 import subprocess
 import json
 from Queue import Queue, Empty
-import collections 
+import collections
 import logging
 import zmq
 
@@ -37,13 +37,14 @@ CRITICAL = logging.critical
 
 class tag_endpoint(object):
 
+    # tag 的蓝牙地址
     tag_addrs = ["E2C56DB5-DFFB-48D2-B060-D0F5A71096E0"]
 
     def __init__(self, name):
         self.server_ip = "tcp://*:8006"
         self.name = name
         self.tags = {}
-        self._queues = {}
+        self._queue = Queue()
         self._init_fliter()
 
     def _init_fliter(self):
@@ -58,6 +59,7 @@ class tag_endpoint(object):
                     self.fliter[tag_addr]['N']*self.fliter[tag_addr]['A']
             self.fliter[tag_addr]['queue'] = collections.deque([1]*10, maxlen=10)
 
+    # 网上找的一个计算距离的公式，不太准
     def calDistance(self, txPower, rssi):
         if rssi == 0:
             return 0.0
@@ -69,6 +71,7 @@ class tag_endpoint(object):
             accuracy = 0.89976*(ratio**7.7095) + 0.111
             return accuracy
 
+    # 窗口长度为10，去除最高和最低值后，减去上一次的平均值再加上窗口的平均值
     def rssi_fliter(self, addr, rssi):
         if addr not in self.fliter:
             return -1
@@ -86,6 +89,7 @@ class tag_endpoint(object):
         fliter['A'] = fliter['S']/fliter['N']
         return fliter['A']
 
+    # 依赖于ibeacon_scan这个bash脚本
     def _fetch_rssi(self):
         subprocess.call(
                         ["sudo", "killall", "-9", "hcitool"],
@@ -105,18 +109,22 @@ class tag_endpoint(object):
                     break
                 datas = data.split()
                 addr = datas[0]
-                if addr in self._queues:
-                    self._queues[addr].put(datas)
+                if addr in tag_endpoint.tag_addrs:
+                    # 将收集的数据放进缓冲队列里
+                    self._queue.put(datas)
             except Exception, ex:
                 ERROR(ex)
                 time.sleep(3)
 
-    def _parse_rssi(self, addr):
-        queue = self._queues[addr]
+    def _parse_rssi(self):
         while True:
             try:
+                # 从缓冲队列里取出数据
+                queue = self._queue
                 datas = queue.get(timeout=10)
+                addr = datas[0]
                 queue.task_done()
+
                 txPower = int(datas[3])
                 rssi = int(datas[4])
                 rssi = self.rssi_fliter(addr, rssi)
@@ -141,14 +149,11 @@ class tag_endpoint(object):
         fetch_t.daemon = True
         fetch_t.start()
 
-        for addr in tag_endpoint.tag_addrs:
-            self._queues[addr] = Queue() #  queue for each tag
-            parse_t = threading.Thread(
-                        target=self._parse_rssi,
-                        args=(addr, )
-                        )
-            parse_t.daemon = True
-            parse_t.start()
+        parse_t = threading.Thread(
+                    target=self._parse_rssi
+                    )
+        parse_t.daemon = True
+        parse_t.start()
 
         context = zmq.Context()
         self.socket = context.socket(zmq.REP)
