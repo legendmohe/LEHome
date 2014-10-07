@@ -370,8 +370,8 @@ class todo_callback(Callback.Callback):
         self.load_todos()
 
     def load_todos(self):
-        self.todos = []
         with self._lock:
+            self.todos = []
             try:
                 with open(todo_callback.todo_path, "rb") as f:
                     self.todos = pickle.load(f)
@@ -456,22 +456,74 @@ class todo_callback(Callback.Callback):
 
 
 class task_callback(Callback.Callback):
+
+    task_path = "data/task.pcl"
+
+    def __init__(self):
+        super(task_callback, self).__init__()
+        self._lock = threading.Lock()
+        self.load_tasks()
+
+    def load_tasks(self):
+        with self._lock:
+            self._tasks = []
+            try:
+                with open(task_callback.task_path, "rb") as f:
+                    self._tasks = pickle.load(f)
+            except:
+                INFO("empty suspended task list.")
+        return self._tasks
+
+    def save_tasks(self):
+        try:
+            with open(task_callback.task_path, "wb") as f:
+                pickle.dump(self._tasks, f, True)
+        except Exception, e:
+            ERROR(e)
+            ERROR("invaild save tasks path:%s", task_callback.task_path)
+
+    def suspend_task(self, index):
+        with self._lock:
+            cmd, thread = self._home._cmd.threads[index]
+            thread.stop()
+            self._tasks.append(cmd)
+            self.save_tasks()
+
+    def resume_task(self, index):
+        with self._lock:
+            try:
+                cmd = self._tasks[index]
+            except IndexError:
+                cmd = None
+            if cmd is None:
+                ERROR("invaild resume_task index:%d" % index)
+                return False
+            else:
+                del self._tasks[index]
+                self.save_tasks()
+                self._home._cmd._fsm.put_cmd_into_parse_stream(cmd)
+                return True
+
     def callback(self, cmd, action, msg, pre_value):
         if pre_value == "show":
             threads = self._home._cmd.threads
             info = u""
-            if len(threads) <= 1: #  当前任务不计入
+            if len(threads) <= 1 and len(self._tasks) == 0: #  当前任务不计入
                 info += u"当前无任务"
                 INFO(info)
                 self._home.publish_msg(cmd, info)
             else:
                 if msg is None or len(msg) == 0:
-                    info += u"任务列表:"
-                    for thread_index in threads:
-                        if threads[thread_index][0] == cmd:
+                    info += u"运行中:\n" + u"="*20
+                    for idx in threads:
+                        if threads[idx][0] == cmd:
                             continue
-                        info += u"\n  序号：%d 内容：%s" % (thread_index, threads[thread_index][0])
-                    INFO(info)
+                        info += u"\n  序号：%d 内容：%s" % (idx, threads[idx][0])
+                    info += u"\n\n暂停中:\n" + u"="*20
+                    for idx, val in enumerate(self._tasks):
+                        if val is not None:
+                            info += u"\n  序号：%d 内容：%s" % (idx, val)
+                    INFO(u"\n" + info)
                     self._home.publish_msg(cmd, info)
                 else:
                     thread_index = Util.cn2dig(msg)
@@ -491,7 +543,7 @@ class task_callback(Callback.Callback):
             thread_index = Util.cn2dig(msg)
             if thread_index is None or thread_index == '':
                 WARN("invaild thread index %s" % (msg, ))
-                self._home.publish_msg(cmd, u"无此任务序号:" + msg)
+                self._home.publish_msg(cmd, u"无任务序号:" + msg)
                 return False, None
             else:
                 thread_index = int(thread_index)
@@ -503,6 +555,35 @@ class task_callback(Callback.Callback):
             else:
                 WARN("invaild thread index %s" % (thread_index, ))
                 self._home.publish_msg(cmd, u"无此任务序号:" + thread_index)
+        elif pre_value == "suspend":
+            thread_index = Util.cn2dig(msg)
+            if thread_index is None or thread_index == '':
+                WARN("invaild thread index %s" % (msg, ))
+                self._home.publish_msg(cmd, u"无任务序号:" + msg)
+                return False, None
+            else:
+                thread_index = int(thread_index)
+            if thread_index in self._home._cmd.threads:
+                self.suspend_task(thread_index)
+                self._home.publish_msg(cmd, u"暂停执行任务%d" % (thread_index, ))
+                INFO("suspend thread: %d with cmd: %s" % (thread_index, cmd))
+            else:
+                WARN("invaild thread index %s" % (thread_index, ))
+                self._home.publish_msg(cmd, u"无此任务序号:" + thread_index)
+        elif pre_value == "resume":
+            task_index = Util.cn2dig(msg)
+            if task_index is None or task_index == '':
+                WARN("invaild thread index %s" % (msg, ))
+                self._home.publish_msg(cmd, u"无任务序号:" + msg)
+                return False, None
+            else:
+                task_index = int(task_index)
+            if self.resume_task(task_index) is True:
+                self._home.publish_msg(cmd, u"恢复执行任务%d" % (task_index, ))
+                INFO("resume thread: %d with cmd: %s" % (task_index, cmd))
+            else:
+                self._home.publish_msg(cmd, u"恢复执行任务失败:%d" % (task_index, ))
+                INFO("resume thread faild: %d with cmd: %s" % (task_index, cmd))
         return True, True
 
 

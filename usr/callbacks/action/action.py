@@ -292,18 +292,28 @@ class invoke_callback(Callback.Callback):
             return True, "run"
 
 
+class suspend_callback(Callback.Callback):
+    def callback(self):
+        return True, "suspend"
+
+
+class resume_callback(Callback.Callback):
+    def callback(self):
+        return True, "resume"
+
+
 class break_callback(Callback.Callback):
     def callback(self):
         return True, "break"
 
 
 class show_callback(Callback.Callback):
-    def callback(self, action, msg, target):
+    def callback(self):
         return True, "show"
 
 
 class get_callback(Callback.Callback):
-    def callback(self, action, msg, target):
+    def callback(self):
         return True, "get"
 
 
