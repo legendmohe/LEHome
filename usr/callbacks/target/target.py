@@ -538,7 +538,7 @@ class task_callback(Callback.Callback):
                             self._home.publish_msg(cmd, info)
                         else:
                             WARN("invaild thread index %s" % (msg, ))
-                            self._home.publish_msg(cmd, u"无此任务序号:" + msg)
+                            self._home.publish_msg(cmd, u"无此任务序号:%d" % thread_index)
         elif pre_value == "break":
             thread_index = Util.cn2dig(msg)
             if thread_index is None or thread_index == '':
@@ -554,7 +554,7 @@ class task_callback(Callback.Callback):
                 INFO("stop thread: %d with cmd: %s" % (thread_index, cmd))
             else:
                 WARN("invaild thread index %s" % (thread_index, ))
-                self._home.publish_msg(cmd, u"无此任务序号:" + thread_index)
+                self._home.publish_msg(cmd, u"无此任务序号:%d" % thread_index)
         elif pre_value == "suspend":
             thread_index = Util.cn2dig(msg)
             if thread_index is None or thread_index == '':
@@ -569,7 +569,7 @@ class task_callback(Callback.Callback):
                 INFO("suspend thread: %d with cmd: %s" % (thread_index, cmd))
             else:
                 WARN("invaild thread index %s" % (thread_index, ))
-                self._home.publish_msg(cmd, u"无此任务序号:" + thread_index)
+                self._home.publish_msg(cmd, u"无此任务序号:%d" % thread_index)
         elif pre_value == "resume":
             task_index = Util.cn2dig(msg)
             if task_index is None or task_index == '':
