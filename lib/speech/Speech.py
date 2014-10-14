@@ -29,10 +29,19 @@ import pyaudio
 import wave
 import urllib2
 import urllib
+import httplib
 import json
 import threading
-from util.log import *
-from lib.sound import Sound
+import logging
+# from util.log import *
+# from lib.sound import Sound
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
+
+DEBUG = logging.debug
+INFO = logging.info
+WARN = logging.warning
+ERROR = logging.error
+CRITICAL = logging.critical
 
 
 # urllib2.install_opener(
@@ -42,7 +51,7 @@ from lib.sound import Sound
 # )
 
 
-def wav_to_flac(wav_data, channels, width, rate, stt_rate):
+def process_ADP(wav_data, channels, width, rate, stt_rate):
 
     filename = 'data/output'
     wav_data = ''.join(wav_data)
@@ -53,15 +62,19 @@ def wav_to_flac(wav_data, channels, width, rate, stt_rate):
     wf.writeframes(wav_data)
     wf.close()
 
+    # subprocess.call(
+    #         ['sox', filename + '.wav', filename + '_nf.wav',
+    #             'noisered', 'data/noise.prof', '0.10']
+    #         )
+    # subprocess.call(
+    #         ['sox', '--norm', filename + '_nf.wav',
+    #             '-r', str(stt_rate), '-b', '16', '-c', '1', filename + '.wav']
+    #         )
     subprocess.call(
-            ['sox', filename + '.wav', filename + '_nf.wav',
-                'data/noisered', 'data/noise.prof', '0.10']
+            ['sox', filename + '.wav',
+                '-r', str(stt_rate), '-b', '16', '-c', '1', filename + '_o.wav']
             )
-    subprocess.call(
-            ['sox', '--norm', filename + '_nf.wav',
-                '-r', str(stt_rate), filename + '.flac']
-            )
-    with open(filename + '.flac', 'rb') as ff:
+    with open(filename + '_o.wav', 'rb') as ff:
         flac_data = ff.read()
 
     INFO("data len: " + str(len(flac_data)))
@@ -72,17 +85,17 @@ class Speech2Text(object):
 
     FORMAT = pyaudio.paInt16
     CHANNELS = 1
-    RATE = 16000
+    RATE = 44100
     STT_RATE = 16000
-    CHUNK_SIZE = 512  # !!!!!
+    CHUNK_SIZE = 256  # !!!!!
     SAMPLE_WIDTH = 0
 
     BEGIN_THRESHOLD = 5
     RMS_THRESHOLD = 200
     CROSS_THRESHOLD = 500
 
-    TIMEOUT_THRESHOLD = BEGIN_THRESHOLD*10
-    WIND_THRESHOLD = BEGIN_THRESHOLD*2
+    TIMEOUT_THRESHOLD = BEGIN_THRESHOLD*15
+    WIND_THRESHOLD = BEGIN_THRESHOLD*3
 
     _PAUSE = False
 
@@ -99,7 +112,7 @@ class Speech2Text(object):
     @classmethod
     def collect_noise(cls):
         INFO("preparing noise reduction.")
-        rec = subprocess.Popen(['rec', '-r', '16000',
+        rec = subprocess.Popen(['rec', '-r', '%d' % Speech2Text.RATE,
                                 '-b', '16',
                                 '-c', '1',
                                 'data/noise.wav'])
@@ -107,18 +120,33 @@ class Speech2Text(object):
         rec.kill()
 
         subprocess.call(
-                ['sox', 'data/noise.wav', '-n', 'data/noiseprof', 'data/noise.prof']
+                ['sox', 'data/noise.wav', '-n', 'noiseprof', 'data/noise.prof']
                 )
         INFO("finish preparing.")
 
     class _queue(object):
 
-        def __init__(self, callback, lang="zh-CN", rate=16000):
+        HOST = "vop.baidu.com"
+        CUID = "346826"
+        APIKEY = "VuEFXGzV5yDqeiuos9xDDhSrG42Vvf3i"
+        SECRETKEY = "Ie7vUgXkYfGedMwHKGbdVflw3dSI0aPa"
+
+        def __init__(self, callback, rate=8000):
             self.write_queue = Queue()
             self.keep_streaming = True
             self.callback = callback
-            self.lang = lang
             self.rate = rate
+            self.token = ""
+            self.init_token()
+
+        def init_token(self):
+
+            host = "https://openapi.baidu.com/oauth/2.0/token?grant_type=client_credentials&client_id=%s&client_secret=%s" \
+                % (Speech2Text._queue.APIKEY, Speech2Text._queue.SECRETKEY)
+            token_res = urllib.urlopen(host).read()
+            token_json = json.loads(token_res)
+            self.token = token_json["access_token"]
+            INFO("api token: %s", self.token)
 
         def start(self):
             self.process_thread = threading.Thread(target=self.process_thread)
@@ -142,31 +170,33 @@ class Speech2Text(object):
                                         ) # block!
                 return data
 
-        def send_and_parse(self, data):
-            xurl = 'http://www.google.com/speech-api/v1/recognize?xjerr=1&client=chromium&lang=' + self.lang
-            content_type = 'audio/x-flac; rate=' + str(self.rate)
-            headers = {'Content-Type':content_type}
-            try:
-                req = urllib2.Request(xurl, data, headers)
-                response = urllib2.urlopen(req)
+        def send_and_parse(self, audio_data):
+            content_len = len(audio_data)
+            post_headers = {}
+            post_headers["Content-Type"] = "audio/wav; rate=%d" % Speech2Text.STT_RATE
+            post_headers["Content-Length"] = content_len
+            post_url = "/server_api?cuid=" \
+                    + Speech2Text._queue.CUID \
+                    + "&token=" + self.token
 
-                result = response.read().decode('utf-8')
-            except Exception, ex:
-                ERROR("request error:", ex)
-                return None, None
-
-            DEBUG("stt result: " + result)
-
-            list_data = json.loads(result)["hypotheses"]
-
-            if len(list_data) != 0:
-                return (list_data[0]["utterance"], list_data[0]["confidence"])
+            conn = httplib.HTTPConnection(Speech2Text._queue.HOST, timeout=5)
+            conn.request("POST", post_url.encode('utf-8'), audio_data, post_headers)
+            INFO('send audio data: %d' % content_len)
+            response = conn.getresponse()
+            data = response.read()
+            if response.status == 200:
+                json_res = json.loads(data)
+                if json_res['err_no'] == 0:
+                    res = json.loads(data)['result'][0]
+                    return res, 1.0
+            conn.close()
             return None, None
 
         def process_thread(self):
             while self.keep_streaming:
                 try:
-                    data = wav_to_flac(self.gen_data(),
+                    # data = self.gen_data()
+                    data = process_ADP(self.gen_data(),
                                         Speech2Text.CHANNELS,
                                         Speech2Text.SAMPLE_WIDTH,
                                         Speech2Text.RATE,
@@ -189,8 +219,7 @@ class Speech2Text(object):
             return ([0]*(l/2) + [1] + [0]*(l/2)) - taps
 
         def __init__(self, low, high, chunk, rate):
-            INFO("init filter:\
-                    low:%s high:%s chunk:%s rate:%s" \
+            INFO("init filter: \nlow:%s high:%s chunk:%s rate:%s" \
                     % (low, high, chunk, rate))
             taps = chunk + 1
             fil_lowpass = signal.firwin(taps, low/(rate/2))
@@ -224,7 +253,7 @@ class Speech2Text(object):
         wnd_data = ''.join(wnd_data)
         cross = audioop.cross(wnd_data, 2)
         rms = audioop.rms(wnd_data, 2)
-        print cross, rms
+        # print cross, rms
         # return True
         return (cross > Speech2Text.CROSS_THRESHOLD) or (rms < Speech2Text.RMS_THRESHOLD)
 
@@ -249,7 +278,7 @@ class Speech2Text(object):
                 except:
                     continue
 
-                snd_data = fil.filter(snd_data)
+                # snd_data = fil.filter(snd_data)
                 wnd_data.append(snd_data)
                 silent = self._is_silent(wnd_data)
                 # if silent:
@@ -415,15 +444,16 @@ class Text2Speech:
 if __name__ == '__main__':
     def callback(result, confidence):
         print "result: " + result + " | " + str(confidence)
-    tts = Text2Speech()
-    tts.start()
-    tts.speak([u"你好", u"今天天气真好"])
+    # tts = Text2Speech()
+    # tts.start()
+    # tts.speak([u"你好", u"今天天气真好"])
 
+    # Speech2Text.collect_noise()
     recongizer = Speech2Text(callback)
     recongizer.start_recognizing()
     sleep(100)
     recongizer.stop_recognizing()
-    tts.stop()
+    # tts.stop()
     print "stop."
     # while True:
     #     sleep(0.1)

@@ -217,6 +217,7 @@ pip-log.txt
 output.flac
 output_nf.wav
 output.wav
+output_o.wav
 usr/message/
 usr/memo/
 noise.*
