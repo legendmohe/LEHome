@@ -15,40 +15,43 @@
 # limitations under the License.
 
 
-
 import sys
 import argparse
 import time
+import threading
+import zmq
 from util.log import *
 from lib.speech.Speech import Speech2Text
-import zmq
 
 
 parser = argparse.ArgumentParser(
-                description='server.py -b <port>')
-parser.add_argument('-p',
+                            description='server.py -t <address>')
+parser.add_argument('-t',
                     action="store",
-                    dest="bind_to",
-                    default="8000",
-                    help="server port")
+                    dest="send_to",
+                    default="192.168.1.101:8000",
+                    help="server address")
 args = parser.parse_args()
-bind_to = args.bind_to
-INFO("host:%s " % (bind_to, ))
+send_to = args.send_to
+INFO("host:%s " % (send_to, ))
 context = zmq.Context()
-sock = context.socket(zmq.PUB)
-sock.bind("tcp://*:" + bind_to)
+sock = context.socket(zmq.REQ)
+sock.connect("tcp://" + send_to)
 
+callbacl_lock = threading.Lock()
 def speech_callback(result, confidence):
-    global sock
-    threshold = 0.5
-
-    INFO("result: " + result + " | " + str(confidence))
-    if confidence > threshold:
-        sock.send_string(result)
+    global sock, callbacl_lock
+    with callbacl_lock:
+        threshold = 0.5
+        INFO("result: " + result + " | " + str(confidence))
+        if confidence > threshold:
+            sock.send_string(result)
+            message = sock.recv()
+            print("Received reply %s [%s]" % (result, message))
 
 
 INFO('initlizing recognize...')
-Speech2Text.collect_noise()
+# Speech2Text.collect_noise()
 reg = Speech2Text(speech_callback)
 
 if not reg:
