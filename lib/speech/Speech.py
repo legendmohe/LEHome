@@ -19,15 +19,15 @@ from Queue import Queue, Empty
 from collections import deque
 from time import sleep
 import subprocess
-import math
+# import math
 import audioop
-import numpy as np
-import scipy.signal as signal
-from array import array
-from struct import pack
+# import numpy as np
+# import scipy.signal as signal
+# from array import array
+# from struct import pack
 import pyaudio
 import wave
-import urllib2
+# import urllib2
 import urllib
 import httplib
 import json
@@ -109,20 +109,20 @@ class Speech2Text(object):
         cls._PAUSE = False
         INFO("stt resume.")
 
-    @classmethod
-    def collect_noise(cls):
-        INFO("preparing noise reduction.")
-        rec = subprocess.Popen(['rec', '-r', '%d' % Speech2Text.RATE,
-                                '-b', '16',
-                                '-c', '1',
-                                'data/noise.wav'])
-        sleep(1)
-        rec.kill()
-
-        subprocess.call(
-                ['sox', 'data/noise.wav', '-n', 'noiseprof', 'data/noise.prof']
-                )
-        INFO("finish preparing.")
+    # @classmethod
+    # def collect_noise(cls):
+    #     INFO("preparing noise reduction.")
+    #     rec = subprocess.Popen(['rec', '-r', '%d' % Speech2Text.RATE,
+    #                             '-b', '16',
+    #                             '-c', '1',
+    #                             'data/noise.wav'])
+    #     sleep(1)
+    #     rec.kill()
+    #
+    #     subprocess.call(
+    #             ['sox', 'data/noise.wav', '-n', 'noiseprof', 'data/noise.prof']
+    #             )
+    #     INFO("finish preparing.")
 
     class _queue(object):
 
@@ -213,33 +213,33 @@ class Speech2Text(object):
 
             DEBUG("end")
 
-    class _filter:
-        def _spectinvert(self, taps):
-            l = len(taps)
-            return ([0]*(l/2) + [1] + [0]*(l/2)) - taps
-
-        def __init__(self, low, high, chunk, rate):
-            INFO("init filter: \nlow:%s high:%s chunk:%s rate:%s" \
-                    % (low, high, chunk, rate))
-            taps = chunk + 1
-            fil_lowpass = signal.firwin(taps, low/(rate/2))
-            fil_highpass = self._spectinvert(
-                                signal.firwin(taps, high/(rate/2))
-                                )
-            fil_bandreject = fil_lowpass+fil_highpass
-            fil_bandpass = self._spectinvert(fil_bandreject)
-
-            self._fil = fil_bandpass
-            self._zi = [0]*(taps-1)
-            self._taps = taps
-
-        def reset(self):
-            self._zi = [0]*(self._taps - 1)
-
-        def filter(self, data):
-            data = np.fromstring(data, dtype=np.int16)
-            (data, self._zi) = signal.lfilter(self._fil, 1, data, -1, self._zi)
-            return data.astype(np.int16).tostring()
+    # class _filter:
+    #     def _spectinvert(self, taps):
+    #         l = len(taps)
+    #         return ([0]*(l/2) + [1] + [0]*(l/2)) - taps
+    #
+    #     def __init__(self, low, high, chunk, rate):
+    #         INFO("init filter: \nlow:%s high:%s chunk:%s rate:%s" \
+    #                 % (low, high, chunk, rate))
+    #         taps = chunk + 1
+    #         fil_lowpass = signal.firwin(taps, low/(rate/2))
+    #         fil_highpass = self._spectinvert(
+    #                             signal.firwin(taps, high/(rate/2))
+    #                             )
+    #         fil_bandreject = fil_lowpass+fil_highpass
+    #         fil_bandpass = self._spectinvert(fil_bandreject)
+    #
+    #         self._fil = fil_bandpass
+    #         self._zi = [0]*(taps-1)
+    #         self._taps = taps
+    #
+    #     def reset(self):
+    #         self._zi = [0]*(self._taps - 1)
+    #
+    #     def filter(self, data):
+    #         data = np.fromstring(data, dtype=np.int16)
+    #         (data, self._zi) = signal.lfilter(self._fil, 1, data, -1, self._zi)
+    #         return data.astype(np.int16).tostring()
 
     def __init__(self, callback):
         self.keep_running = False
