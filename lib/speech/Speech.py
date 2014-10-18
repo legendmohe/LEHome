@@ -259,7 +259,7 @@ class Speech2Text(object):
 
 
     def _processing(self):
-        fil = self._filter(100.0, 3000.0, Speech2Text.CHUNK_SIZE, Speech2Text.RATE)
+        # fil = self._filter(100.0, 3000.0, Speech2Text.CHUNK_SIZE, Speech2Text.RATE)
         wnd_data = deque(maxlen=Speech2Text.WIND_THRESHOLD)
 
         while self.keep_running:
@@ -269,7 +269,7 @@ class Speech2Text(object):
             num_silent = 0
             num_sound = 0
             sound_data = ""
-            fil.reset()
+            # fil.reset()
 
             INFO("detecting:")
             while self.keep_running:
