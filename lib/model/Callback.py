@@ -45,7 +45,7 @@ class Callback(object):
                 call_dict[key] = kwargs[key]
             else:
                 call_dict[key] = None
-        DEBUG("callback: %s" % (kwargs, ))
+        # DEBUG("callback: %s" % (kwargs, ))
         return self.callback(**call_dict)
 
     def internal_canceled(self, **kwargs):
@@ -57,7 +57,7 @@ class Callback(object):
                 call_dict[key] = kwargs[key]
             else:
                 call_dict[key] = None
-        DEBUG("canceled: %s" % (kwargs, ))
+        # DEBUG("canceled: %s" % (kwargs, ))
         return self.canceled(**call_dict)
 
     def redirect(self, c_type, c_name, **kwargs):

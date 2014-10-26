@@ -12,24 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 import logging
 import logging.handlers
 
-file_name = 'f_log.log'
+file_name = 'log/home_debug.log'
 file_logger = logging.getLogger('FileLog')
 handler = logging.handlers.RotatingFileHandler(file_name, maxBytes=50*1024*1024)
 file_logger.addHandler(handler)
+file_logger.setLevel(logging.DEBUG)
+file_logger.propagate = False # now if you use logger it will not log to console.
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
 
-DEBUG = logging.debug
-INFO = logging.info
-WARN = logging.warning
-ERROR = logging.error
+def stack_info_debug(info):
+    stack_info = inspect.currentframe().f_back.f_code.co_name
+    file_logger.debug("%s:  %s" % (stack_info, info))
+
+# DEBUG = logging.debug
+DEBUG    = stack_info_debug # only output to file
+INFO     = logging.info
+WARN     = logging.warning
+ERROR    = logging.error
 CRITICAL = logging.critical
 
-FDEBUG = file_logger.debug
-FINFO = file_logger.info
-FWARN = file_logger.warning
-FERROR = file_logger.error
+FDEBUG    = file_logger.debug
+FINFO     = file_logger.info
+FWARN     = file_logger.warning
+FERROR    = file_logger.error
 FCRITICAL = file_logger.critical
+

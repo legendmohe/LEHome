@@ -36,6 +36,7 @@ class Command:
     def __init__(self, coms, backup_path="data/backup.pcl", info_sender=None):
         DEBUG("Command __init__.")
         self._lock = threading.Lock()
+        self._parse_lock = threading.Lock()
         self._local = threading.local()
         self._thread_lock = threading.Lock()
         self.threads = {}
@@ -505,7 +506,7 @@ class Command:
             return
 
     def parse(self, word_stream):
-        with self._lock:
+        with self._parse_lock:
             if not self._keep_running:
                 WARN("parser is not running.")
                 return

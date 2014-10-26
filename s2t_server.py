@@ -46,9 +46,7 @@ def speech_callback(result, confidence):
         INFO("result: " + result + " | " + str(confidence))
         if confidence > threshold:
             sock.send_string(result)
-            message = sock.recv()
-            print("Received reply %s [%s]" % (result, message))
-
+            message = sock.recv_string()
 
 INFO('initlizing recognize...')
 # Speech2Text.collect_noise()

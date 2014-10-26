@@ -170,6 +170,7 @@ def worker(play_url, loop):
         mp_context[play_url] = player
         print "player create: " + str(player.pid)
         player.wait()
+        sleep(0.5)
     if play_url in mp_context:
         del mp_context[play_url]
     print "play finished:%s" % (play_url,)

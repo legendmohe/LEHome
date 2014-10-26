@@ -69,4 +69,6 @@ class RilHelper:
                     return recv.strip()
                 except socket.timeout:
                     ERROR("RilHelper cmd socket timeout.")
+                except Exception, ex:
+                    ERROR(ex)
             return None

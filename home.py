@@ -197,9 +197,10 @@ class Home:
             INFO("waiting for command...")
             req = self._cmd_socket.recv_string()
             if req == "":
-                rep = "error"
+                rep = u"error"
             else:
-                rep = "ok"
+                rep = u"ok"
+            INFO("home received cmd: %s" % req)
             self._cmd_socket.send_string(rep)
             home.parse_cmd(req)
 

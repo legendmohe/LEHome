@@ -33,15 +33,15 @@ import httplib
 import json
 import threading
 import logging
-# from util.log import *
-# from lib.sound import Sound
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
-
-DEBUG = logging.debug
-INFO = logging.info
-WARN = logging.warning
-ERROR = logging.error
-CRITICAL = logging.critical
+from util.log import *
+from lib.sound import Sound
+# logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
+#
+# DEBUG = logging.debug
+# INFO = logging.info
+# WARN = logging.warning
+# ERROR = logging.error
+# CRITICAL = logging.critical
 
 
 # urllib2.install_opener(
@@ -77,7 +77,7 @@ def process_ADP(wav_data, channels, width, rate, stt_rate):
     with open(filename + '_o.wav', 'rb') as ff:
         flac_data = ff.read()
 
-    INFO("data len: " + str(len(flac_data)))
+    # INFO("data len: " + str(len(flac_data)))
     # map(os.remove, (filename + '.flac', filename + '.wav'))
     return flac_data
 
@@ -85,14 +85,14 @@ class Speech2Text(object):
 
     FORMAT = pyaudio.paInt16
     CHANNELS = 1
-    RATE = 44100
-    STT_RATE = 16000
+    RATE = 16000
+    STT_RATE = 8000
     CHUNK_SIZE = 256  # !!!!!
     SAMPLE_WIDTH = 0
 
     BEGIN_THRESHOLD = 5
-    RMS_THRESHOLD = 200
-    CROSS_THRESHOLD = 500
+    RMS_THRESHOLD = 600
+    CROSS_THRESHOLD = 300
 
     TIMEOUT_THRESHOLD = BEGIN_THRESHOLD*15
     WIND_THRESHOLD = BEGIN_THRESHOLD*3
@@ -143,10 +143,14 @@ class Speech2Text(object):
 
             host = "https://openapi.baidu.com/oauth/2.0/token?grant_type=client_credentials&client_id=%s&client_secret=%s" \
                 % (Speech2Text._queue.APIKEY, Speech2Text._queue.SECRETKEY)
-            token_res = urllib.urlopen(host).read()
-            token_json = json.loads(token_res)
-            self.token = token_json["access_token"]
-            INFO("api token: %s", self.token)
+            try:
+                token_res = urllib.urlopen(host).read()
+                token_json = json.loads(token_res)
+                self.token = token_json["access_token"]
+                INFO("api token: %s", self.token)
+            except Exception, ex:
+                ERROR(ex)
+                self.token = ""
 
         def start(self):
             self.process_thread = threading.Thread(target=self.process_thread)
@@ -160,6 +164,7 @@ class Speech2Text(object):
             DEBUG("Queue stop")
 
         def write_data(self, data):
+            INFO("current queue size: %d" % self.write_queue.qsize())
             self.write_queue.put(data)
 
         def gen_data(self):
@@ -202,9 +207,14 @@ class Speech2Text(object):
                                         Speech2Text.RATE,
                                         Speech2Text.STT_RATE)
                     if self.keep_streaming and data:
+                        # if fatch token faild, fetch again here
+                        if self.token == "":
+                            self.init_token()
                         result, conf = self.send_and_parse(data)
                         if result is not None:
                             self.callback(result, conf)
+                        else:
+                            WARN("Speech2Text result is None.")
                         self.write_queue.task_done()
                 except Empty:
                     pass
@@ -286,7 +296,8 @@ class Speech2Text(object):
                 if record_begin:
                     sound_data += snd_data
 
-                # print silent
+                # if silent is False:
+                #     print silent
                 # print num_silent
                 if silent:
                     num_silent += 1

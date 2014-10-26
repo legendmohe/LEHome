@@ -85,7 +85,7 @@ class weather_report_callback(Callback.Callback):
 
             if pre_value == 'show':
                 self._home.publish_msg(cmd, content)
-                # self._speaker.speak(content.split('\n'))
+                self._speaker.speak(content.split('\n'))
 
         return True, we
 

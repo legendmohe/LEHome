@@ -27,7 +27,7 @@ from util.log import *
 class SwitchHelper:
 
     HEARTBEAT_RATE = 3
-    SOCKET_TIMEOUT = 3
+    SOCKET_TIMEOUT = 5
     RETRY_TIME = 3
     SCAN_PORT = 48899
     SWITCH_PORT = 8899
@@ -76,16 +76,20 @@ class SwitchHelper:
             ERROR("target_ip not exist: " + target_ip)
             return
         cmd = self._get_switch_cmd("ON")
-        self.switchs[target_ip]['status'] = "on"
-        return self._send_cmd(target_ip, cmd);
+        res = self._send_cmd(target_ip, cmd)
+        if res == "+OK":
+            self.switchs[target_ip]['status'] = "on"
+        return res
 
     def send_close(self, target_ip):
         if not target_ip in self.switchs:
             ERROR("target_ip not exist: " + target_ip)
             return
         cmd = self._get_switch_cmd("OFF")
-        self.switchs[target_ip]['status'] = "off"
-        return self._send_cmd(target_ip, cmd);
+        res = self._send_cmd(target_ip, cmd)
+        if res == "+OK":
+            self.switchs[target_ip]['status'] = "off"
+        return res
 
     def show_state(self, target_ip):
         if not target_ip in self.switchs:
@@ -177,8 +181,8 @@ class SwitchHelper:
             return None
 
     def _heartbeat_send(self):
-        for ip in self.switchs:
-            self.switchs[ip]["status"] = "-1"
+        # for ip in self.switchs:
+        #     self.switchs[ip]["status"] = "-1"
 
         sock = self._hb_sock
         address = (self.scan_ip, SwitchHelper.SCAN_PORT)
