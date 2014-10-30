@@ -181,7 +181,6 @@ class MessageHelper(object):
                             "type": cmd_type,
                             "msg": msg
                         }
-            # INFO("public msg:" + msg_string)
 
             if cmd_type != "heartbeat":
                 self._context['seq'] += 1
@@ -195,6 +194,7 @@ class MessageHelper(object):
                 msg_dict["seq"] = -1
                 msg_dict["maxseq"] = self._context['seq']
                 msg_string = json.dumps(msg_dict)
+            DEBUG("push msg:%s-%s-%s" % (self._context['seq'], cmd_type, msg))
             self._put_msg(msg_string)
             self._save_data()
 

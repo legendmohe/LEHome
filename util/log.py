@@ -17,28 +17,39 @@ import logging
 import logging.handlers
 
 file_name = 'log/home_debug.log'
-file_logger = logging.getLogger('FileLog')
+debug_logger = logging.getLogger('DebugLog')
 handler = logging.handlers.RotatingFileHandler(file_name, maxBytes=50*1024*1024)
-file_logger.addHandler(handler)
-file_logger.setLevel(logging.DEBUG)
-file_logger.propagate = False # now if you use logger it will not log to console.
+formatter = logging.Formatter("[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s")
+handler.setFormatter(formatter)
+debug_logger.setLevel(logging.DEBUG)
+debug_logger.addHandler(handler)
+debug_logger.propagate = False # now if you use logger it will not log to console.
+
+comm_name = 'log/home.log'
+comm_logger = logging.getLogger('CommonLog')
+handler = logging.handlers.RotatingFileHandler(comm_name, maxBytes=20*1024*1024)
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+comm_logger.setLevel(logging.INFO)
+comm_logger.addHandler(handler)
+comm_logger.propagate = False # now if you use logger it will not log to console.
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
 
-def stack_info_debug(info):
-    stack_info = inspect.currentframe().f_back.f_code.co_name
-    file_logger.debug("%s:  %s" % (stack_info, info))
+# def stack_info_debug(info):
+#     stack_info = inspect.currentframe().f_back.f_code.co_name
+#     debug_logger.debug("%s:  %s" % (stack_info, info))
 
-# DEBUG = logging.debug
-DEBUG    = stack_info_debug # only output to file
-INFO     = logging.info
-WARN     = logging.warning
-ERROR    = logging.error
-CRITICAL = logging.critical
+DEBUG = debug_logger.debug
+# DEBUG    = stack_info_debug # only output to file
+INFO     = comm_logger.info
+WARN     = comm_logger.warning
+ERROR    = comm_logger.error
+CRITICAL = comm_logger.critical
 
-FDEBUG    = file_logger.debug
-FINFO     = file_logger.info
-FWARN     = file_logger.warning
-FERROR    = file_logger.error
-FCRITICAL = file_logger.critical
+FDEBUG    = debug_logger.debug
+FINFO     = debug_logger.info
+FWARN     = debug_logger.warning
+FERROR    = debug_logger.error
+FCRITICAL = debug_logger.critical
 

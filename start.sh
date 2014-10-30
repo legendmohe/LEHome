@@ -15,7 +15,7 @@ if [[ $rc != 0 ]] ; then
 fi
 
 echo 'running home.py...'
-python home.py > log/home.log 2>&1 &
+python home.py > /dev/null 2>&1 &
 rc=$?
 if [[ $rc != 0 ]] ; then
     exit $rc
