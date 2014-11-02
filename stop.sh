@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo 'kill home.py...'
-ps -ef | awk '/python home\.py/ {print $2}' | xargs kill -INT
+ps -ef | awk '/python home\.py/ {print $2}' | xargs kill -9
 
 echo 'kill audio_server.py...'
 ps -ef | awk '/sudo python audio_server\.py/ {print $2}' | sudo xargs kill -INT
