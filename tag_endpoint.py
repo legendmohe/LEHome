@@ -91,7 +91,7 @@ class tag_endpoint(object):
     # 依赖于ibeacon_scan这个bash脚本
     def _fetch_rssi(self):
         subprocess.call(
-                        ["sudo", "kill", "-INT", "hcitool"],
+                        ["sudo", "kill", "-9", "hcitool"],
                         )
         subprocess.call(
                         ["./vender/ibeacon_scan"],
@@ -202,7 +202,7 @@ class tag_endpoint(object):
 
     def stop(self):
         subprocess.call(
-                        ["sudo", "kill", "-INT", "hcitool"],
+                        ["sudo", "kill", "-9", "hcitool"],
                         )
         print "tag_endpoint stop."
 
