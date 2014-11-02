@@ -91,7 +91,7 @@ class tag_endpoint(object):
     # 依赖于ibeacon_scan这个bash脚本
     def _fetch_rssi(self):
         subprocess.call(
-                        ["sudo", "killall", "-9", "hcitool"],
+                        ["sudo", "kill", "-INT", "hcitool"],
                         )
         subprocess.call(
                         ["./vender/ibeacon_scan"],
@@ -111,6 +111,10 @@ class tag_endpoint(object):
                 if addr in self._queues:
                     # 将收集的数据放进缓冲队列里
                     self._queues[addr].put(datas)
+            except (KeyboardInterrupt, SystemExit):
+                self.socket.close()
+                self.stop()
+                raise
             except Exception, ex:
                 ERROR(ex)
                 time.sleep(3)
@@ -129,6 +133,10 @@ class tag_endpoint(object):
             except Empty:
                 self.tags[addr] = -1.0
                 INFO('parse rssi timeout.')
+            except (KeyboardInterrupt, SystemExit):
+                self.socket.close()
+                self.stop()
+                raise
             except Exception, ex:
                 self.tags[addr] = -1.0
                 ERROR(ex)
@@ -194,7 +202,7 @@ class tag_endpoint(object):
 
     def stop(self):
         subprocess.call(
-                        ["sudo", "killall", "-9", "hcitool"],
+                        ["sudo", "kill", "-INT", "hcitool"],
                         )
         print "tag_endpoint stop."
 
