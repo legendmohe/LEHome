@@ -45,6 +45,7 @@ class remote_server_proxy:
     def _send_cmd_to_home(self, cmd):
         if not cmd is None and not cmd == "":
             INFO("send cmd %s to home." % (cmd, ))
+            cmd = unicode(cmd, "utf-8")
             self._sock.send_string(cmd)
             if self._poller.poll(5*1000): # 10s timeout in milliseconds
                 rep = self._sock.recv_string()
