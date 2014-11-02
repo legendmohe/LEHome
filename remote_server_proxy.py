@@ -47,7 +47,7 @@ class remote_server_proxy:
             INFO("send cmd %s to home." % (cmd, ))
             self_sock.send_string(cmd)
             if self._poller.poll(5*1000): # 10s timeout in milliseconds
-                rep = self_sock.recv_string()
+                rep = self._sock.recv_string()
                 INFO("recv from home:%s" % rep)
                 return True
             else:
@@ -69,15 +69,17 @@ class remote_server_proxy:
         INFO("start fetching cmds from remote server.")
         while True :
             try:
-                INFO("sending fetch request to remote server.")
+                DEBUG("sending fetch request to remote server.")
                 req = urllib2.Request(remote_server_proxy.HOST + "/cmd/fetch")
-                cmds = urllib2.urlopen(req).read()
+                cmds = urllib2.urlopen(req, timeout=10).read()
                 if len(cmds) != 0:
                     INFO("fetch cmds:%s" % cmds)
                     for cmd in cmds.split("\n"):
                         self._send_cmd_to_home(cmd)
             except (KeyboardInterrupt, SystemExit):
                 raise
+            except urllib2.URLError, e:
+                WARN(e)
             except Exception, ex:
                 ERROR(ex)
             time.sleep(2)
