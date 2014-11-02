@@ -21,6 +21,13 @@ if [[ $rc != 0 ]] ; then
     exit $rc
 fi
 
+echo 'running remote server proxy.py'
+python remote_server_proxy.py > /dev/null 2>&1 &
+rc=$?
+if [[ $rc != 0 ]] ; then
+    exit $rc
+fi
+
 # echo 'running sensor_server.py...'
 # # python sensor_server.py > log/sensor.log 2>&1 &
 # python sensor_server.py > /dev/null 2>&1 &
