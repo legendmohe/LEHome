@@ -45,14 +45,14 @@ class remote_info_sender:
 
     def _send_info_to_server(self, info):
         if not info is None and not info == "":
-            INFO("send info %s to remote server." % (info, ))
+            DEBUG("send info %s to remote server." % (info, ))
             # print info
             info = info.encode('utf-8')
             url = remote_info_sender.HOST + "/info/put/%s" % urllib.quote_plus(info) 
             req = urllib2.Request(url)
             rep = urllib2.urlopen(req, timeout=10).read()
             if len(rep) != 0:
-                INFO("remote_server rep:%s" % rep)
+                DEBUG("remote_server rep:%s" % rep)
                 if rep == 'ok':
                     return True
             ERROR("invaild rep:" % rep)
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     parser.add_argument('-a',
                         action="store",
                         dest="address",
-                        default="tcp://localhost:8000",
+                        default="tcp://localhost:9000",
                         )
     args = parser.parse_args()
     address = args.address

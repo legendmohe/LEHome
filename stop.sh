@@ -3,6 +3,9 @@
 echo 'kill remote_server_proxy.py...'
 ps -ef | awk '/python remote_server_proxy\.py/ {print $2}' | xargs kill -9
 
+echo 'kill remote_info_sender.py...'
+ps -ef | awk '/python remote_info_sender\.py/ {print $2}' | xargs kill -9
+
 echo 'kill home.py...'
 ps -ef | awk '/python home\.py/ {print $2}' | xargs kill -9
 
