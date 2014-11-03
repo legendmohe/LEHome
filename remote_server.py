@@ -159,7 +159,7 @@ class CmdFetchHandler(tornado.web.RequestHandler):
             INFO("server fetch all cmds: %d" % remote_cb.cmd_number())
             cmds = remote_cb.pop_all_cmd()
             if len(cmds) != 0:
-                self.write("\n".join(cmds))
+                self.write("|".join(cmds))
             else:
                 self.write("")
         else:
@@ -181,7 +181,7 @@ class InfoFetchHandler(tornado.web.RequestHandler):
             return
         infos = remote_cb.pop_info_start_from(start_index)
         if len(infos) != 0:
-            self.write("\n".join([info[1] for info in infos]))
+            self.write("|".join([info[1] for info in infos]))
         else:
             self.write("")
 

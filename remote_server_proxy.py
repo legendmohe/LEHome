@@ -19,7 +19,6 @@
 import argparse
 import threading
 import time
-from Queue import Queue, Empty
 import urllib, urllib2
 import zmq
 from util.Res import Res
@@ -75,7 +74,7 @@ class remote_server_proxy:
                 cmds = urllib2.urlopen(req, timeout=10).read()
                 if len(cmds) != 0:
                     INFO("fetch cmds:%s" % cmds)
-                    for cmd in cmds.split("\n"):
+                    for cmd in cmds.split("|"):
                         self._send_cmd_to_home(cmd)
             except (KeyboardInterrupt, SystemExit):
                 raise
