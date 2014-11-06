@@ -28,7 +28,7 @@ debug_logger.propagate = False # now if you use logger it will not log to consol
 comm_name = 'log/home.log'
 comm_logger = logging.getLogger('CommonLog')
 handler = logging.handlers.RotatingFileHandler(comm_name, maxBytes=20*1024*1024)
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s [%(filename)s] ')
 handler.setFormatter(formatter)
 comm_logger.setLevel(logging.INFO)
 comm_logger.addHandler(handler)

@@ -1,4 +1,5 @@
 {
+    "id":"12345678",
     "connection":{
         "cmd_bind_address" : "tcp://*:8000",
         "publisher" : "tcp://*:9000",

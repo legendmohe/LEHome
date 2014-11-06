@@ -40,7 +40,9 @@ class Res:
         return elem
 
     @staticmethod
-    def init(path):
+    def init(path, force=False):
+        if force == False and len(Res.settings) != 0:
+            return Res.settings
         path = os.path.join(Res.base_path, path)
         with open(path) as init_file:
             init_json = json.load(init_file)

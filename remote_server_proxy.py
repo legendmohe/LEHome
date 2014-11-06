@@ -38,6 +38,12 @@ class remote_server_proxy:
             self._poller = zmq.Poller()
             self._poller.register(self._sock, zmq.POLLIN)
             self._sock.connect(address)
+
+            self._send_lock = threading.Lock()
+
+            settings = Res.init("init.json")
+            self._device_id = settings['id']
+            INFO("load device id:%s" % self._device_id)
         else:
             ERROR("address is empty")
 
@@ -45,14 +51,15 @@ class remote_server_proxy:
         if not cmd is None and not cmd == "":
             INFO("send cmd %s to home." % (cmd, ))
             cmd = unicode(cmd, "utf-8")
-            self._sock.send_string(cmd)
-            if self._poller.poll(5*1000): # 10s timeout in milliseconds
-                rep = self._sock.recv_string()
-                INFO("recv from home:%s" % rep)
-                return True
-            else:
-                INFO("send cmd to home timeout.")
-                return False
+            with self._send_lock:
+                self._sock.send_string(cmd)
+                if self._poller.poll(5*1000): # 10s timeout in milliseconds
+                    rep = self._sock.recv_string()
+                    INFO("recv from home:%s" % rep)
+                    return True
+                else:
+                    INFO("send [%s] to home timeout." % cmd)
+                    return False
         else:
             ERROR("cmd is invaild.")
             return False
@@ -70,9 +77,10 @@ class remote_server_proxy:
         while True :
             try:
                 DEBUG("sending fetch request to remote server.")
-                req = urllib2.Request(remote_server_proxy.HOST + "/cmd/fetch")
+                url = remote_server_proxy.HOST + "/cmd/fetch?id=" + self._device_id
+                req = urllib2.Request(url)
                 cmds = urllib2.urlopen(req, timeout=10).read()
-                if len(cmds) != 0:
+                if len(cmds) != 0 and cmds != "error":
                     INFO("fetch cmds:%s" % cmds)
                     for cmd in cmds.split("|"):
                         self._send_cmd_to_home(cmd)

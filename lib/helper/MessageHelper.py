@@ -23,6 +23,7 @@ import time
 import json
 import zmq
 from Queue import Queue, Empty
+from util.Res import Res
 from util.log import *
 from util.thread import TimerThread
 
@@ -179,8 +180,9 @@ class MessageHelper(object):
         with self._msg_lock:
             msg_dict = {
                             "type": cmd_type,
-                            "msg": msg
-                        }
+                            "msg": msg,
+                            "ts": "%d" % int(time.time()),
+                       }
 
             if cmd_type != "heartbeat":
                 self._context['seq'] += 1

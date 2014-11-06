@@ -40,22 +40,28 @@ class remote_info_sender:
             self._sock.setsockopt(zmq.SUBSCRIBE, '')
 
             self._msg_queue = Queue()
+
+            settings = Res.init("init.json")
+            self._device_id = settings['id']
         else:
             ERROR("address is empty")
 
     def _send_info_to_server(self, info):
         if not info is None and not info == "":
             DEBUG("send info %s to remote server." % (info, ))
-            # print info
-            info = info.encode('utf-8')
-            url = remote_info_sender.HOST + "/info/put/%s" % urllib.quote_plus(info) 
-            req = urllib2.Request(url)
-            rep = urllib2.urlopen(req, timeout=10).read()
-            if len(rep) != 0:
-                DEBUG("remote_server rep:%s" % rep)
-                if rep == 'ok':
-                    return True
-            ERROR("invaild rep:" % rep)
+            try:
+                info = info.encode('utf-8')
+                url = remote_info_sender.HOST + "/info/put/%s?id=%s" \
+                        % (urllib.quote_plus(info) , self._device_id)
+                req = urllib2.Request(url)
+                rep = urllib2.urlopen(req, timeout=10).read()
+                if len(rep) != 0:
+                    DEBUG("remote_server rep:%s" % rep)
+                    if rep == 'ok':
+                        return True
+                ERROR("invaild rep:" % rep)
+            except Exception, e:
+                ERROR(e)
             return False
         else:
             ERROR("info is invaild.")
@@ -72,6 +78,10 @@ class remote_info_sender:
         return msg
 
     def start(self):
+        if self._msg_queue is None:
+            ERROR("remote_info_sender start faild.")
+            return
+
         send_t = threading.Thread(
                     target=self._send_worker
                     )
@@ -92,12 +102,14 @@ class remote_info_sender:
                 DEBUG("get info from home:%s" % info)
                 info_object = json.loads(info)
                 
-                msg_seq = info_object['seq']
-                msg_msg = info_object['msg']
+                msg_seq  = info_object['seq']
+                msg_msg  = info_object['msg']
                 msg_type = info_object['type']
+                msg_ts   = info_object["ts"]
                 if msg_type != "heartbeat":
                     # unicode !
-                    self._put_msg(u"%s,%s" % (msg_seq, msg_msg))
+                    DEBUG("put msg to queue:%s" % msg_msg)
+                    self._put_msg(u"%s,%s,%s" % (msg_seq, msg_ts, msg_msg))
             except (KeyboardInterrupt, SystemExit):
                 raise
             except Exception, ex:
