@@ -45,6 +45,7 @@ def speech_callback(result, confidence):
         threshold = 0.5
         INFO("result: " + result + " | " + str(confidence))
         if confidence > threshold:
+# needs timeout
             sock.send_string(result)
             message = sock.recv_string()
 

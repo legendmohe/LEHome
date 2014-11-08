@@ -32,14 +32,11 @@ class remote_server_proxy:
     def __init__(self, address):
         if not address is None:
             INFO("connect to server: %s " % (address))
-            context = zmq.Context()
-            self._sock = context.socket(zmq.REQ)
-            self._sock.setsockopt(zmq.LINGER, 0)
-            self._poller = zmq.Poller()
-            self._poller.register(self._sock, zmq.POLLIN)
-            self._sock.connect(address)
+            self._home_address = address
 
-            self._send_lock = threading.Lock()
+            self._sock = None
+            self._sock_context = zmq.Context()
+            self._poller = zmq.Poller()
 
             settings = Res.init("init.json")
             self._device_id = settings['id']
@@ -50,16 +47,24 @@ class remote_server_proxy:
     def _send_cmd_to_home(self, cmd):
         if not cmd is None and not cmd == "":
             INFO("send cmd %s to home." % (cmd, ))
+            if self._sock is None:
+                self._sock = self._sock_context.socket(zmq.REQ)
+                self._sock.setsockopt(zmq.LINGER, 0)
+                self._poller.register(self._sock, zmq.POLLIN)
+                self._sock.connect(self._home_address)
+
             cmd = unicode(cmd, "utf-8")
-            with self._send_lock:
-                self._sock.send_string(cmd)
-                # if self._poller.poll(5*1000): # 10s timeout in milliseconds
+            self._sock.send_string(cmd)
+            if self._poller.poll(5*1000): # 10s timeout in milliseconds
                 rep = self._sock.recv_string()
                 INFO("recv from home:%s" % rep)
                 return True
-                # else:
-                #     INFO("send [%s] to home timeout." % cmd)
-                #     return False
+            else:
+                INFO("send [%s] to home timeout." % cmd)
+                self._sock.close()
+                self._poller.unregister(self._sock)
+                self._sock = None
+                return False
         else:
             ERROR("cmd is invaild.")
             return False
@@ -91,6 +96,7 @@ class remote_server_proxy:
             except Exception, ex:
                 ERROR(ex)
             time.sleep(2)
+        self._sock_context.term()
 
 
 if __name__ == "__main__":
