@@ -53,13 +53,13 @@ class remote_server_proxy:
             cmd = unicode(cmd, "utf-8")
             with self._send_lock:
                 self._sock.send_string(cmd)
-                if self._poller.poll(5*1000): # 10s timeout in milliseconds
-                    rep = self._sock.recv_string()
-                    INFO("recv from home:%s" % rep)
-                    return True
-                else:
-                    INFO("send [%s] to home timeout." % cmd)
-                    return False
+                # if self._poller.poll(5*1000): # 10s timeout in milliseconds
+                rep = self._sock.recv_string()
+                INFO("recv from home:%s" % rep)
+                return True
+                # else:
+                #     INFO("send [%s] to home timeout." % cmd)
+                #     return False
         else:
             ERROR("cmd is invaild.")
             return False
