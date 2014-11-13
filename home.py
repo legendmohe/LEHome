@@ -142,10 +142,7 @@ class Home:
         cmd_bind_address = self._init_res["connection"]["cmd_bind_address"]
         INFO("initlizing cmd socket, bing to:" + cmd_bind_address)
 
-        context = zmq.Context()
-        self._cmd_socket = context.socket(zmq.REP)
-        self._cmd_socket.setsockopt(zmq.LINGER, 0)
-        self._cmd_socket.bind(cmd_bind_address)
+        self._cmd_bind_address = cmd_bind_address
 
     def _init_helper(self):
         publisher_ip = self._init_res["connection"]["publisher"]
@@ -193,16 +190,31 @@ class Home:
         self._spk.start()
         self._cmd.start()
 
+        context = zmq.Context()
+        cmd_socket = context.socket(zmq.REP)
+        cmd_socket.setsockopt(zmq.LINGER, 0)
+        cmd_poller = zmq.Poller()
+        cmd_poller.register(cmd_socket, zmq.POLLIN)
+        cmd_socket.bind(self._cmd_bind_address)
         while True:
             INFO("waiting for command...")
-            req = self._cmd_socket.recv_string()
-            if req == "":
-                rep = u"error"
-            else:
-                rep = u"ok"
-            INFO("home received cmd: %s" % req)
-            self._cmd_socket.send_string(rep)
-            home.parse_cmd(req)
+            if cmd_poller.poll(10*1000): # 10s timeout in milliseconds
+                req = cmd_socket.recv_string()
+                if req == "":
+                    rep = u"error"
+                else:
+                    rep = u"ok"
+                INFO("home received cmd: %s" % req)
+                cmd_socket.send_string(rep)
+                home.parse_cmd(req)
+            # else:
+            #     # INFO("home recv timeout.")
+            #     cmd_socket.close()
+            #     cmd_poller.unregister(cmd_socket)
+            #     cmd_socket = context.socket(zmq.REP)
+            #     cmd_socket.setsockopt(zmq.LINGER, 0)
+            #     cmd_poller.register(cmd_socket, zmq.POLLIN)
+            #     cmd_socket.bind(self._cmd_bind_address)
 
     def deactivate(self):
         self._spk.stop()
@@ -215,3 +227,4 @@ class Home:
 if __name__ == '__main__':
     home = Home()
     home.activate()
+    WARN("home got exception, now exit.")

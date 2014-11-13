@@ -28,6 +28,8 @@ from util.log import *
 class remote_server_proxy:
     
     HOST = "http://lehome.sinaapp.com"
+    TRIGGER = u""
+    FINISH = u""
 
     def __init__(self, address):
         if not address is None:
@@ -40,6 +42,8 @@ class remote_server_proxy:
 
             settings = Res.init("init.json")
             self._device_id = settings['id']
+            self._trigger_cmd = settings['command']['trigger'][0]
+            self._finish_cmd = settings['command']['finish'][0]
             INFO("load device id:%s" % self._device_id)
         else:
             ERROR("address is empty")
@@ -53,7 +57,7 @@ class remote_server_proxy:
                 self._poller.register(self._sock, zmq.POLLIN)
                 self._sock.connect(self._home_address)
 
-            cmd = unicode(cmd, "utf-8")
+            cmd = self._trigger_cmd + unicode(cmd, "utf-8") + self._finish_cmd
             self._sock.send_string(cmd)
             if self._poller.poll(5*1000): # 10s timeout in milliseconds
                 rep = self._sock.recv_string()
