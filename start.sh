@@ -29,7 +29,7 @@ if [[ $rc != 0 ]] ; then
 fi
 
 echo 'running remote info sender.py'
-python remote_info_sender.py > /dev/null 2>&1 &
+python remote_info_sender.py > log/remote_proxy.log 2>&1 &
 rc=$?
 if [[ $rc != 0 ]] ; then
     exit $rc

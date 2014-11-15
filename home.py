@@ -197,8 +197,8 @@ class Home:
         cmd_poller.register(cmd_socket, zmq.POLLIN)
         cmd_socket.bind(self._cmd_bind_address)
         while True:
-            INFO("waiting for command...")
             if cmd_poller.poll(10*1000): # 10s timeout in milliseconds
+                INFO("waiting for command...")
                 req = cmd_socket.recv_string()
                 if req == "":
                     rep = u"error"
