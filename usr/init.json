@@ -27,8 +27,8 @@
                     "提醒", "闹铃", "铃声", "公交车", "公车", "公交站",
                     "任务", "待办事项", "脚本", "变量", "警报",
                     "开关", "传感器", "热水器", "电饭煲", "风扇", "书桌",
-                    "空调",
-                    "我",
+                    "电灯", "空调",
+                    "新宇", "芳莹",
                     "天气", "录音", "语音"],
         "stop" : ["算了", "取消"],
         "finish" : ["好吗", "谢谢"],
@@ -108,9 +108,11 @@
             "热水器":"target.normal_switch_callback",
             "电饭煲":"target.normal_switch_callback",
             "风扇":"target.normal_switch_callback",
+            "电灯":"target.normal_switch_callback",
             "书桌":"target.normal_sensor_callback",
             "空调":"target.normal_ril_callback",
-            "我":"target.normal_tag_callback"
+            "新宇":"target.normal_tag_callback",
+            "芳莹":"target.normal_tag_callback"
         },
         "stop":{
             "算了":"stop.stop_callback",
@@ -147,7 +149,8 @@
         "com_trash":"com_trash.mp3"
     },
     "switchs":{
-        "风扇":"192.168.1.102",
+        "风扇":"",
+        "电灯":"192.168.1.102",
         "热水器":"192.168.1.120",
         "电饭煲":"192.168.1.160"
     },
@@ -157,7 +160,8 @@
         "书桌":"00124B00041183FE"
     },
     "tag":{
-        "我":"E2C56DB5-DFFB-48D2-B060-D0F5A71096E0"
+        "新宇":"E2C56DB5-DFFB-48D2-B060-D0F5A71096E0",
+        "芳莹":"E2C56DB5-DFFB-48D2-B060-D0F5A71096E1"
     },
     "qqfm": {
         "server":"192.168.1.101:8888"

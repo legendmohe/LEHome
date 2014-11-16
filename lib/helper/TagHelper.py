@@ -51,6 +51,7 @@ class TagHelper(object):
         return True if distance > 0.0 else False
 
     def _send_request(self, addr, place_ip):
+        DEBUG("send tag request to %s for %s" % (addr, place_ip))
         context = zmq.Context()
         socket = context.socket(zmq.REQ)
         socket.setsockopt(zmq.LINGER, 0)
@@ -65,4 +66,5 @@ class TagHelper(object):
                 DEBUG("recv msgs:" + rep)
         except:
             WARN("socket timeout.")
+        socket.close()
         return rep

@@ -25,19 +25,16 @@ import collections
 import logging
 import zmq
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
-
-DEBUG = logging.debug
-INFO = logging.info
-WARN = logging.warning
-ERROR = logging.error
-CRITICAL = logging.critical
+from util.log import *
 
 
 class tag_endpoint(object):
 
     # tag 的蓝牙地址
-    tag_addrs = ["E2C56DB5-DFFB-48D2-B060-D0F5A71096E0"]
+    tag_addrs = [
+                "E2C56DB5-DFFB-48D2-B060-D0F5A71096E0",
+                "E2C56DB5-DFFB-48D2-B060-D0F5A71096E1"
+                ]
 
     def __init__(self, name):
         self.server_ip = "tcp://*:8006"
@@ -103,7 +100,7 @@ class tag_endpoint(object):
             try:
                 data = proc.stdout.readline() #block / wait
                 if data == "":
-                    print "no broadcast data."
+                    WARN("no broadcast data.")
                     break
                 datas = data.split()
                 addr = datas[0]
@@ -131,7 +128,7 @@ class tag_endpoint(object):
                 self.tags[addr] = self.calDistance(txPower, rssi)
             except Empty:
                 self.tags[addr] = -1.0
-                INFO('parse rssi timeout.')
+                DEBUG('parse rssi timeout.')
             except (KeyboardInterrupt, SystemExit):
                 self.socket.close()
                 self.stop()
@@ -140,7 +137,7 @@ class tag_endpoint(object):
                 self.tags[addr] = -1.0
                 ERROR(ex)
                 time.sleep(3)
-            INFO("addr:%s, distance:%f" % (addr, self.tags[addr]))
+            DEBUG("addr:%s, distance:%f" % (addr, self.tags[addr]))
 
     def start(self):
 
@@ -203,7 +200,7 @@ class tag_endpoint(object):
         subprocess.call(
                         ["sudo", "killall", "-9", "hcitool"],
                         )
-        print "tag_endpoint stop."
+        INFO("tag_endpoint stop.")
 
 if __name__ == '__main__':
     tag_endpoint("test").start()

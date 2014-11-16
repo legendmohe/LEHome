@@ -1025,7 +1025,7 @@ class normal_tag_callback(Callback.Callback):
             res = self._home._tag.near(addr, place)
             if res is None:
                 INFO(u'无法获取位置：' + cmd)
-                self._home.publish_msg(cmd, u"内部错误")
+                self._home.publish_msg(cmd, u"无法获取位置信息：" + msg)
                 return False
             else:
                 status = u"在" if res else u"不在"

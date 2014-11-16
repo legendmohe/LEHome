@@ -65,15 +65,6 @@ class Home:
     def _init_command(self):
         INFO('initlizing command...')
         
-        def info_sender(info_type, info):
-            pass
-            # if info_type == 'begin':
-            #     msg = u'执行命令:'
-            # elif info_type == 'end':
-            #     msg = u'执行完毕:'
-            #     info = msg + info
-            # self.publish_msg(info, info)
-
         settings = self._init_res
         if settings:
             com_json = settings['command']
@@ -91,7 +82,7 @@ class Home:
                         "nexts":com_json["next"],
                         "logical":com_json["logical"],
                         "compare":com_json["compare"],
-                        }, info_sender=info_sender)
+                        })
             self._cmd.setDEBUG(False)
             self._cmd.cmd_begin_callback = self._cmd_begin_callback
             self._cmd.cmd_end_callback = self._cmd_end_callback

@@ -33,7 +33,7 @@ from util.thread import StoppableThread
 
 
 class Command:
-    def __init__(self, coms, backup_path="data/backup.pcl", info_sender=None):
+    def __init__(self, coms, backup_path="data/backup.pcl"):
         DEBUG("Command __init__.")
         self._lock = threading.Lock()
         self._parse_lock = threading.Lock()
@@ -49,11 +49,6 @@ class Command:
 
         self._keep_running = True
         self.backup_path = backup_path
-        self._info = info_sender
-
-    def send_info(self, info_type, info):
-        if self._info is not None:
-            self._info(info_type, info)
 
     def init_tasklist(self):
         backup_path = self.backup_path
@@ -154,9 +149,7 @@ class Command:
         self._local.cmd = command
         self._local.thread = threading.current_thread()
         block_stack = Command.BlockStack()
-        self.send_info('begin', command)
         self._invoke_block(block, block_stack)
-        self.send_info('end', command)
         del self._local.cmd
         del self._local.thread
 
@@ -164,7 +157,6 @@ class Command:
             del self.threads[thread_index]
             self._tasklist.remove(tasklist_item)
             self._save_tasklist()
-
         try:
             self.cmd_end_callback(command)
         except AttributeError:
