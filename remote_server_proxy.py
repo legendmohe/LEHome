@@ -30,6 +30,7 @@ class remote_server_proxy:
     HOST = "http://lehome.sinaapp.com"
     TRIGGER = u""
     FINISH = u""
+    NO_HEAD_FLAG = "*"
 
     def __init__(self, address):
         if not address is None:
@@ -57,7 +58,10 @@ class remote_server_proxy:
                 self._poller.register(self._sock, zmq.POLLIN)
                 self._sock.connect(self._home_address)
 
-            cmd = self._trigger_cmd + unicode(cmd, "utf-8") + self._finish_cmd
+            if cmd.startswith(remote_server_proxy.NO_HEAD_FLAG):
+                cmd = unicode(cmd[1:], "utf-8")
+            else:
+                cmd = self._trigger_cmd + unicode(cmd, "utf-8") + self._finish_cmd
             self._sock.send_string(cmd)
             if self._poller.poll(5*1000): # 10s timeout in milliseconds
                 rep = self._sock.recv_string()

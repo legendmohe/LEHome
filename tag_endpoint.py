@@ -187,7 +187,7 @@ class tag_endpoint(object):
                                 }
                                 }
                     self.socket.send_string(json.dumps(rep))
-                    INFO("recv req:" + req)
+                    DEBUG("recv req:" + req)
             except (KeyboardInterrupt, SystemExit):
                 self.socket.close()
                 self.stop()
