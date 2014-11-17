@@ -31,7 +31,7 @@ down下来后，配置init.json（后面会说明如何配置），然后在根�
 
 客户端
 
-目前LEHome实现了Android，web app，微信版客户端，如有需要可与我联系。
+目前LEHome实现了Android，web app，微信版客户端，如有需要可与我联系legendmohe@foxmail.com。
 
 硬件
 
@@ -72,7 +72,7 @@ down下来后，配置init.json（后面会说明如何配置），然后在根�
 
 
 系统功能
-============
+========
 
 本系统最大的特点是能支持简单的命令编程。
 
@@ -92,10 +92,65 @@ down下来后，配置init.json（后面会说明如何配置），然后在根�
 
 	循环每工作日晚上7点30分内容是如果我在家里那么延时10分钟打开电灯然后如果当前温度大于数值26那么打开风扇然后播放语音#你好#
 
+
 #### 如何查看系统支持的命令
 
 打开usr/init.json，可以看到在"command"项下，有许多预定义的命令。
 
+系统检测到命令词出现的时候，会调用相应的callback，所有业务逻辑都在callback里面完成。
+
 #### 命令格式
 
+命令由基本命令和控制语句组成。准许以下规则：
 
+1. 基本命令 = delay + action + target + message
+2. 基本命令 = 基本命令 + 控制语句
+3. 命令 = trigger + 基本命令 + finish/stop
+
+例如：
+
+    打开风扇 -- 打开[action]风扇[target]
+	延时10分钟打开电灯 -- 延时10分钟[delay]打开[action]电灯[target]
+
+	查询公交车8路 -- 查询[action]公交车[target]8路[message]
+
+	如果我在家里那么打开电灯 -- 如果[控制语句if]我在家里[基本命令]那么[控制语句then]打开电灯[基本命令]
+
+以上命令不能直接被系统识别，需要用trigger和finish/stop包围
+
+例如：
+
+    你好打开风扇谢谢 -- 你好[trigger]打开[action]风扇[target]谢谢[finish]
+
+*添加trigger和finish的原因是系统支持连续语音识别命令，需要考虑断句的情况，所以要添加两个标志位来截取命令。
+
+#### 命令callback
+
+所有命令对应的callback.py都保存在usr/callbacks/目录下。
+
+在init.json文件中，可以通过：
+
+    "callback":{
+        "whiles":{
+            "循环":"whiles.while_callback",
+            "重复":"whiles.while_callback"
+        },
+    ...
+	}
+
+这样来指定。
+
+callback主要如下所示：
+
+    from lib.model import Callback
+    
+	class timer_callback(Callback.Callback):
+        def callback(self, cmd, action, target, msg):
+	        ...
+
+当命令词被触发时，相应callback的callback()方法会被调用，传入的参数由callback函数的定义决定。
+
+联系方式
+========
+
+本项目断断续续做了一年，代码风格，逻辑实现等比较幼稚，加上本README写得极简，基本不可作为开发参考使用，故如有任何疑问，可联系legendmohe@foxmail.com。
