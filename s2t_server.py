@@ -29,7 +29,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('-t',
                     action="store",
                     dest="send_to",
-                    default="192.168.1.101:8000",
+                    default="localhost:8000",
                     help="server address")
 args = parser.parse_args()
 send_to = args.send_to

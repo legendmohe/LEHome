@@ -4,10 +4,10 @@
         "cmd_bind_address" : "tcp://*:8000",
         "publisher" : "tcp://*:9000",
         "msg_cmd_bind" : "tcp://*:9001",
-        "audio_server" : "http://192.168.1.101:8001",
+        "audio_server" : "http://localhost:8001",
         "sensor_server" : "tcp://localhost:8005",
         "tag_server":{
-            "家里":"tcp://192.168.1.101:8006"
+            "家里":"tcp://localhost:8006"
         }
     },
     "command":{
@@ -164,6 +164,6 @@
         "芳莹":"E2C56DB5-DFFB-48D2-B060-D0F5A71096E1"
     },
     "qqfm": {
-        "server":"192.168.1.101:8888"
+        "server":"localhost:8888"
     }
 }

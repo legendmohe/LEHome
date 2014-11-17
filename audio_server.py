@@ -163,8 +163,9 @@ def worker(play_url, loop):
     # mp.exit()
     # if play_url in mp_context:
     #     del mp_context[play_url]
-    cmd = ['mplayer', '-ao', 'alsa:device=btheadset', play_url, '-loop', str(loop)]
+    # cmd = ['mplayer', '-ao', 'alsa:device=btheadset', play_url, '-loop', str(loop)]
     # print cmd
+    cmd = ['mplayer', play_url, '-loop', str(loop)]
     with open(os.devnull, 'w') as tempf:
         player = subprocess.Popen(cmd, stdout=tempf, stderr=tempf)
         mp_context[play_url] = player
@@ -248,7 +249,8 @@ def queue_worker():
     while True:
         url, loop = mp_queue.get()
         print "get from queue:" + str(url)
-        cmd = ['mplayer', '-ao', 'alsa:device=btheadset', url, '-loop', str(loop)]
+        # cmd = ['mplayer', '-ao', 'alsa:device=btheadset', url, '-loop', str(loop)]
+        cmd = ['mplayer', url, '-loop', str(loop)]
         # print cmd
         with open(os.devnull, 'w') as tempf:
             player = subprocess.Popen(cmd, stdout=tempf, stderr=tempf)
