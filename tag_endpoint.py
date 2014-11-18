@@ -17,6 +17,8 @@
 
 
 import threading
+import os
+import signal
 import time
 import subprocess
 import json
@@ -91,6 +93,12 @@ class tag_endpoint(object):
                         ["sudo", "killall", "-9", "hcitool"],
                         )
         subprocess.call(
+                        ["sudo", "hciconfig", "hci0", "down"],
+                        )
+        subprocess.call(
+                        ["sudo", "hciconfig", "hci0", "up"],
+                        )
+        subprocess.call(
                         ["sudo", "./vender/ibeacon_scan"],
                         )
         proc = subprocess.Popen(
@@ -118,6 +126,7 @@ class tag_endpoint(object):
 
     def _parse_rssi(self, addr):
         queue = self._queues[addr]
+        self.tags[addr] = -1.0
         while True:
             try:
                 # 从缓冲队列里取出数据

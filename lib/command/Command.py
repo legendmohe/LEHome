@@ -107,7 +107,7 @@ class Command:
                     self.print_block(command, block, index + 1)
 
     def _finish_callback(self, command, block):
-        DEBUG(" _finish_callback: %s" % command)
+        # DEBUG(" _finish_callback: %s" % command)
         # self.print_block(command, block)
         # import pdb
         # pdb.set_trace()

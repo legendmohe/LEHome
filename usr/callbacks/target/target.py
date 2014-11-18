@@ -1067,7 +1067,7 @@ class speech_callback(Callback.Callback):
 
 class bus_callback(Callback.Callback):
     REQUEST_URL = "http://gzbusnow.sinaapp.com/index.php?"
-    REQUEST_TIMEOUT = 10
+    REQUEST_TIMEOUT = 5
 
     def _request_info(self, msg):
         url = bus_callback.REQUEST_URL + \
@@ -1147,7 +1147,7 @@ class bus_callback(Callback.Callback):
 
 class bus_station_callback(Callback.Callback):
     REQUEST_URL = "http://gzbusnow.sinaapp.com/index.php?"
-    REQUEST_TIMEOUT = 10
+    REQUEST_TIMEOUT = 5
 
     def _request_info(self, msg):
         url = bus_callback.REQUEST_URL + \

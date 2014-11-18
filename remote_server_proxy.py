@@ -31,6 +31,7 @@ class remote_server_proxy:
     TRIGGER = u""
     FINISH = u""
     NO_HEAD_FLAG = "*"
+    CMD_FETCH_INTERVAL = 3
 
     def __init__(self, address):
         if not address is None:
@@ -103,7 +104,7 @@ class remote_server_proxy:
                 WARN(e)
             except Exception, ex:
                 ERROR(ex)
-            time.sleep(2)
+            time.sleep(remote_server_proxy.CMD_FETCH_INTERVAL)
         self._sock_context.term()
 
 

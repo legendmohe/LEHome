@@ -19,7 +19,7 @@ import logging.handlers
 file_name = 'log/home_debug.log'
 debug_logger = logging.getLogger('DebugLog')
 handler = logging.handlers.RotatingFileHandler(file_name, maxBytes=50*1024*1024)
-formatter = logging.Formatter("[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s")
+formatter = logging.Formatter("%(asctime)s - [%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s")
 handler.setFormatter(formatter)
 debug_logger.setLevel(logging.DEBUG)
 debug_logger.addHandler(handler)
@@ -32,7 +32,7 @@ formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s [%(file
 handler.setFormatter(formatter)
 comm_logger.setLevel(logging.INFO)
 comm_logger.addHandler(handler)
-comm_logger.propagate = False # now if you use logger it will not log to console.
+# comm_logger.propagate = False # now if you use logger it will not log to console.
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
 

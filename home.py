@@ -49,6 +49,8 @@ class TracePrints(object):
 class Home:
     def __init__(self):
 
+        INFO(u"==========服务器启动==========")
+
         self._global_context = {}
         self._init_res = Res.init("init.json")
         self._init_cmd_socket()
@@ -60,7 +62,7 @@ class Home:
         self._resume = False
         self._cmd.init_tasklist()  # load unfinished task
 
-        self.publish_msg("init", u"服务器启动")
+        self.publish_msg("init", u"==========服务器启动==========")
 
     def _init_command(self):
         INFO('initlizing command...')

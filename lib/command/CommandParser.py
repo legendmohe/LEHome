@@ -41,7 +41,8 @@ class CommandParser:
         if e.dst == "error_state":
             self._error_occoured = True
             return
-        self._statement.delay = e.args[1]
+        if e.dst == "delay_state":
+            self._statement.delay = e.args[1]
 
     def onfound_trigger(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
@@ -52,21 +53,23 @@ class CommandParser:
             self._last_cmd = ''
             self._is_cmd_triggered = True
             self._lock.acquire()
-        self._statement.trigger = e.args[1]
+            self._statement.trigger = e.args[1]
 
     def onfound_target(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
         if e.dst == "error_state":
             self._error_occoured = True
             return
-        self._statement.target = e.args[1]
+        if e.dst == "target_state":
+            self._statement.target = e.args[1]
 
     def onfound_action(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
         if e.dst == "error_state":
             self._error_occoured = True
             return
-        self._statement.action = e.args[1]
+        if e.dst == "action_state":
+            self._statement.action = e.args[1]
 
     def onfound_others(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
@@ -119,8 +122,7 @@ class CommandParser:
         if e.dst == "trigger_state":
             block = self._block_stack[-1]
             self._append_statement(block)
-
-        self._statement.nexts = e.args[1]
+            self._statement.nexts = e.args[1]
 
     def onfound_while(self, e):
         DEBUG('event: %s, src: %s, dst: %s' % (e.event, e.src, e.dst))
