@@ -1077,35 +1077,43 @@ class bus_callback(Callback.Callback):
                     'c': 'busrunningv2'
                     })
         try:
+            INFO("start fetching bus info:%s" % msg)
             rep = urllib2.urlopen(
                     url,
                     timeout=bus_callback.REQUEST_TIMEOUT) \
                 .read()
+            INFO("got bus info:%d" % len(rep))
             return rep
-        except:
+        except urllib2.URLError, e:
+            ERROR(e)
             return None
 
     def _parse_info(self, rep):
         res = []
         soup = BeautifulSoup(rep)
-        for status in soup.find_all(class_='bus_direction'):
-            current = {
-                    'status': unicode(status.string).strip(),
-                    'nodes': []}
-            # WTF?!
-            begin_node = status.next_sibling.next_sibling.table.tbody
-            for child in begin_node.children:
-                if type(child) != type(begin_node):
-                    continue
-                node = {}
-                if child.get('class') is None:
-                    node['in'] = False
-                else:
-                    node['in'] = True
+        try:
+            for status in soup.find_all(class_='bus_direction'):
+                current = {
+                        'status': unicode(status.string).strip(),
+                        'nodes': []}
                 # WTF?!
-                node['name'] = unicode(child.contents[3].contents[0].string.strip())
-                current['nodes'].append(node)
-            res.append(current)
+                begin_node = status.next_sibling.next_sibling.table
+                for child in begin_node.children:
+                    if type(child) != type(begin_node):
+                        continue
+                    node = {}
+                    if child.get('class') is None:
+                        node['in'] = False
+                    else:
+                        node['in'] = True
+                    # WTF?!
+                    node['name'] = unicode(child.contents[3].contents[0].string.strip())
+                    current['nodes'].append(node)
+                res.append(current)
+            # import pdb; pdb.set_trace()
+        except Exception, e:
+            ERROR(e)
+        INFO("parse bus info:%d" % len(res))
         return res
 
     def _bus_info(self, bus_number):
@@ -1115,7 +1123,7 @@ class bus_callback(Callback.Callback):
         else:
             parse_res = self._parse_info(info)
             if parse_res is None or len(parse_res) == 0:
-                return None
+                return u""
             return parse_res
 
     def _readable_info(self, info):
@@ -1137,10 +1145,14 @@ class bus_callback(Callback.Callback):
             self._home.publish_msg(cmd, u"正在查询...")
             info = self._bus_info(msg)
             if info is None:
+                self._home.publish_msg(cmd, u"公交信息服务连接失败")
+                return True, None
+            elif info == u"":
                 self._home.publish_msg(cmd, u"请输入正确的公交线路名称")
                 return True, None
             else:
                 readable_info = self._readable_info(info)
+                INFO(readable_info)
                 self._home.publish_msg(cmd, readable_info)
         return True, info
 
