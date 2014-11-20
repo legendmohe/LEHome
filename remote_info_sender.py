@@ -25,8 +25,11 @@ import json
 import zmq
 from util.Res import Res
 from util.log import *
-# from vender.baidu_push.Channel import *
+from vender.baidu_push.Channel import *
 
+PUSH_apiKey = "7P5ZCG6WTAGWr5TuURBgndRH"                                             
+PUSH_secretKey = "gggk30ubCSFGM5uXYfwGll4vILlnQ0em"                                  
+PUSH_user_id = "4355409"   
 
 class remote_info_sender:
     
@@ -50,12 +53,12 @@ class remote_info_sender:
     def _send_info_to_server(self, info):
         if not info is None and not info == "":
             DEBUG("send info %s to remote server." % (info, ))
+
             try:
                 info = info.encode('utf-8')
-                url = remote_info_sender.HOST + "/info/put/%s?id=%s" \
-                        % (urllib.quote_plus(info) , self._device_id)
-                req = urllib2.Request(url)
-                rep = urllib2.urlopen(req, timeout=10).read()
+                ret = self._push_info(info, str(self._device_id))   
+                DEBUG("push ret:%s" % ret)
+                rep = self._sae_info(info)
                 if len(rep) != 0:
                     DEBUG("remote_server rep:%s" % rep)
                     if rep == 'ok':
@@ -67,6 +70,22 @@ class remote_info_sender:
         else:
             ERROR("info is invaild.")
             return False
+
+    def _push_info(self, info, tag_name):
+        # baidu push
+        c = Channel(PUSH_apiKey, PUSH_secretKey)                                              
+        push_type = 2                                                               
+        optional = {}                                                           
+        optional[Channel.TAG_NAME] = tag_name                                   
+        ret = c.pushMessage(push_type, info, "key", optional)
+        return ret
+    
+    def _sae_info(self, info):
+        url = remote_info_sender.HOST + "/info/put/%s?id=%s" \
+                % (urllib.quote_plus(info) , self._device_id)
+        req = urllib2.Request(url)
+        rep = urllib2.urlopen(req, timeout=10).read()
+        return rep
 
     def _put_msg(self, msg):
         self._msg_queue.put(msg)
