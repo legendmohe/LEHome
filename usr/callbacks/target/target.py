@@ -727,7 +727,8 @@ class var_callback(Callback.Callback):
             try:
                 with open(var_callback.var_path, "rb") as f:
                     self.vars = pickle.load(f)
-            except:
+            except Exception, e:
+                ERROR(e)
                 INFO("empty var list.")
         return self.vars
 

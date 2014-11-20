@@ -130,7 +130,7 @@ class Command:
                 callbacks[stop](stop=stop)
 
     def _execute(self, block, command):
-        INFO("start _execute: %s" % command)
+        # INFO("start _execute: %s" % command)
         tasklist_item = command
         self._tasklist.append(tasklist_item)
         self._save_tasklist()
@@ -149,7 +149,10 @@ class Command:
         self._local.cmd = command
         self._local.thread = threading.current_thread()
         block_stack = Command.BlockStack()
-        self._invoke_block(block, block_stack)
+        try:
+            self._invoke_block(block, block_stack)
+        except Exception, e:
+            ERROR(e)
         del self._local.cmd
         del self._local.thread
 
@@ -162,7 +165,7 @@ class Command:
         except AttributeError:
             DEBUG("no cmd_end_callback")
 
-        INFO("finish _execute: %s" % command)
+        # INFO("finish _execute: %s" % command)
 
     def _invoke_block(self, block, stack, pass_value=None, in_loop=False):
         # import pdb

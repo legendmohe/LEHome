@@ -25,6 +25,7 @@ import json
 import zmq
 from util.Res import Res
 from util.log import *
+# from vender.baidu_push.Channel import *
 
 
 class remote_info_sender:
