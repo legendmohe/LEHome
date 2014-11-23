@@ -42,7 +42,7 @@ class remote_info_sender:
             self._sock = context.socket(zmq.SUB)
             self._sock.connect(address)
             self._sock.setsockopt(zmq.SUBSCRIBE, '')
-
+            self.channel = Channel(PUSH_apiKey, PUSH_secretKey)
             self._msg_queue = Queue()
 
             settings = Res.init("init.json")
@@ -53,11 +53,8 @@ class remote_info_sender:
     def _send_info_to_server(self, info):
         if not info is None and not info == "":
             DEBUG("send info %s to remote server." % (info, ))
-
             try:
                 info = info.encode('utf-8')
-                ret = self._push_info(info, str(self._device_id))   
-                DEBUG("push ret:%s" % ret)
                 rep = self._sae_info(info)
                 if len(rep) != 0:
                     DEBUG("remote_server rep:%s" % rep)
@@ -72,13 +69,22 @@ class remote_info_sender:
             return False
 
     def _push_info(self, info, tag_name):
-        # baidu push
-        c = Channel(PUSH_apiKey, PUSH_secretKey)                                              
-        push_type = 2                                                               
-        optional = {}                                                           
-        optional[Channel.TAG_NAME] = tag_name                                   
-        ret = c.pushMessage(push_type, info, "key", optional)
-        return ret
+        if not info is None and not info == "":
+            DEBUG("push info %s to remote server." % (info, ))
+            # baidu push
+            push_type = 2
+            optional = {}                                                           
+            optional[Channel.TAG_NAME] = tag_name                                   
+            try:
+                ret = self.channel.pushMessage(push_type, info, "key", optional)
+                DEBUG("push ret:%s" % ret)
+            except Exception, e:
+                ERROR(e)
+                return False
+            return True
+        else:
+            ERROR("info is invaild.")
+            return False
     
     def _sae_info(self, info):
         url = remote_info_sender.HOST + "/info/put/%s?id=%s" \
@@ -111,25 +117,23 @@ class remote_info_sender:
 
     def _send_worker(self):
         while True:
-            msg = self._get_msg()
-            self._send_info_to_server(msg)
+            info = self._get_msg()
+            info_object = json.loads(info)
+            msg_seq  = info_object['seq']
+            msg_msg  = info_object['msg']
+            msg_type = info_object['type']
+            msg_ts   = info_object["ts"]
+            if msg_type != "heartbeat":
+                self._push_info(info, str(self._device_id))   
+                self._send_info_to_server(u"%s,%s,%s" % (msg_seq, msg_ts, msg_msg))
 
     def _put_worker(self):
         INFO("start waiting infos from home.")
         while True :
             try:
                 info = self._sock.recv_string()
+                self._put_msg(info)
                 DEBUG("get info from home:%s" % info)
-                info_object = json.loads(info)
-                
-                msg_seq  = info_object['seq']
-                msg_msg  = info_object['msg']
-                msg_type = info_object['type']
-                msg_ts   = info_object["ts"]
-                if msg_type != "heartbeat":
-                    # unicode !
-                    DEBUG("put msg to queue:%s" % msg_msg)
-                    self._put_msg(u"%s,%s,%s" % (msg_seq, msg_ts, msg_msg))
             except (KeyboardInterrupt, SystemExit):
                 raise
             except Exception, ex:
