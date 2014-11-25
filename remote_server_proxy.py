@@ -31,7 +31,7 @@ class remote_server_proxy:
     TRIGGER = u""
     FINISH = u""
     NO_HEAD_FLAG = "*"
-    CMD_FETCH_INTERVAL = 4
+    CMD_FETCH_INTERVAL = 3
 
     def __init__(self, address):
         if not address is None:
