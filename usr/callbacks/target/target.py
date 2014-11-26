@@ -26,6 +26,7 @@ import os
 import io
 import threading
 import errno
+import time
 from datetime import datetime
 from bs4 import BeautifulSoup
 from lib.command.Command import UserInput
@@ -1235,3 +1236,14 @@ class bus_station_callback(Callback.Callback):
         return True, info
 
 
+class time_callback(Callback.Callback):
+    def callback(self, cmd, action, target, msg, pre_value):
+        if pre_value == "show" or pre_value == "get":
+            cur_datetime = datetime.now()
+            if pre_value == "show":
+                date_str = cur_datetime.strftime("%Y-%m-%d %H:%M:%S")
+                self._home.publish_msg(cmd, date_str)
+                DEBUG("time_callback: %s" % date_str)
+            return True, cur_datetime
+        else:
+            return False

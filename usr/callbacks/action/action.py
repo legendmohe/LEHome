@@ -68,6 +68,20 @@ class str_value_callback(Callback.Callback):
         else:
             return True, msg
 
+class time_value_callback(Callback.Callback):
+    def callback(self, msg):
+        if msg is None:
+            ERROR("time_value msg is None.")
+            self._home.publish_msg(cmd, u"时间格式错误")
+            return False
+        else:
+            target_date = Util.parse_datetime(msg)
+            DEBUG("time_value_callback: %s" % target_date)
+            if target_date is None:
+                self._home.publish_msg(cmd, u"时间格式错误")
+                return False
+            else:
+                return True, target_date
 
 class switch_on_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg):

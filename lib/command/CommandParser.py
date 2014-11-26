@@ -585,7 +585,8 @@ class CommandParser:
     def _reset_element(self):
         self._statement = Statement()
         self._block_stack = [Block()]
-        self._lock.release()
+        if self._lock.locked():
+            self._lock.release()
 
     def reset(self):
         self._reset()
