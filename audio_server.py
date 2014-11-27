@@ -24,8 +24,11 @@ import signal
 from Queue import Queue
 from time import sleep
 import argparse
+
 import tornado.ioloop
 import tornado.web
+import alsaaudio
+
 from util.log import *
 
 
@@ -96,6 +99,39 @@ class StopHandler(tornado.web.RequestHandler):
 class ClearQeueuHandler(tornado.web.RequestHandler):
     def get(self):
         clear_audio_queue()
+        self.write(RETURNCODE.SUCCESS)
+
+
+class VolumeHandler(tornado.web.RequestHandler):
+    def get(self):
+        m = alsaaudio.Mixer()
+        volume = str(int(m.getvolume()))
+        DEBUG(u"当前音量值为：%s" % volume)
+        self.write(volume)
+
+    def post(self):
+        v_str = self.get_argument("v", default=None, strip=False)
+        if v_str is None:
+            self.write("-1")
+            DEBUG(u"请输入音量值")
+            return
+        m = alsaaudio.Mixer()
+        try:
+            volume = int(v_str)
+        except ValueError:
+            try:
+                volume = float(v_str)
+                self.write("-2")
+                DEBUG(u"音量值必须为整数")
+                return
+            except ValueError:
+                volume = -1
+        if volume == -1:
+            self.write("-3")
+            DEBUG(u"音量值无效：%s" % msg)
+            return
+        m.setvolume(volume)
+        DEBUG(u"设置音量值为：%s" % str(volume))
         self.write(RETURNCODE.SUCCESS)
 
 
@@ -276,6 +312,7 @@ application = tornado.web.Application([
     (r"/play", PlayHandler),
     (r"/clear", ClearQeueuHandler),
     (r"/stop", StopHandler),
+    (r"/volume", VolumeHandler),
     # (r"/pause", PauseHandler),
 ])
 

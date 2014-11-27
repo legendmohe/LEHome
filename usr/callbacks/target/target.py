@@ -28,7 +28,9 @@ import threading
 import errno
 import time
 from datetime import datetime
+
 from bs4 import BeautifulSoup
+
 from lib.command.Command import UserInput
 from util.Res import Res
 from util import Util
@@ -372,9 +374,9 @@ class todo_callback(Callback.Callback):
 
     def load_todos(self):
         with self._lock:
-            self.todos = []
             try:
                 with open(todo_callback.todo_path, "rb") as f:
+                    self.todos = []
                     self.todos = pickle.load(f)
             except:
                 INFO("empty todo list.")
@@ -467,9 +469,9 @@ class task_callback(Callback.Callback):
 
     def load_tasks(self):
         with self._lock:
-            self._tasks = []
             try:
                 with open(task_callback.task_path, "rb") as f:
+                    self._tasks = []
                     self._tasks = pickle.load(f)
             except:
                 INFO("empty suspended task list.")
@@ -599,12 +601,12 @@ class script_callback(Callback.Callback):
 
     def load_scripts(self):
         with self._lock:
-            self.scripts = {}
             try:
                 with io.open(script_callback.script_path,
                                 "r",
                                 encoding="utf-8") as f:
                     # self.scripts = pickle.load(f)
+                    self.scripts = {}
                     for line in f.readlines():
                         script_token = line.split()
                         if(len(script_token) == 2):
@@ -724,9 +726,9 @@ class var_callback(Callback.Callback):
 
     def load_vars(self):
         with self._lock:
-            self.vars = {}
             try:
                 with open(var_callback.var_path, "rb") as f:
+                    self.vars = {}
                     self.vars = pickle.load(f)
             except Exception, e:
                 ERROR(e)
@@ -1245,5 +1247,29 @@ class time_callback(Callback.Callback):
                 self._home.publish_msg(cmd, date_str)
                 DEBUG("time_callback: %s" % date_str)
             return True, cur_datetime
+        else:
+            return False
+
+
+class volume_callback(Callback.Callback):
+    def callback(self, cmd, action, target, msg, pre_value):
+        if pre_value == "show" or pre_value == "get":
+            volume = Sound.get_volume()
+            if pre_value == "show":
+                self._home.publish_msg(cmd, u"当前音量值为：%s" % volume)
+            return True, int(volume)
+        elif pre_value == "set":
+            if msg is None or len(msg) == 0:
+                self._home.publish_msg(cmd, u"请输入音量值")
+                return False
+            ret = Sound.set_volume(msg)
+            if ret == "-2":
+                self._home.publish_msg(cmd, u"音量值必须为整数")
+                return False
+            elif ret == "-3":
+                self._home.publish_msg(cmd, u"音量值无效：%s" % msg)
+                return False
+            self._home.publish_msg(cmd, u"设置音量值为：%s" % msg)
+            return True, int(msg)
         else:
             return False

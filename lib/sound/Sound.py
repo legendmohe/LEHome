@@ -66,6 +66,14 @@ def get_clear_request_url():
     return AUDIO_SERVER_ADDRESS + '/clear'
 
 
+def get_volume_url():
+    global AUDIO_SERVER_ADDRESS
+    if AUDIO_SERVER_ADDRESS is None:
+        WARN("audio server address is empty.")
+        return None
+    return AUDIO_SERVER_ADDRESS + '/volume'
+
+
 def play(path, inqueue=False, loop=-1):
     url = get_play_request_url(path, inqueue, loop)
     if url is None:
@@ -86,6 +94,41 @@ def play(path, inqueue=False, loop=-1):
 def stop(path):
     pass
 
+def set_volume(value):
+    url = get_volume_url()
+    if url is None:
+        return
+    INFO("setting audio volume: %s" % value)
+    try:
+        data = {"v":value}
+        enc_data = urllib.urlencode(data)
+        response = urllib2.urlopen(url, enc_data).read()
+    except urllib2.HTTPError, e:
+        INFO(e)
+        WARN("audio server address is invaild")
+    except urllib2.URLError, e:
+        INFO(e)
+        WARN("audio server unavailable.")
+    else:
+        INFO("audio response: " + response)
+    return response
+
+def get_volume():
+    url = get_volume_url()
+    if url is None:
+        return
+    INFO("getting audio volume: %s" % value)
+    try:
+        response = urllib2.urlopen(url).read()
+    except urllib2.HTTPError, e:
+        INFO(e)
+        WARN("audio server address is invaild")
+    except urllib2.URLError, e:
+        INFO(e)
+        WARN("audio server unavailable.")
+    else:
+        INFO("audio response: " + response)
+    return response
 
 def clear_queue():
     url = get_clear_request_url()
