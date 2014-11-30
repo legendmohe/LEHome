@@ -133,7 +133,7 @@ class remote_info_sender:
             try:
                 info = self._sock.recv_string()
                 self._put_msg(info)
-                DEBUG("get info from home:%s" % info)
+                # DEBUG("get info from home:%s" % info)
             except (KeyboardInterrupt, SystemExit):
                 raise
             except Exception, ex:

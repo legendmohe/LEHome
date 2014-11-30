@@ -20,7 +20,7 @@ import argparse
 import threading
 import time
 import urllib, urllib2
-import zmq
+# import zmq
 from util.Res import Res
 from util.log import *
 
@@ -38,9 +38,9 @@ class remote_server_proxy:
             INFO("connect to server: %s " % (address))
             self._home_address = address
 
-            self._sock = None
-            self._sock_context = zmq.Context()
-            self._poller = zmq.Poller()
+            # self._sock = None
+            # self._sock_context = zmq.Context()
+            # self._poller = zmq.Poller()
 
             settings = Res.init("init.json")
             self._device_id = settings['id']
@@ -53,27 +53,41 @@ class remote_server_proxy:
     def _send_cmd_to_home(self, cmd):
         if not cmd is None and not cmd == "":
             INFO("send cmd %s to home." % (cmd, ))
-            if self._sock is None:
-                self._sock = self._sock_context.socket(zmq.REQ)
-                self._sock.setsockopt(zmq.LINGER, 0)
-                self._poller.register(self._sock, zmq.POLLIN)
-                self._sock.connect(self._home_address)
-
+            # if self._sock is None:
+            #     self._sock = self._sock_context.socket(zmq.REQ)
+            #     self._sock.setsockopt(zmq.LINGER, 0)
+            #     self._poller.register(self._sock, zmq.POLLIN)
+            #     self._sock.connect(self._home_address)
+            # INFO("cmd type:%s" % type(cmd))
             if cmd.startswith(remote_server_proxy.NO_HEAD_FLAG):
-                cmd = unicode(cmd[1:], "utf-8")
+                cmd = cmd[1:]
             else:
-                cmd = self._trigger_cmd + unicode(cmd, "utf-8") + self._finish_cmd
-            self._sock.send_string(cmd)
-            if self._poller.poll(5*1000): # 10s timeout in milliseconds
-                rep = self._sock.recv_string()
-                INFO("recv from home:%s" % rep)
-                return True
-            else:
-                INFO("send [%s] to home timeout." % cmd)
-                self._sock.close()
-                self._poller.unregister(self._sock)
-                self._sock = None
+                cmd = "%s%s%s" % (self._trigger_cmd, cmd, self._finish_cmd)
+
+            try:
+                data = {"cmd": cmd}
+                enc_data = urllib.urlencode(data)
+                response = urllib2.urlopen(self._home_address, enc_data).read()
+            except urllib2.HTTPError, e:
+                ERROR(e)
                 return False
+            except urllib2.URLError, e:
+                ERROR(e)
+                return False
+            else:
+                INFO("home response: " + response)
+                return True
+            # self._sock.send_string(cmd)
+            # if self._poller.poll(5*1000): # 10s timeout in milliseconds
+            #     rep = self._sock.recv_string()
+            #     INFO("recv from home:%s" % rep)
+            #     return True
+            # else:
+            #     INFO("send [%s] to home timeout." % cmd)
+            #     self._sock.close()
+            #     self._poller.unregister(self._sock)
+            #     self._sock = None
+            #     return False
         else:
             ERROR("cmd is invaild.")
             return False
@@ -114,7 +128,7 @@ if __name__ == "__main__":
     parser.add_argument('-a',
                         action="store",
                         dest="address",
-                        default="tcp://localhost:8000",
+                        default="http://localhost:8000/home/cmd",
                         )
     args = parser.parse_args()
     address = args.address

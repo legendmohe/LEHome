@@ -20,9 +20,13 @@ import sys
 import importlib
 import traceback
 import threading
+import signal
 import time
 import json
-import zmq
+
+import tornado.ioloop
+import tornado.web
+
 from lib.command.Command import Command
 from lib.speech.Speech import Text2Speech
 from lib.helper.SwitchHelper import SwitchHelper
@@ -36,12 +40,12 @@ from util.log import *
 from util.thread import TimerThread
 
 
-class TracePrints(object):
-      def __init__(self):    
-          self.stdout = sys.stdout
-      def write(self, s):
-          self.stdout.write("Writing %r\n" % s)
-          traceback.print_stack(file=self.stdout)
+# class TracePrints(object):
+#       def __init__(self):    
+#           self.stdout = sys.stdout
+#       def write(self, s):
+#           self.stdout.write("Writing %r\n" % s)
+#           traceback.print_stack(file=self.stdout)
 
 # sys.stdout = TracePrints()
 
@@ -132,10 +136,10 @@ class Home:
         INFO("connect to audio server: %s " % (Sound.AUDIO_SERVER_ADDRESS))
 
     def _init_cmd_socket(self):
-        cmd_bind_address = self._init_res["connection"]["cmd_bind_address"]
-        INFO("initlizing cmd socket, bing to:" + cmd_bind_address)
+        cmd_bind_port = self._init_res["connection"]["cmd_bind_port"]
+        INFO("initlizing cmd socket, bing to:" + cmd_bind_port)
 
-        self._cmd_bind_address = cmd_bind_address
+        self._cmd_bind_port = cmd_bind_port
 
     def _init_helper(self):
         publisher_ip = self._init_res["connection"]["publisher"]
@@ -178,36 +182,17 @@ class Home:
             self._cmd.parse(cmd)
 
     def activate(self):
-        INFO("home activate!")
         Sound.play(Res.get_res_path("sound/com_begin"))
         self._spk.start()
         self._cmd.start()
 
-        context = zmq.Context()
-        cmd_socket = context.socket(zmq.REP)
-        cmd_socket.setsockopt(zmq.LINGER, 0)
-        cmd_poller = zmq.Poller()
-        cmd_poller.register(cmd_socket, zmq.POLLIN)
-        cmd_socket.bind(self._cmd_bind_address)
-        while True:
-            if cmd_poller.poll(10*1000): # 10s timeout in milliseconds
-                INFO("waiting for command...")
-                req = cmd_socket.recv_string()
-                if req == "":
-                    rep = u"error"
-                else:
-                    rep = u"ok"
-                INFO("home received cmd: %s" % req)
-                cmd_socket.send_string(rep)
-                home.parse_cmd(req)
-            # else:
-            #     # INFO("home recv timeout.")
-            #     cmd_socket.close()
-            #     cmd_poller.unregister(cmd_socket)
-            #     cmd_socket = context.socket(zmq.REP)
-            #     cmd_socket.setsockopt(zmq.LINGER, 0)
-            #     cmd_poller.register(cmd_socket, zmq.POLLIN)
-            #     cmd_socket.bind(self._cmd_bind_address)
+        application = tornado.web.Application([
+            (r"/home/cmd", CmdHandler, dict(home=self)),
+        ])
+        application.listen(self._cmd_bind_port.encode("utf-8"))
+        tornado.ioloop.PeriodicCallback(try_exit, 1000).start()
+        tornado.ioloop.IOLoop.instance().start()
+        INFO("home activate!")
 
     def deactivate(self):
         self._spk.stop()
@@ -216,8 +201,34 @@ class Home:
     def setResume(self, resume):
         self._resume = resume
 
+class CmdHandler(tornado.web.RequestHandler):
+    def initialize(self, home):
+        self.home = home
+
+    def post(self):
+        cmd = self.get_argument("cmd", default=None, strip=False)
+        if cmd is None:
+            self.write("error")
+            return
+        self.home.parse_cmd(cmd)
+        self.write("ok")
+
+is_closing = False
+def signal_handler(signum, frame):
+    global is_closing
+    is_closing = True
+
+
+def try_exit():
+    global is_closing
+    if is_closing:
+        # clean up here
+        tornado.ioloop.IOLoop.instance().stop()
+        logging.info('exit success')
 
 if __name__ == '__main__':
+    signal.signal(signal.SIGINT, signal_handler)
+
     home = Home()
     home.activate()
     WARN("home got exception, now exit.")
