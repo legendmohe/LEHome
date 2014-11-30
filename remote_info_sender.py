@@ -70,7 +70,7 @@ class remote_info_sender:
 
     def _push_info(self, info, tag_name):
         if not info is None and not info == "":
-            DEBUG("push info %s to remote server." % (info, ))
+            # DEBUG("push info %s to remote server." % (info, ))
             # baidu push
             push_type = 2
             optional = {}                                                           
@@ -87,10 +87,9 @@ class remote_info_sender:
             return False
     
     def _sae_info(self, info):
-        url = remote_info_sender.HOST + "/info/put/%s?id=%s" \
-                % (urllib.quote_plus(info) , self._device_id)
-        req = urllib2.Request(url)
-        rep = urllib2.urlopen(req, timeout=10).read()
+        url = remote_info_sender.HOST + "/info/put?id=%s" \
+                % (self._device_id,)
+        rep = urllib2.urlopen(url, info, timeout=10).read()
         return rep
 
     def _put_msg(self, msg):
@@ -119,13 +118,10 @@ class remote_info_sender:
         while True:
             info = self._get_msg()
             info_object = json.loads(info)
-            msg_seq  = info_object['seq']
-            msg_msg  = info_object['msg']
             msg_type = info_object['type']
-            msg_ts   = info_object["ts"]
             if msg_type != "heartbeat":
                 self._push_info(info, str(self._device_id))   
-                self._send_info_to_server(u"%s,%s,%s" % (msg_seq, msg_ts, msg_msg))
+                self._send_info_to_server(info)
 
     def _put_worker(self):
         INFO("start waiting infos from home.")
@@ -133,7 +129,7 @@ class remote_info_sender:
             try:
                 info = self._sock.recv_string()
                 self._put_msg(info)
-                # DEBUG("get info from home:%s" % info)
+                DEBUG("get info from home:%s" % info)
             except (KeyboardInterrupt, SystemExit):
                 raise
             except Exception, ex:
