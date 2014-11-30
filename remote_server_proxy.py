@@ -20,7 +20,6 @@ import argparse
 import threading
 import time
 import urllib, urllib2
-# import zmq
 from util.Res import Res
 from util.log import *
 
@@ -28,8 +27,6 @@ from util.log import *
 class remote_server_proxy:
     
     HOST = "http://lehome.sinaapp.com"
-    TRIGGER = u""
-    FINISH = u""
     NO_HEAD_FLAG = "*"
     CMD_FETCH_INTERVAL = 3
 
@@ -38,14 +35,10 @@ class remote_server_proxy:
             INFO("connect to server: %s " % (address))
             self._home_address = address
 
-            # self._sock = None
-            # self._sock_context = zmq.Context()
-            # self._poller = zmq.Poller()
-
             settings = Res.init("init.json")
             self._device_id = settings['id']
-            self._trigger_cmd = settings['command']['trigger'][0]
-            self._finish_cmd = settings['command']['finish'][0]
+            self._trigger_cmd = settings['command']['trigger'][0].encode("utf-8")
+            self._finish_cmd = settings['command']['finish'][0].encode("utf-8")
             INFO("load device id:%s" % self._device_id)
         else:
             ERROR("address is empty")
@@ -53,12 +46,6 @@ class remote_server_proxy:
     def _send_cmd_to_home(self, cmd):
         if not cmd is None and not cmd == "":
             INFO("send cmd %s to home." % (cmd, ))
-            # if self._sock is None:
-            #     self._sock = self._sock_context.socket(zmq.REQ)
-            #     self._sock.setsockopt(zmq.LINGER, 0)
-            #     self._poller.register(self._sock, zmq.POLLIN)
-            #     self._sock.connect(self._home_address)
-            # INFO("cmd type:%s" % type(cmd))
             if cmd.startswith(remote_server_proxy.NO_HEAD_FLAG):
                 cmd = cmd[1:]
             else:
@@ -77,17 +64,6 @@ class remote_server_proxy:
             else:
                 INFO("home response: " + response)
                 return True
-            # self._sock.send_string(cmd)
-            # if self._poller.poll(5*1000): # 10s timeout in milliseconds
-            #     rep = self._sock.recv_string()
-            #     INFO("recv from home:%s" % rep)
-            #     return True
-            # else:
-            #     INFO("send [%s] to home timeout." % cmd)
-            #     self._sock.close()
-            #     self._poller.unregister(self._sock)
-            #     self._sock = None
-            #     return False
         else:
             ERROR("cmd is invaild.")
             return False
