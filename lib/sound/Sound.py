@@ -99,6 +99,7 @@ def set_volume(value):
     if url is None:
         return
     INFO("setting audio volume: %s" % value)
+    response = None
     try:
         data = {"v":value}
         enc_data = urllib.urlencode(data)
@@ -110,7 +111,7 @@ def set_volume(value):
         INFO(e)
         WARN("audio server unavailable.")
     else:
-        INFO("audio response: " + response)
+        INFO("audio set volume response: " + response)
     return response
 
 def get_volume():
@@ -118,6 +119,7 @@ def get_volume():
     if url is None:
         return
     INFO("getting audio volume: %s" % value)
+    response = None
     try:
         response = urllib2.urlopen(url).read()
     except urllib2.HTTPError, e:

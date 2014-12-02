@@ -115,7 +115,10 @@ class VolumeHandler(tornado.web.RequestHandler):
             self.write("-1")
             DEBUG(u"请输入音量值")
             return
-        m = alsaaudio.Mixer()
+        cards = alsaaudio.cards()
+        INFO(cards)
+        INFO("use card 1.")
+        m = alsaaudio.Mixer(control='PCM', cardindex=1)
         try:
             volume = int(v_str)
         except ValueError:

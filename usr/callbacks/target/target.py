@@ -1255,6 +1255,9 @@ class volume_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
         if pre_value == "show" or pre_value == "get":
             volume = Sound.get_volume()
+            if volume is None:
+                self._home.publish_msg(cmd, u"设置音量值失败")
+                return False
             if pre_value == "show":
                 self._home.publish_msg(cmd, u"当前音量值为：%s" % volume)
             return True, int(volume)
@@ -1263,6 +1266,9 @@ class volume_callback(Callback.Callback):
                 self._home.publish_msg(cmd, u"请输入音量值")
                 return False
             ret = Sound.set_volume(msg)
+            if ret is None:
+                self._home.publish_msg(cmd, u"设置音量值失败")
+                return False
             if ret == "-2":
                 self._home.publish_msg(cmd, u"音量值必须为整数")
                 return False
