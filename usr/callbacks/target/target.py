@@ -769,7 +769,8 @@ class var_callback(Callback.Callback):
     def callback(self, cmd, action, msg, pre_value):
         if pre_value == "show":
             info = ""
-            self.load_vars()
+            # bugs
+            # self.load_vars()
             if Util.empty_str(msg):
                 for var_name in self.vars:
                     info += u"名称: " + var_name  \
@@ -787,7 +788,7 @@ class var_callback(Callback.Callback):
             self._home.publish_msg(cmd, info)
             INFO(info)
         elif pre_value == "get":
-            self.load_vars()
+            # self.load_vars()
             if Util.empty_str(msg):
                 self._home.publish_msg(cmd, u"缺少变量名称")
                 return False
