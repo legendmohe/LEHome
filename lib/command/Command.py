@@ -59,14 +59,6 @@ class Command:
             for command in tasklist:
                 INFO("exec backup task:%s" % (command, ))
                 self._fsm.put_cmd_into_parse_stream(command)
-            # for (block, command) in tasklist:
-            #     INFO("exec backup task:%s" % (command, ))
-            #     t = StoppableThread(
-            #                         target=self._execute,
-            #                         args=(block, command)
-            #                         )
-            #     t.daemon = True
-            #     t.start()
 
     def _load_tasklist(self):
         with self._lock:

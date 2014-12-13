@@ -88,8 +88,6 @@ class remote_server_proxy:
                     INFO("fetch cmds:%s" % cmds)
                     for cmd in cmds.split("|"):
                         self._send_cmd_to_home(cmd)
-            except (KeyboardInterrupt, SystemExit):
-                raise
             except urllib2.URLError, e:
                 WARN(e)
             except Exception, ex:

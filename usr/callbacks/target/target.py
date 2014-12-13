@@ -168,7 +168,9 @@ class qqfm_callback(Callback.Callback):
                     info = u"电台列表:\n"
                     info += u", ".join(self.channels)
                     self._home.publish_msg(cmd, info)
-            elif pre_value == "run" or pre_value == "on":
+            elif pre_value == "play" \
+                    or pre_value == "run"\
+                    or pre_value == "on":
                 if len(self.channels) == 0:
                     self._home.publish_msg(cmd, u"无电台列表")
                 else:
@@ -417,7 +419,7 @@ class todo_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
         if pre_value == "show":
             info = ""
-            self.load_todos()
+            # self.load_todos()
             for index, todo in enumerate(self.todos):
                 info += u"序号: %d\n    内容:%s\n"  \
                         % (index, self.todos[index])
@@ -662,7 +664,7 @@ class script_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
         if pre_value == "show":
             info = ""
-            self.load_scripts()
+            # self.load_scripts()
             if msg is None or len(msg) == 0:
                 for script_name in self.scripts:
                     info += u"名称: " + script_name  \
