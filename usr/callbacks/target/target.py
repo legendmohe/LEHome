@@ -1282,3 +1282,15 @@ class volume_callback(Callback.Callback):
             return True, int(msg)
         else:
             return False
+
+# class str_value_callback(Callback.Callback):
+#     def callback(self, cmd, action, target, msg, pre_value):
+#         if pre_value == "show":
+#             if msg is None or len(msg) == 0:
+#                 self._home.publish_msg(cmd, u"请输入内容")
+#                 return True, None
+#             self._home.publish_msg(cmd, msg)
+#             DEBUG("str_value_callback: %s" % mg)
+#             return True, msg
+#         else:
+#             return False

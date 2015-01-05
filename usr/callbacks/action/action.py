@@ -326,7 +326,14 @@ class break_callback(Callback.Callback):
 
 
 class show_callback(Callback.Callback):
-    def callback(self):
+    def callback(self, target, msg, cmd):
+        if target is None or len(target) == 0:
+            if msg is None or len(msg) == 0:
+                self._home.publish_msg(cmd, u"请输入内容")
+                return True, None
+            self._home.publish_msg(cmd, msg)
+            DEBUG("show_callback: %s" % msg)
+            return True, msg
         return True, "show"
 
 
