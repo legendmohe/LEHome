@@ -32,25 +32,6 @@ import alsaaudio
 from util.log import *
 
 
-# http://stackoverflow.com/questions/17101502/how-to-stop-the-tornado-web-server-with-ctrlc
-is_closing = False
-
-
-def signal_handler(signum, frame):
-    global is_closing
-    is_closing = True
-
-
-def try_exit():
-    global is_closing, mp_context
-    if is_closing:
-        # clean up here
-        tornado.ioloop.IOLoop.instance().stop()
-        logging.info('exit success')
-        for url in mp_context:
-            mp = mp_context[url]
-            mp.exit()
-
 
 
 #
@@ -209,8 +190,7 @@ def worker(play_url, loop):
         player = subprocess.Popen(cmd, stdout=tempf, stderr=tempf)
         mp_context[play_url] = player
         print "player create: " + str(player.pid)
-        player.wait()
-        sleep(0.5)
+        player.communicate()
     if play_url in mp_context:
         del mp_context[play_url]
     print "play finished:%s" % (play_url,)
@@ -294,7 +274,7 @@ def queue_worker():
         with open(os.devnull, 'w') as tempf:
             player = subprocess.Popen(cmd, stdout=tempf, stderr=tempf)
             mp_context["queue"] = player
-            player.wait()
+            player.communicate()
             print url + u" stopped."
             if "queue" in  mp_context:
                 del mp_context["queue"]
@@ -310,6 +290,23 @@ def init_queue_player():
 
 mp_context = {}
 mp_queue = Queue()
+# http://stackoverflow.com/questions/17101502/how-to-stop-the-tornado-web-server-with-ctrlc
+is_closing = False
+def signal_handler(signum, frame):
+    global is_closing
+    is_closing = True
+
+
+def try_exit():
+    global is_closing, mp_context
+    if is_closing:
+        # clean up here
+        tornado.ioloop.IOLoop.instance().stop()
+        logging.info('exit success')
+        for url in mp_context:
+            mp = mp_context[url]
+            mp.terminate()
+
 
 application = tornado.web.Application([
     (r"/play", PlayHandler),
