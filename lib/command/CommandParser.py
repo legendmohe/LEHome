@@ -78,11 +78,12 @@ class CommandParser:
             self._error_occoured = True
 
     def onfound_finish_flag(self, e):
-        DEBUG('finish ! = event: %s, src: %s, dst: %s' \
+        DEBUG('event: %s, src: %s, dst: %s' \
                                 % (e.event, e.src, e.dst))
 
         if e.dst == "error_state":
             self._error_occoured = True
+            return
         elif e.src in ['action_state', 'target_state', 'message_state']:
             self._statement.finish = e.args[1]
             block = self._block_stack[-1]
@@ -230,23 +231,22 @@ class CommandParser:
         self._error_occoured = True
 
     def onreset(self, e):
-        DEBUG('reset ! = event: %s, src: %s, dst: %s' \
+        DEBUG('event: %s, src: %s, dst: %s' \
                     % (e.event, e.src, e.dst))
 
         self._last_cmd = ''
         self._is_cmd_triggered = False
 
     def onerror_state(self, e):
-        DEBUG('onerror_state event: %s, src: %s, dst: %s' \
+        DEBUG('event: %s, src: %s, dst: %s' \
                     % (e.event, e.src, e.dst))
-        DEBUG("error occoured.")
 
     def ontrigger_state(self, e):
-        DEBUG('ontrigger_state event: %s, src: %s, dst: %s' \
+        DEBUG('event: %s, src: %s, dst: %s' \
                     % (e.event, e.src, e.dst))
 
     def oninitial_state(self, e):
-        DEBUG('oninitial_state event: %s, src: %s, dst: %s' \
+        DEBUG('event: %s, src: %s, dst: %s' \
                     % (e.event, e.src, e.dst))
 
     def _append_statement(self, block):
@@ -289,7 +289,7 @@ class CommandParser:
                     {'name': 'found_action', 'src': 'trigger_state',  'dst': 'action_state'},
                     {'name': 'found_target', 'src': 'trigger_state',  'dst': 'error_state'},
                     {'name': 'found_others', 'src': 'trigger_state',  'dst': 'error_state'},
-                    {'name': 'found_finish_flag', 'src': 'trigger_state',  'dst': 'initial_state'},
+                    {'name': 'found_finish_flag', 'src': 'trigger_state',  'dst': 'error_state'},
                     {'name': 'found_nexts_flag', 'src': 'trigger_state',  'dst': 'error_state'},
                     {'name': 'found_compare', 'src': 'trigger_state',  'dst': 'error_state'},
                     {'name': 'found_logical', 'src': 'trigger_state',  'dst': 'error_state'},
@@ -495,7 +495,8 @@ class CommandParser:
 
     def put_into_parse_stream(self, stream_term):
         # if self.DEBUG :
-        #     DEBUG("parse: %s" %(stream_term)
+        DEBUG("put[%s] into parse stream." %(stream_term, ))
+        # import pdb; pdb.set_trace()
         for item in list(stream_term):
             # escape for confilct items
             if not self._in_escape is True and item == CommandParser.ESCAPE_BEGIN:
@@ -513,10 +514,10 @@ class CommandParser:
                 _token, _token_type = (item, "others")
             else:
                 _token, _token_type = self._parse_token(item)
-            # print _token_type, _token
             if _token is None:
-                #DEBUG("continue"
                 continue
+
+            DEBUG("parse token:%s type:%s" % (_token, _token_type))
             if _token_type == "whiles":
                 self._FSM.found_while(self, _token)
                 if not self._FSM.current == "message_state":
@@ -577,7 +578,7 @@ class CommandParser:
                 self._FSM.reset()
                 self._reset_element()
                 self._error_occoured = False
-            # DEBUG(self._FSM.current
+        DEBUG("exit parse current stream:%s", stream_term)
 
     def last_command(self):
         return self._last_cmd

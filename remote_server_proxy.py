@@ -54,7 +54,9 @@ class remote_server_proxy:
             try:
                 data = {"cmd": cmd}
                 enc_data = urllib.urlencode(data)
-                response = urllib2.urlopen(self._home_address, enc_data).read()
+                response = urllib2.urlopen(self._home_address,
+                                            enc_data,
+                                            timeout=5).read()
             except urllib2.HTTPError, e:
                 ERROR(e)
                 return False
@@ -93,6 +95,7 @@ class remote_server_proxy:
             except Exception, ex:
                 ERROR(ex)
             time.sleep(remote_server_proxy.CMD_FETCH_INTERVAL)
+        WARN("fetch worker exit!")
         self._sock_context.term()
 
 
