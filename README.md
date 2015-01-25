@@ -29,7 +29,10 @@ LEHome 服务端基于Python，需要安装以下依赖：
     - tornado
     - pyzmq
     - numpy
+    - BeautifulSoup
     - scipy
+    - audioop
+    - alsaaudio
     - pyaudio
     - fysom
     - mplayer
