@@ -40,6 +40,7 @@ class Command:
         self._local = threading.local()
         self._thread_lock = threading.Lock()
         self.threads = {}
+
         self._registered_callbacks = {}
         self._fsm = CommandParser(coms)
         self.setDEBUG(False)
@@ -49,6 +50,8 @@ class Command:
 
         self._keep_running = True
         self.backup_path = backup_path
+
+        self._cmd_hook = Command.CommandHook()
 
     def init_tasklist(self):
         backup_path = self.backup_path
@@ -247,6 +250,10 @@ class Command:
         coms["stack"] = stack  # for next token
         msg = statement.msg
         delay_time = statement.delay_time
+
+        cmd = statement.action + statement.target + statement.msg
+        self._cmd_hook.call_hook_callback(cmd)
+
         pass_value = self._invoke_callbacks(coms, msg, delay_time)
         return pass_value
 
@@ -510,6 +517,41 @@ class Command:
     def setDEBUG(self, debug):
         self._fsm.DEBUG = debug
         self.DEBUG = debug
+
+    def add_hook(self, cmd):
+        if cmd is None or len(cmd) == 0:
+            ERROR("add_hook cmd is empty.")
+            return
+        return self._cmd_hook.add_hook(cmd)
+
+
+    class CommandHook:
+        def __init__(self):
+            self._hook_dict = {}
+
+        def add_hook(self, cmd):
+            DEBUG("add hook:%s" % cmd)
+
+            if cmd not in self._hook_dict:
+                self._hook_dict[cmd] = []
+
+            wait_event = threading.Event()
+            event_array = self._hook_dict[cmd]
+            event_array.append(wait_event)
+
+            return wait_event
+
+        def call_hook_callback(self, cmd):
+            if cmd in self._hook_dict:
+                DEBUG("wake hook:%s" % cmd)
+                event_array = self._hook_dict[cmd]
+                DEBUG("hook size:%d" % len(event_array))
+                if len(event_array) != 0:
+                    for wait_event in event_array:
+                        if not wait_event.isSet():
+                            wait_event.set()
+                    event_array[:] = []
+                del self._hook_dict[cmd]
 
     class BlockStack:
         def __init__(self):

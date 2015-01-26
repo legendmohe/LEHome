@@ -350,6 +350,21 @@ class set_callback(Callback.Callback):
             pre_value=None):
         return True, "set"
 
+class hook_callback(Callback.Callback):
+    def callback(self, target, msg, cmd):
+        if msg is None or len(msg) == 0:
+            self._home.publish_msg(cmd, u"请输入内容")
+            return True, None
+
+        INFO("hook:%s run:%s" % (msg, cmd))
+        wait_event = self._home._cmd.add_hook(msg)
+        if not wait_event is None:
+            wait_event.wait()
+            INFO("run hook:%s" % cmd)
+            return True
+        else:
+            ERROR("wait_event is None.")
+            return False
 
 class new_callback(Callback.Callback):
     def callback(self, cmd, target, pre_value):

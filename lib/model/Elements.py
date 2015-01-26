@@ -37,7 +37,7 @@ class Statement:
         for attr in vars(self):
             ele = getattr(self, attr)
             res += u"self.%s = %s\n" % (attr, ele)
-        sys.stdout.flush()
+        # sys.stdout.flush() # what?
         return res.encode('utf-8')
 
 
