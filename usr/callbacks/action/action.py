@@ -353,6 +353,7 @@ class set_callback(Callback.Callback):
 class hook_callback(Callback.Callback):
     def callback(self, target, msg, cmd):
         if msg is None or len(msg) == 0:
+            INFO("hook error, empty msg:%s" % cmd)
             self._home.publish_msg(cmd, u"请输入内容")
             return True, None
 

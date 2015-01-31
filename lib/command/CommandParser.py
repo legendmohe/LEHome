@@ -404,7 +404,7 @@ class CommandParser:
         self._FSM.onerror_state = self.onerror_state
 
         self._token_buf = []
-        self._match_heap = []
+        self._match_array = []
 
         self.finish_callback = None
         self.stop_callback = None
@@ -417,66 +417,88 @@ class CommandParser:
         self._reset_element()
         self._FSM.current = "initial_state"
         del self._token_buf[:]
-        del self._match_heap[:]
+        del self._match_array[:]
 
-    def _parse_token(self, word):
+    def _parse_token(self, word, is_others=False):
         # word = word.encode("utf-8")
         # DEBUG(word, type(word)
         self._token_buf.append(word)
-        _temp_str = "".join(self._token_buf)
-        _no_match = True
-        _index = 1
-        for token_tuple in self.flag: 
-            _found_match_in_token_flag_array = False # a flag that indicate if all mis-match or not
-            _token_type = (_index, token_tuple[0]) #item in heap is tuple (index, item)
+        temp_str = "".join(self._token_buf)
+        no_match = True
+        if len(self._match_array) == 0:
+            loop_flags = self.flag
+        else:
+            loop_flags = [x for x in self.flag if x[0] in self._match_array]
+
+        # import pdb; pdb.set_trace()
+        for token_tuple in loop_flags: 
+            if is_others is True:
+                break
+
+            found_match_in_token_flag_array = False # a flag that indicate if all mis-match or not
+            token_type = token_tuple[0]
 
             for match_str in token_tuple[1]:
-                if match_str.startswith(_temp_str):
-                    # print match_str, _temp_str
-                    # import pdb
-                    # pdb.set_trace()
-                    _found_match_in_token_flag_array = True #found match
-                    _no_match = False #for no match in each match token
-                    if _token_type not in self._match_heap:
-                        heappush(self._match_heap, _token_type) # use heap
+                if match_str.startswith(temp_str):
+                    found_match_in_token_flag_array = True #found match
+                    no_match = False #for no match in each match token
+                    if token_type not in self._match_array:
+                        self._match_array.append(token_type)
                         
-                    if len(match_str) == len(_temp_str):
+                    if len(match_str) == len(temp_str):
                         # if current match type is on top of heap, that means it has the
                         # highest priority. now it totally match the buf, so we get the 
                         # token type
-                        if self._match_heap[0] == _token_type: 
-                            del self._match_heap[:]
+                        if self._match_array[0] == token_type: 
+                            del self._match_array[:]
                             del self._token_buf[:]
-                            return _temp_str, _token_type[1] #that we found the final type
+                            return temp_str, token_type, False #that we found the final type
 
                     # we found the current buf's token type, so we clean the scene
                     # don't use break here, in case longer mismatch token has same 
                     # prefix with lower weight token 
                     break
                 # in case that token has shorter token length then the buf
-                elif _temp_str.startswith(match_str):
-                    _found_match_in_token_flag_array = True
-                    _no_match = False
-                    if _token_type not in self._match_heap:
-                        heappush(self._match_heap, _token_type)
+                elif temp_str.startswith(match_str):
+                    found_match_in_token_flag_array = True
+                    no_match = False
+                    if token_type not in self._match_array:
+                        self._match_array.append(token_type)
 
                     # in case that lower token has short lengh, and it match
-                    if self._match_heap[0] == _token_type:
-                        del self._match_heap[:]
+                    if self._match_array[0] == token_type:
+                        del self._match_array[:]
                         del self._token_buf[0:len(match_str)] #remove match but leave the unknown
-                        return _temp_str[:-1], _token_type[1]
+                        return temp_str[:-1], token_type, False
                     break
 
-            _index += 1  # same token type has same weight
-
             #buf will never match the current token type, so we pop it
-            if not _found_match_in_token_flag_array and _token_type in self._match_heap:
-                self._match_heap.remove(_token_type)
-                heapify(self._match_heap)
-        if _no_match:
-            return self._token_buf.pop(0), "others"
+            if not found_match_in_token_flag_array and token_type in self._match_array:
+                self._match_array.remove(token_type)
+        # if nothing match, we have to check if last matchs in _token_buf match
+        # any words
+        if no_match:
+            if len(self._token_buf) == 1:
+                return self._token_buf.pop(0), "others", False
+            else:
+                loop_flags = [x for x in self.flag if x[0] in self._match_array]
+                temp_str = "".join(self._token_buf[:-1])
+                _result_type = "others"
+                for token_tuple in loop_flags: 
+                    token_type = token_tuple[0]
+                    found = False
+                    for match_str in token_tuple[1]:
+                        if match_str == temp_str: 
+                            _result_type = token_type
+                            found = True
+                            break
+                    if found is True:
+                        break
+                del self._match_array[:]
+                del self._token_buf[:]
+                return temp_str, _result_type, True
 
-        return None, None
+        return None, None, False
 
     def put_cmd_into_parse_stream(self, cmd):
         trigger = self.flag[5]
@@ -497,82 +519,86 @@ class CommandParser:
         # if self.DEBUG :
         DEBUG("put[%s] into parse stream." %(stream_term, ))
         # import pdb; pdb.set_trace()
-        for item in list(stream_term):
-            # escape for confilct items
-            if not self._in_escape is True and item == CommandParser.ESCAPE_BEGIN:
+        parse_chars = list(stream_term)
+        while len(parse_chars) != 0:
+            a_char = parse_chars.pop(0)
+            # escape for confilct chars
+            if not self._in_escape is True and a_char == CommandParser.ESCAPE_BEGIN:
                 self._in_escape = True
                 continue
-            elif self._in_escape is True and item == CommandParser.ESCAPE_END:
+            elif self._in_escape is True and a_char == CommandParser.ESCAPE_END:
                 self._in_escape = False
                 continue
             elif not self._in_escape and \
-                    (item.isspace() or item in self._stopwords):
-                INFO(u"ignore:" + item)
+                    (a_char.isspace() or a_char in self._stopwords):
+                INFO(u"ignore:" + a_char)
                 continue
 
-            if self._in_escape is True:
-                _token, _token_type = (item, "others")
-            else:
-                _token, _token_type = self._parse_token(item)
-            if _token is None:
+            DEBUG("got a_char:%s" % a_char)
+            token, token_type, need_pushback = self._parse_token(a_char, is_others=self._in_escape)
+            if need_pushback is True:
+                # current token is not current char but the last matching token
+                # so we need to push it in front of parse_chars
+                parse_chars.insert(0, a_char)
+            if token is None:
                 continue
 
-            DEBUG("parse token:%s type:%s" % (_token, _token_type))
-            if _token_type == "whiles":
-                self._FSM.found_while(self, _token)
+            DEBUG("parse token:%s type:%s" % (token, token_type))
+            if token_type == "whiles":
+                self._FSM.found_while(self, token)
                 if not self._FSM.current == "message_state":
                     self._message_buf = ''
                     self._delay_buf = ''
-            elif _token_type == "ifs":
-                self._FSM.found_if(self, _token)
+            elif token_type == "ifs":
+                self._FSM.found_if(self, token)
                 if not self._FSM.current == "message_state":
                     self._message_buf = ''
                     self._delay_buf = ''
-            elif _token_type == "thens":
-                self._FSM.found_then(self, _token)
+            elif token_type == "thens":
+                self._FSM.found_then(self, token)
                 self._message_buf = ''
                 self._delay_buf = ''
-            elif _token_type == "elses":
-                self._FSM.found_else(self, _token)
+            elif token_type == "elses":
+                self._FSM.found_else(self, token)
                 self._message_buf = ''
                 self._delay_buf = ''
-            elif _token_type == "delay":
-                self._FSM.found_delay(self, _token)
-            elif _token_type == "trigger":
-                self._FSM.found_trigger(self, _token)
-            elif _token_type == "action":
-                self._FSM.found_action(self, _token)
-            elif _token_type == "target":
-                self._FSM.found_target(self, _token)
-            elif _token_type == "stop":
-                self._FSM.found_stop_flag(self, _token)
+            elif token_type == "delay":
+                self._FSM.found_delay(self, token)
+            elif token_type == "trigger":
+                self._FSM.found_trigger(self, token)
+            elif token_type == "action":
+                self._FSM.found_action(self, token)
+            elif token_type == "target":
+                self._FSM.found_target(self, token)
+            elif token_type == "stop":
+                self._FSM.found_stop_flag(self, token)
                 self._message_buf = ''
                 self._delay_buf = ''
-            elif _token_type == "finish":
-                self._FSM.found_finish_flag(self, _token)
+            elif token_type == "finish":
+                self._FSM.found_finish_flag(self, token)
                 self._message_buf = ''
                 self._delay_buf = ''
-            elif _token_type == "nexts":
-                self._FSM.found_nexts_flag(self, _token)
+            elif token_type == "nexts":
+                self._FSM.found_nexts_flag(self, token)
                 self._message_buf = ''
                 self._delay_buf = ''
-            elif _token_type == "compare":
-                self._FSM.found_compare(self, _token)
+            elif token_type == "compare":
+                self._FSM.found_compare(self, token)
                 self._message_buf = ''
                 self._delay_buf = ''
-            elif _token_type == "logical":
-                self._FSM.found_logical(self, _token)
+            elif token_type == "logical":
+                self._FSM.found_logical(self, token)
                 self._message_buf = ''
                 self._delay_buf = ''
-            elif _token_type == "others":
-                self._FSM.found_others(self, _token)
+            elif token_type == "others":
+                self._FSM.found_others(self, token)
                 if self._FSM.current == 'delay_state':  # put it into buf here
-                    self._delay_buf += _token
+                    self._delay_buf += token
 
             if self._FSM.current == 'message_state':
-                self._message_buf += _token
-            if self._is_cmd_triggered and not _token_type == "trigger":
-                self._last_cmd += _token
+                self._message_buf += token
+            if self._is_cmd_triggered and not token_type == "trigger":
+                self._last_cmd += token
 
             if self._error_occoured:
                 self._FSM.reset()
