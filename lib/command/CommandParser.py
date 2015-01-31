@@ -17,8 +17,10 @@
 
 
 import threading
+from collections import deque
+
 from fysom import Fysom
-from heapq import heappush, heapify
+
 from lib.model.Elements import Statement, IfStatement, WhileStatement, Block, LogicalOperator, CompareOperator
 from util.log import *
 
@@ -420,15 +422,14 @@ class CommandParser:
         del self._match_array[:]
 
     def _parse_token(self, word, is_others=False):
-        # word = word.encode("utf-8")
-        # DEBUG(word, type(word)
         self._token_buf.append(word)
-        temp_str = "".join(self._token_buf)
+        match_str = "".join(self._token_buf)
         no_match = True
         if len(self._match_array) == 0:
             loop_flags = self.flag
         else:
             loop_flags = [x for x in self.flag if x[0] in self._match_array]
+        tmp_match_array = self._match_array[:]
 
         # import pdb; pdb.set_trace()
         for token_tuple in loop_flags: 
@@ -438,38 +439,25 @@ class CommandParser:
             found_match_in_token_flag_array = False # a flag that indicate if all mis-match or not
             token_type = token_tuple[0]
 
-            for match_str in token_tuple[1]:
-                if match_str.startswith(temp_str):
+            for token_str in token_tuple[1]:
+                if token_str.startswith(match_str):
                     found_match_in_token_flag_array = True #found match
                     no_match = False #for no match in each match token
                     if token_type not in self._match_array:
                         self._match_array.append(token_type)
                         
-                    if len(match_str) == len(temp_str):
+                    if len(token_str) == len(match_str):
                         # if current match type is on top of heap, that means it has the
                         # highest priority. now it totally match the buf, so we get the 
                         # token type
                         if self._match_array[0] == token_type: 
                             del self._match_array[:]
                             del self._token_buf[:]
-                            return temp_str, token_type, False #that we found the final type
+                            return match_str, token_type, None #that we found the final type
 
                     # we found the current buf's token type, so we clean the scene
                     # don't use break here, in case longer mismatch token has same 
                     # prefix with lower weight token 
-                    break
-                # in case that token has shorter token length then the buf
-                elif temp_str.startswith(match_str):
-                    found_match_in_token_flag_array = True
-                    no_match = False
-                    if token_type not in self._match_array:
-                        self._match_array.append(token_type)
-
-                    # in case that lower token has short lengh, and it match
-                    if self._match_array[0] == token_type:
-                        del self._match_array[:]
-                        del self._token_buf[0:len(match_str)] #remove match but leave the unknown
-                        return temp_str[:-1], token_type, False
                     break
 
             #buf will never match the current token type, so we pop it
@@ -478,27 +466,33 @@ class CommandParser:
         # if nothing match, we have to check if last matchs in _token_buf match
         # any words
         if no_match:
-            if len(self._token_buf) == 1:
-                return self._token_buf.pop(0), "others", False
+            # DEBUG("no match!: %s" % tmp_match_array)
+            if len(tmp_match_array) == 0:
+                return self._token_buf.pop(), "others", None
             else:
-                loop_flags = [x for x in self.flag if x[0] in self._match_array]
-                temp_str = "".join(self._token_buf[:-1])
-                _result_type = "others"
-                for token_tuple in loop_flags: 
-                    token_type = token_tuple[0]
-                    found = False
-                    for match_str in token_tuple[1]:
-                        if match_str == temp_str: 
-                            _result_type = token_type
-                            found = True
-                            break
-                    if found is True:
-                        break
+                loop_flags = [x for x in self.flag if x[0] in tmp_match_array]
+                move_back_idx = 0
+                while move_back_idx <= len(self._token_buf):
+                    move_back_idx += 1
+                    match_str = "".join(self._token_buf[:-move_back_idx])
+                    move_back_array = self._token_buf[-move_back_idx:]
+                    for token_tuple in loop_flags: 
+                        token_type = token_tuple[0]
+                        for token_str in token_tuple[1]:
+                            if token_str == match_str: 
+                                del self._match_array[:]
+                                del self._token_buf[:]
+                                # DEBUG("match!: %s %s" % (match_str, move_back_array))
+                                return match_str, token_type, move_back_array
+
+                first_char = self._token_buf[0]
+                move_back_array = self._token_buf[1:]
                 del self._match_array[:]
                 del self._token_buf[:]
-                return temp_str, _result_type, True
+                # DEBUG("rollback...........")
+                return first_char, "others", move_back_array
 
-        return None, None, False
+        return None, None, None
 
     def put_cmd_into_parse_stream(self, cmd):
         trigger = self.flag[5]
@@ -519,9 +513,10 @@ class CommandParser:
         # if self.DEBUG :
         DEBUG("put[%s] into parse stream." %(stream_term, ))
         # import pdb; pdb.set_trace()
-        parse_chars = list(stream_term)
+        parse_chars = deque(stream_term)
         while len(parse_chars) != 0:
-            a_char = parse_chars.pop(0)
+            a_char = parse_chars.popleft()
+            # DEBUG("parse_chars:%s" % parse_chars)
             # escape for confilct chars
             if not self._in_escape is True and a_char == CommandParser.ESCAPE_BEGIN:
                 self._in_escape = True
@@ -535,11 +530,11 @@ class CommandParser:
                 continue
 
             DEBUG("got a_char:%s" % a_char)
-            token, token_type, need_pushback = self._parse_token(a_char, is_others=self._in_escape)
-            if need_pushback is True:
+            token, token_type, rollback = self._parse_token(a_char, is_others=self._in_escape)
+            if rollback is not None:
                 # current token is not current char but the last matching token
                 # so we need to push it in front of parse_chars
-                parse_chars.insert(0, a_char)
+                parse_chars.extendleft(reversed(rollback))
             if token is None:
                 continue
 
