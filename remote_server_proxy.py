@@ -19,6 +19,7 @@
 import argparse
 import threading
 import time
+import json
 import urllib, urllib2
 from util.Res import Res
 from util.log import *
@@ -86,10 +87,16 @@ class remote_server_proxy:
                 url = remote_server_proxy.HOST + "/cmd/fetch?id=" + self._device_id
                 req = urllib2.Request(url)
                 cmds = urllib2.urlopen(req, timeout=10).read()
-                if len(cmds) != 0 and cmds != "error":
-                    INFO("fetch cmds:%s" % cmds)
-                    for cmd in cmds.split("|"):
-                        self._send_cmd_to_home(cmd)
+                obj_cmds = json.loads(cmds)
+                rep_code = obj_cmds['code']
+                if rep_code == 200 or rep_code == 201:
+                    for cmd in obj_cmds['data']:
+                        INFO("fetch cmds:%s" % cmd)
+                        # tornado handler needs encode utf-8
+                        self._send_cmd_to_home(cmd.encode('utf-8'))
+                else:
+                    WARN("fetch cmds error code %d, desc:%s"
+                            % (obj_cmds['code'], obj_cmds['desc']))
             except urllib2.URLError, e:
                 WARN(e)
             except Exception, ex:

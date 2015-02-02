@@ -58,9 +58,12 @@ class remote_info_sender:
                 rep = self._sae_info(info)
                 if len(rep) != 0:
                     DEBUG("remote_server rep:%s" % rep)
-                    if rep == 'ok':
+                    obj_rep = json.loads(rep)
+                    if obj_rep['code'] == 200:
                         return True
-                ERROR("invaild rep:" % rep)
+                    else:
+                        ERROR("send info error code:%d, desc:%s" %
+                                (obj_rep['code'], obj_rep['desc']))
             except Exception, e:
                 ERROR(e)
             return False
