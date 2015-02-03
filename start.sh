@@ -1,5 +1,8 @@
 #!/bin/bash
 
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+cd $DIR
+
 echo 'running tag_endpoint.py'
 python tag_endpoint.py > /dev/null 2>&1 &
 rc=$?
