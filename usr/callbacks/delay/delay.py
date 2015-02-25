@@ -44,7 +44,7 @@ class delay_callback(Callback.Callback):
         if delay_time.endswith(u'点') or \
            delay_time.endswith(u'分'):
             t = Util.gap_for_timestring(delay_time)
-        elif delay_time.endswith(u"秒"):
+        elif delay_time.endswith(u"秒") or delay_time.endswith(u"秒钟"):
             t = int(Util.cn2dig(delay_time[:-1]))
         elif delay_time.endswith(u"分钟"):
             t = int(Util.cn2dig(delay_time[:-2]))*60

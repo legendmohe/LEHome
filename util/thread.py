@@ -25,11 +25,14 @@ class StoppableThread(threading.Thread):
     def __init__(self, target, args=None):
         super(StoppableThread, self).__init__(target=target, args=args)
         self._stop = threading.Event()
+        self.suspend_event = None
 
     def waitUtil(self, sec):
         self._stop.wait(sec)
 
     def stop(self):
+        if not self.suspend_event is None:
+            self.suspend_event.set()
         self._stop.set()
 
     def stopped(self):

@@ -538,7 +538,11 @@ class Command:
             wait_event = threading.Event()
             event_array = self._hook_dict[cmd]
             event_array.append(wait_event)
-
+            
+            # add hook event for stop thread
+            current_hread = threading.current_thread()
+            if isinstance(current_thread, StoppableThread):
+                current_thread.suspend_event = wait_event
             return wait_event
 
         def call_hook_callback(self, cmd):

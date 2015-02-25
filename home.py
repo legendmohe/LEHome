@@ -212,7 +212,7 @@ class CmdHandler(tornado.web.RequestHandler):
             return
         INFO("get cmd through http post:%s", cmd)
         self.home.parse_cmd(cmd)
-        INFO("finish running http post cmd:%s", cmd)
+        # INFO("finish running http post cmd:%s", cmd)
         self.write("ok")
 
 is_closing = False

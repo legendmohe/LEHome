@@ -224,7 +224,7 @@ class every_callback(Callback.Callback):
                 t = 60
             else:
                 t = int(Util.cn2dig(msg[:-2]))*60
-        elif msg.endswith(u"秒"):
+        elif msg.endswith(u"秒") or msg.endswith(u"秒钟"):
             if msg.startswith(u"秒"):
                 t = 1
             else:
@@ -362,6 +362,8 @@ class hook_callback(Callback.Callback):
         if not wait_event is None:
             wait_event.wait()
             INFO("run hook:%s" % cmd)
+            if threading.current_thread().stopped():
+                return False
             return True
         else:
             ERROR("wait_event is None.")

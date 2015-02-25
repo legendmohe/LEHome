@@ -221,5 +221,6 @@ output_o.wav
 usr/message/
 usr/memo/
 noise.*
-*.pcl
+data/
+# *.pcl
 *.swo
