@@ -37,7 +37,7 @@ class time_callback(Callback.Callback):
 
 class delay_callback(Callback.Callback):
     def callback(self, cmd, delay_time, action, target, msg):
-        if delay_time is None:
+        if delay_time is None or len(delay_time) == 0:
             self._home.publish_msg(cmd, u"时间格式错误")
             return False, None
 
