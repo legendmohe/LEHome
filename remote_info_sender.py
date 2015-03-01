@@ -73,7 +73,7 @@ class remote_info_sender:
 
     def _push_info(self, info, tag_name):
         if not info is None and not info == "":
-            # DEBUG("push info %s to remote server." % (info, ))
+            DEBUG("baidu push info %s to remote server." % (info, ))
             # baidu push
             push_type = 2
             optional = {}                                                           

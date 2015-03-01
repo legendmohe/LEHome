@@ -529,7 +529,7 @@ class CommandParser:
                 INFO(u"ignore:" + a_char)
                 continue
 
-            DEBUG("got a_char:%s" % a_char)
+            # DEBUG("got a_char:%s" % a_char)
             token, token_type, rollback = self._parse_token(a_char, is_others=self._in_escape)
             if rollback is not None:
                 # current token is not current char but the last matching token

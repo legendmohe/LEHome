@@ -17,6 +17,8 @@
 
 import re
 import datetime
+import urllib2
+import json
 from HTMLParser import HTMLParser
 
 
@@ -89,28 +91,57 @@ def parse_time(msg):
 def parse_datetime(msg):
     if msg is None or len(msg) == 0:
         return None
-    m = re.match(ur"([0-9零一二两三四五六七八九十]+年)?([0-9一二两三四五六七八九十]+月)?([0-9一二两三四五六七八九十]+[号日])?([上下午晚早]+)?([0-9零一二两三四五六七八九十百]+[点:\.小时]+)?([0-9零一二三四五六七八九十百]+分钟?)?([0-9零一二三四五六七八九十百]+秒钟?)?", msg)
+    m = re.match(ur"([0-9零一二两三四五六七八九十]+年)?([0-9一二两三四五六七八九十]+月)?([0-9一二两三四五六七八九十]+[号日])?([0-9一二两三四五六七八九十]*[明后大天]+)?([上下午晚早]+)?([0-9零一二两三四五六七八九十百]+[点:\.小时整正]+)?([0-9零一二三四五六七八九十百]+分钟?)?([0-9零一二三四五六七八九十百]+秒钟?)?", msg)
     if m.group(0) is not None and len(m.group(0).strip()) != 0:
         res = {
             "year": m.group(1),
             "month": m.group(2),
             "day": m.group(3),
-            "hour": m.group(5) if m.group(5) is not None else '00',
-            "minute": m.group(6) if m.group(6) is not None else '00',
-            "second": m.group(7) if m.group(7) is not None else '00',
+            "hour": m.group(6) if m.group(6) is not None else '00',
+            "minute": m.group(7) if m.group(7) is not None else '00',
+            "second": m.group(8) if m.group(8) is not None else '00',
             # "microsecond": '00',
             }
         params = {}
         for name in res:
+            remove_count = 1
             if res[name] is not None and len(res[name]) != 0:
-                params[name] = int(cn2dig(res[name][:-1]))
+                if res[name].endswith(u"小时") or \
+                   res[name].endswith(u"点正") or \
+                   res[name].endswith(u"点整") or \
+                   res[name].endswith(u"秒钟") or \
+                   res[name].endswith(u"分钟"):
+                    remove_count = 2
+                params[name] = int(cn2dig(res[name][:-remove_count]))
         target_date = datetime.datetime.today().replace(**params)
-        is_pm = m.group(4)
+        next_day = m.group(4)
+        if next_day is not None:
+            day = target_date.date().day
+            if next_day == u"明天":
+                target_date = target_date.replace(day=day+1)
+            elif next_day == u"后天":
+                target_date = target_date.replace(day=day+2)
+            elif next_day == u"大后天":
+                target_date = target_date.replace(day=day+3)
+            elif next_day.endswith(u"天后"):
+                try:
+                    days_after = int(cn2dig(next_day[:-2]))
+                    target_date = target_date.replace(day=day+days_after)
+                except Exception, ex:
+                    return None
+            else:
+                return None
+        is_pm = m.group(5)
         if is_pm is not None:
             if is_pm == u'下午' or is_pm == u'晚上':
                 hour = target_date.time().hour
                 if hour < 12:
                     target_date = target_date.replace(hour=hour+12)
+                return target_date
+            elif is_pm == u"上午" or is_pm == u"早上":
+                return target_date
+            else:
+                return None
         return target_date 
     else:
         return None
@@ -208,6 +239,31 @@ def xunicode(u):
 def what_day_is_today():
     return datetime.datetime.today().weekday()
 
+g_workday_cache = None
+g_workday_fetched = None
+def is_workday_today():
+    global g_workday_cache, g_workday_fetched
+
+    check_date =datetime.datetime.today()
+    if g_workday_fetched is None or g_workday_fetched.day < check_date.day:
+        print "init workday"
+        weekday_api = "http://www.easybots.cn/api/holiday.php?d=" + check_date.strftime('%Y%m%d')
+        try:
+            workday_json = urllib2.urlopen(weekday_api).read()
+            workday_obj = json.loads(workday_json)
+            g_workday_cache = workday_obj[check_date.strftime("%Y%m%d")]
+            g_workday_fetched = check_date
+            return g_workday_cache
+        except Exception, ex:
+            print ex
+    elif not g_workday_cache is None:
+        return g_workday_cache
+
+    if what_day_is_today() > 4:
+        return "1"
+    else:
+        return "0"
+
 class MLStripper(HTMLParser):
     def __init__(self):
         self.reset()
@@ -241,15 +297,23 @@ if __name__ == "__main__":
     # print parse_time(u"七点零五分")
     # print parse_time(u"9点04分")
 
-    print parse_datetime(None)
-    print parse_datetime(u"两点30分")
-    print parse_datetime(u"7点")
-    print parse_datetime(u"五分")
-    print parse_datetime(u"七点五分")
-    print parse_datetime(u"七点零五分")
-    print parse_datetime(u"9点04分")
-    print parse_datetime(u"下午9点04分")
-    print parse_datetime(u"6月三十日04分")
-    print parse_datetime(u"1995年6月10号下午3点41分50秒")
 
-    print gap_for_timestring2(u"7月6日下午四点")
+    # print parse_datetime(u"7点")
+    # print parse_datetime(u"五分")
+    # print parse_datetime(u"七点五分")
+    # print parse_datetime(u"七点零五分")
+    # print parse_datetime(u"9点04分")
+    # print parse_datetime(u"下午9点04分")
+    # print parse_datetime(u"6月三十日04分")
+    # print parse_datetime(u"1995年6月10号下午3点41分50秒")
+    # print parse_datetime(u"明天下午3点41分50秒")
+    # print parse_datetime(u"5天后下午3点41分50秒")
+    # print parse_datetime(u"5天后下午3点整")
+    # #
+    # print gap_for_timestring(u"3月6日下午四点")
+    # print parse_datetime(u"7点钟")
+    # print gap_for_timestring(u"2秒")
+    # print gap_for_timestring(u"5分钟")
+    # print gap_for_timestring(u"下午6点")
+    for i in [1]*10:
+        print is_workday_today()

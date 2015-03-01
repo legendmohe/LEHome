@@ -41,19 +41,17 @@ class delay_callback(Callback.Callback):
             self._home.publish_msg(cmd, u"时间格式错误")
             return False, None
 
-        if delay_time.endswith(u'点') or \
-           delay_time.endswith(u'分'):
-            t = Util.gap_for_timestring(delay_time)
-        elif delay_time.endswith(u"秒") or delay_time.endswith(u"秒钟"):
+        t = None
+        if delay_time.endswith(u"秒") or delay_time.endswith(u"秒钟"):
             t = int(Util.cn2dig(delay_time[:-1]))
         elif delay_time.endswith(u"分钟"):
             t = int(Util.cn2dig(delay_time[:-2]))*60
         elif delay_time.endswith(u"小时"):
             t = int(Util.cn2dig(delay_time[:-2]))*60*60
         else:
-            self._home.publish_msg(cmd, u"时间格式错误:" + delay_time)
-            return False
+            t = Util.gap_for_timestring(delay_time)
         if t is None:
+            WARN("error delay_time format")
             self._home.publish_msg(cmd, u"时间格式错误:" + delay_time)
             return False, None
         info = delay_time + u"执行: %s%s%s" % (

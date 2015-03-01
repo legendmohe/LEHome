@@ -232,9 +232,9 @@ class every_callback(Callback.Callback):
         elif (msg.startswith(u'天') or msg.startswith(u'工作日')) and \
              (msg.endswith(u'点') or msg.endswith(u'分')):
             # import pdb; pdb.set_trace()
-            is_weekday = False
+            check_weekday = False
             if msg.startswith(u'工作日'):
-                is_weekday = True
+                check_weekday = True
                 msg = msg[3:]
             else:
                 msg = msg[1:]
@@ -242,28 +242,35 @@ class every_callback(Callback.Callback):
             period = msg.split(u'到')
             if len(period) == 2:
                 t = Util.wait_for_period(period)
-                if t == 0:
-                    return True, True
-                else:
+                if t > 0:
                     DEBUG("period wait for %d sec" % (t, ))
                     threading.current_thread().waitUtil(t)
-                    weekday = Util.what_day_is_today()
-                    if weekday > 4 and is_weekday is True:
-                        t = (7-weekday)*24*60*60
+                if check_weekday is True:
+                    workday = Util.is_workday_today()
+                    while workday != "0":
+                        t = 24*60*60
+                        INFO("weekday task, wait for %d sec" % (t, ))
                         threading.current_thread().waitUtil(t)
-                    if threading.current_thread().stopped():
-                        return False, False
-                    return True, True
+                        if threading.current_thread().stopped():
+                            return False, False
+                        workday = Util.is_workday_today()
+                if threading.current_thread().stopped():
+                    return False, False
+                return True, True
             else:
                 t = Util.gap_for_timestring(msg)
-            if t >= 1:
+            if t > 0:
                 INFO("gap wait for %d sec" % (t, ))
                 threading.current_thread().waitUtil(t)
-                weekday = Util.what_day_is_today()
-                if weekday > 4 and is_weekday is True:
-                    t = (7-weekday)*24*60*60
-                    INFO("weekday task, wait for %d sec" % (t, ))
-                    threading.current_thread().waitUtil(t)
+                if check_weekday is True:
+                    workday = Util.is_workday_today()
+                    while workday != "0":
+                        t = 24*60*60
+                        INFO("weekday task, wait for %d sec" % (t, ))
+                        threading.current_thread().waitUtil(t)
+                        if threading.current_thread().stopped():
+                            return False, False
+                        workday = Util.is_workday_today()
                 if threading.current_thread().stopped():
                     return False, False
             return True, True
@@ -286,9 +293,9 @@ class every_callback(Callback.Callback):
 
 class invoke_callback(Callback.Callback):
     def callback(self, action, target, msg, pre_value, stack):
-        if pre_value == "while" and not msg is None:
+        if pre_value == "while" and not msg is None and not len(msg) == 0:
             if not msg.endswith(u'次'):
-                INFO(u"loop not ends with 次")
+                INFO(u"loop not ends with 次:%s" % msg)
                 threading.current_thread().waitUtil(1)  # time gap
                 return True, True
             var_name = "invoke_time" + str(stack.cur_layer())

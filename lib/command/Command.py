@@ -540,7 +540,7 @@ class Command:
             event_array.append(wait_event)
             
             # add hook event for stop thread
-            current_hread = threading.current_thread()
+            current_thread = threading.current_thread()
             if isinstance(current_thread, StoppableThread):
                 current_thread.suspend_event = wait_event
             return wait_event
