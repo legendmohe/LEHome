@@ -229,8 +229,11 @@ class every_callback(Callback.Callback):
                 t = 1
             else:
                 t = int(Util.cn2dig(msg[:-1]))
-        elif (msg.startswith(u'天') or msg.startswith(u'工作日')) and \
-             (msg.endswith(u'点') or msg.endswith(u'分')):
+        elif (msg.startswith(u'天') or \
+                msg.startswith(u'工作日')) and \
+                (msg.endswith(u'点') or \
+                   msg.endswith(u'点钟') or \
+                   msg.endswith(u'分')):
             # import pdb; pdb.set_trace()
             check_weekday = False
             if msg.startswith(u'工作日'):
@@ -247,7 +250,7 @@ class every_callback(Callback.Callback):
                     threading.current_thread().waitUtil(t)
                 if check_weekday is True:
                     workday = Util.is_workday_today()
-                    while workday != "0":
+                    while workday != 0:
                         t = 24*60*60
                         INFO("weekday task, wait for %d sec" % (t, ))
                         threading.current_thread().waitUtil(t)
@@ -264,7 +267,7 @@ class every_callback(Callback.Callback):
                 threading.current_thread().waitUtil(t)
                 if check_weekday is True:
                     workday = Util.is_workday_today()
-                    while workday != "0":
+                    while workday != 0:
                         t = 24*60*60
                         INFO("weekday task, wait for %d sec" % (t, ))
                         threading.current_thread().waitUtil(t)

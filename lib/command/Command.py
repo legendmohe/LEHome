@@ -143,13 +143,14 @@ class Command:
             self.threads[thread_index] = (command, threading.current_thread())
         self._local.cmd = command
         self._local.thread = threading.current_thread()
+        self._local.thread.thread_idx = thread_index
         block_stack = Command.BlockStack()
         try:
             DEBUG("begin invoke cmd block: %s", command)
             self._invoke_block(block, block_stack)
             DEBUG("finish invoke cmd block: %s", command)
         except Exception, e:
-            ERROR(e)
+            EXCEPTION(e)
         del self._local.cmd
         del self._local.thread
 

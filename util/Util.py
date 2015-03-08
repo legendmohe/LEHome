@@ -91,7 +91,7 @@ def parse_time(msg):
 def parse_datetime(msg):
     if msg is None or len(msg) == 0:
         return None
-    m = re.match(ur"([0-9零一二两三四五六七八九十]+年)?([0-9一二两三四五六七八九十]+月)?([0-9一二两三四五六七八九十]+[号日])?([0-9一二两三四五六七八九十]*[明后大天]+)?([上下午晚早]+)?([0-9零一二两三四五六七八九十百]+[点:\.小时整正]+)?([0-9零一二三四五六七八九十百]+分钟?)?([0-9零一二三四五六七八九十百]+秒钟?)?", msg)
+    m = re.match(ur"([0-9零一二两三四五六七八九十]+年)?([0-9一二两三四五六七八九十]+月)?([0-9一二两三四五六七八九十]+[号日])?([0-9一二两三四五六七八九十]*[明后大天]+)?([上下午晚早]+)?([0-9零一二两三四五六七八九十百]+[点钟:\.小时整正]+)?([0-9零一二三四五六七八九十百]+分钟?)?([0-9零一二三四五六七八九十百]+秒钟?)?", msg)
     if m.group(0) is not None and len(m.group(0).strip()) != 0:
         res = {
             "year": m.group(1),
@@ -109,6 +109,7 @@ def parse_datetime(msg):
                 if res[name].endswith(u"小时") or \
                    res[name].endswith(u"点正") or \
                    res[name].endswith(u"点整") or \
+                   res[name].endswith(u"点钟") or \
                    res[name].endswith(u"秒钟") or \
                    res[name].endswith(u"分钟"):
                     remove_count = 2
@@ -260,9 +261,9 @@ def is_workday_today():
         return g_workday_cache
 
     if what_day_is_today() > 4:
-        return "1"
+        return 1
     else:
-        return "0"
+        return 0
 
 class MLStripper(HTMLParser):
     def __init__(self):
@@ -314,6 +315,6 @@ if __name__ == "__main__":
     # print parse_datetime(u"7点钟")
     # print gap_for_timestring(u"2秒")
     # print gap_for_timestring(u"5分钟")
-    # print gap_for_timestring(u"下午6点")
+    print gap_for_timestring(u"早上8点钟")
     for i in [1]*10:
-        print is_workday_today()
+        print type(is_workday_today())

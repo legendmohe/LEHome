@@ -26,6 +26,7 @@ class StoppableThread(threading.Thread):
         super(StoppableThread, self).__init__(target=target, args=args)
         self._stop = threading.Event()
         self.suspend_event = None
+        self.thread_idx = -1
 
     def waitUtil(self, sec):
         self._stop.wait(sec)

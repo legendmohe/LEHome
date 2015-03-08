@@ -53,3 +53,4 @@ FWARN     = debug_logger.warning
 FERROR    = debug_logger.error
 FCRITICAL = debug_logger.critical
 
+EXCEPTION = comm_logger.exception
