@@ -174,13 +174,12 @@ class qqfm_callback(Callback.Callback):
                 if len(self.channels) == 0:
                     self._home.publish_msg(cmd, u"无电台列表")
                 else:
-                    if msg in self.channels:
-                        play_url = qqfm_callback.next_url \
-                                + "?" + urllib.urlencode(
-                                            {'type':msg.encode('utf-8')}
-                                        )
-                    else:
-                        play_url = qqfm_callback.next_url
+                    if msg is None:
+                        msg = ""
+                    play_url = qqfm_callback.next_url \
+                            + "?" + urllib.urlencode(
+                                        {'type':msg.encode('utf-8')}
+                                    )
                     INFO("qqfm playing:%s" % (play_url,))
                     rep = urllib2.urlopen(play_url, timeout=5).read()
                     INFO("qqfm playing state: " + rep)
