@@ -26,10 +26,14 @@ import zmq
 from util.Res import Res
 from util.log import *
 from vender.baidu_push.Channel import *
+from vender.xg_push import xinge
 
 PUSH_apiKey = "7P5ZCG6WTAGWr5TuURBgndRH"                                             
 PUSH_secretKey = "gggk30ubCSFGM5uXYfwGll4vILlnQ0em"                                  
 PUSH_user_id = "4355409"   
+
+XINGE_ACCESS_ID = 2100063377
+XINGE_SECRET_KEY = "50618a8882f2dd7849a2f2bc68f41587"
 
 class remote_info_sender:
     
@@ -43,6 +47,7 @@ class remote_info_sender:
             self._sock.connect(address)
             self._sock.setsockopt(zmq.SUBSCRIBE, '')
             self.channel = Channel(PUSH_apiKey, PUSH_secretKey)
+            self.xinge_app = xinge.XingeApp(XINGE_ACCESS_ID, XINGE_SECRET_KEY)
             self._msg_queue = Queue()
 
             settings = Res.init("init.json")
@@ -71,7 +76,7 @@ class remote_info_sender:
             ERROR("info is invaild.")
             return False
 
-    def _push_info(self, info, tag_name):
+    def _push_info_baidu(self, info, tag_name):
         if not info is None and not info == "":
             DEBUG("baidu push info %s to remote server." % (info, ))
             # baidu push
@@ -80,7 +85,7 @@ class remote_info_sender:
             optional[Channel.TAG_NAME] = tag_name                                   
             try:
                 ret = self.channel.pushMessage(push_type, info, "key", optional)
-                DEBUG("push ret:%s" % ret)
+                DEBUG("baidu push ret:%s" % ret)
             except Exception, e:
                 ERROR(e)
                 return False
@@ -88,6 +93,31 @@ class remote_info_sender:
         else:
             ERROR("info is invaild.")
             return False
+
+    def _push_info_xg(self, info, tag_name):
+        if not info is None and not info == "":
+            DEBUG("xg push info %s to remote server." % (info, ))
+            # xg push
+            msg = self._build_msg(info)
+            try:
+                ret = self.xinge_app.PushTags(0, (tag_name,), "OR", msg, xinge.XingeApp.ENV_DEV)
+                DEBUG("xg push ret: %s,%s" % (ret[0], ret[1]))
+            except Exception, e:
+                ERROR(e)
+                return False
+            return True
+        else:
+            ERROR("info is invaild.")
+            return False
+
+    def _build_msg(self, content):
+        msg = xinge.Message()
+        msg.type = xinge.Message.TYPE_MESSAGE
+        msg.content = content
+        msg.expireTime = 5*3600
+        # 自定义键值对，key和value都必须是字符串
+        # msg.custom = {'aaa':'111', 'bbb':'222'}
+        return msg
     
     def _sae_info(self, info):
         url = remote_info_sender.HOST + "/info/put?id=%s" \
@@ -120,10 +150,13 @@ class remote_info_sender:
     def _send_worker(self):
         while True:
             info = self._get_msg()
-            info_object = json.loads(info)
-            msg_type = info_object['type']
-            if msg_type != "heartbeat":
-                self._push_info(info, str(self._device_id))   
+            DEBUG("_send_worker get: %s" % info)
+            if not "\"heartbeat\"" in info:
+            # info_object = json.loads(info)
+            # msg_type = info_object['type']
+            # if msg_type != "heartbeat":
+                self._push_info_xg(info, str(self._device_id))   
+                self._push_info_baidu(info, str(self._device_id))   
                 self._send_info_to_server(info)
 
     def _put_worker(self):
