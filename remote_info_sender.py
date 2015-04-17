@@ -100,7 +100,7 @@ class remote_info_sender:
             # xg push
             msg = self._build_msg(info)
             try:
-                ret = self.xinge_app.PushTags(0, (tag_name,), "OR", msg, xinge.XingeApp.ENV_DEV)
+                ret = self.xinge_app.PushTags(0, (tag_name,), "OR", msg)
                 DEBUG("xg push ret: %s,%s" % (ret[0], ret[1]))
             except Exception, e:
                 ERROR(e)
