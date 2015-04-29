@@ -156,7 +156,7 @@ class remote_info_sender:
             # msg_type = info_object['type']
             # if msg_type != "heartbeat":
                 self._push_info_xg(info, str(self._device_id))   
-                self._push_info_baidu(info, str(self._device_id))   
+                # self._push_info_baidu(info, str(self._device_id))   
                 self._send_info_to_server(info)
 
     def _put_worker(self):

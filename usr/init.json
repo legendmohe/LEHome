@@ -22,7 +22,7 @@
                     "恢复",
                     "结束", "显示", "查看", "新增", "新建", "添加", "增加",
                     "逻辑", "数值", "字符", "时刻", "当前", "获取", "查询",
-                    "翻译", "百科", "计算", "计时",
+                    "翻译", "百科", "计算", "计时", "截图",
                     "绑定", "等待", "当"],
         "target" : ["豆瓣电台", "qq电台", "QQ电台", "新闻电台", "留言",
                     "提醒", "闹铃", "铃声", "公交车", "公车", "公交站",
@@ -86,7 +86,8 @@
             "翻译":"tools.translate_callback",
             "百科":"tools.baidu_wiki_callback",
             "计时":"tools.timer_callback",
-            "计算":"tools.cal_callback"
+            "计算":"tools.cal_callback",
+            "截图":"tools.camera_quickshot_callback"
         },
         "target":{
             "闹铃":"target.alarm_callback",

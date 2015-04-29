@@ -238,3 +238,8 @@ class cal_callback(Callback.Callback):
             else:
                 self._home.publish_msg(cmd, u"格式有误")
         return True, None
+
+class camera_quickshot_callback(Callback.Callback):
+
+    def callback(self, cmd, msg):
+        return True
