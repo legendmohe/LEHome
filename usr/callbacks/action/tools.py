@@ -9,7 +9,11 @@ import urllib2
 import urllib
 import json
 import re
+import hashlib
+import base64
+
 from lib.command.Command import UserInput
+from lib.helper.CameraHelper import CameraHelper
 from lib.sound import Sound
 from util import Util
 from util.Res import Res
@@ -241,5 +245,37 @@ class cal_callback(Callback.Callback):
 
 class camera_quickshot_callback(Callback.Callback):
 
+    UPLOAD_URL = "http://lehome.sinaapp.com/image"
+
+    def _upload_image(self, img_src):
+        img_hash = hashlib.md5(img_src).hexdigest()
+        INFO("img hash:%s" % img_hash)
+
+        img_base64 = None
+        with open(img_src, "rb") as img_f:
+            img_base64 = base64.b64encode(img_f.read())
+        if img_base64 is None:
+            return False
+
+        url = camera_quickshot_callback.UPLOAD_URL + "/" + img_hash
+        url += "?id=" + Res.get('id')
+        req = urllib2.Request(url, img_base64)
+        response = urllib2.urlopen(req)
+        content = response.read()
+        INFO(content)
+        return content
+
     def callback(self, cmd, msg):
+        self._home.publish_msg(cmd, u"正在截图...")
+        save_path="/home/ubuntu/dev/LEHome/data/capture/"
+        save_name = CameraHelper().take_a_photo(save_path)
+        if save_name is None:
+            self._home.publish_msg(cmd, u"截图失败")
+            INFO("capture faild.")
+            return True
+        upload_result = self._upload_image(save_path + save_name)
+        if upload_result is None:
+            self._home.publish_msg(cmd, u"截图失败")
+            INFO("capture faild.")
+            return True
         return True

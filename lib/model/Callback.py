@@ -38,6 +38,14 @@ class Callback(object):
             if "self" in self.canceled_param_names:
                 self.canceled_param_names.remove("self")
 
+        if callable(getattr(self, "initialize", None)):
+            self.init_param_names = inspect.getargspec(
+                                                            self.initialize
+                                                            )[0]
+            DEBUG(self.init_param_names)
+            if "self" in self.init_param_names:
+                self.init_param_names.remove("self")
+
     def internal_callback(self, **kwargs):
         call_dict = {}
         for key in self.callback_param_names:
