@@ -179,9 +179,9 @@ class MessageHelper(object):
     def publish_msg(self, sub_id, msg, cmd_type="normal"):
         with self._msg_lock:
             msg_dict = {
-                            "type": cmd_type,
-                            "msg": msg,
-                            "ts": "%d" % int(time.time()),
+                        "type": cmd_type,
+                        "msg": msg,
+                        "ts": "%d" % int(time.time()),
                        }
 
             if cmd_type != "heartbeat":

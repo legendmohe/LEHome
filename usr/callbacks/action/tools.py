@@ -7,6 +7,7 @@ from decimal import Decimal
 import threading
 import urllib2
 import urllib
+import httplib
 import json
 import re
 import hashlib
@@ -245,7 +246,7 @@ class cal_callback(Callback.Callback):
 
 class camera_quickshot_callback(Callback.Callback):
 
-    UPLOAD_URL = "http://lehome.sinaapp.com/image"
+    IMAGE_SERVER_URL = "http://lehome.sinaapp.com/image"
 
     def _upload_image(self, img_src):
         img_hash = hashlib.md5(img_src).hexdigest()
@@ -257,13 +258,25 @@ class camera_quickshot_callback(Callback.Callback):
         if img_base64 is None:
             return False
 
-        url = camera_quickshot_callback.UPLOAD_URL + "/" + img_hash
-        url += "?id=" + Res.get('id')
+        device_id = Res.get('id')
+        url = camera_quickshot_callback.IMAGE_SERVER_URL + "/" + img_hash
+        url += "?id=" + device_id
         req = urllib2.Request(url, img_base64)
-        response = urllib2.urlopen(req)
-        content = response.read()
-        INFO(content)
-        return content
+        try: 
+            response = urllib2.urlopen(req)
+            content = response.read()
+            INFO(content)
+            return url
+        except urllib2.HTTPError, e:
+            ERROR('HTTPError = ' + str(e.code))
+        except urllib2.URLError, e:
+            ERROR('URLError = ' + str(e.reason))
+        except httplib.HTTPException, e:
+            ERROR('HTTPException')
+        except Exception:
+            import traceback
+            ERROR('generic exception: ' + traceback.format_exc())
+        return None
 
     def callback(self, cmd, msg):
         self._home.publish_msg(cmd, u"正在截图...")
@@ -278,4 +291,9 @@ class camera_quickshot_callback(Callback.Callback):
             self._home.publish_msg(cmd, u"截图失败")
             INFO("capture faild.")
             return True
+        self._home.publish_msg(
+                cmd,
+                msg=upload_result,
+                cmd_type="capture"
+                )
         return True
