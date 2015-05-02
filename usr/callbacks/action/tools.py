@@ -12,6 +12,7 @@ import json
 import re
 import hashlib
 import base64
+# import zlib
 
 from lib.command.Command import UserInput
 from lib.helper.CameraHelper import CameraHelper
@@ -255,8 +256,12 @@ class camera_quickshot_callback(Callback.Callback):
         img_base64 = None
         with open(img_src, "rb") as img_f:
             img_base64 = base64.b64encode(img_f.read())
+            INFO("image base64 string len:%d" % len(img_base64))
         if img_base64 is None:
             return False
+
+        # img_base64 = zlib.compress(img_base64)
+        # INFO("image base64 compressed string len:%d" % len(img_base64))
 
         device_id = Res.get('id')
         url = camera_quickshot_callback.IMAGE_SERVER_URL + "/" + img_hash
@@ -282,6 +287,8 @@ class camera_quickshot_callback(Callback.Callback):
         self._home.publish_msg(cmd, u"正在截图...")
         save_path="/home/ubuntu/dev/LEHome/data/capture/"
         save_name = CameraHelper().take_a_photo(save_path)
+        # for test
+        # save_name = "2015_05_02_164052.jpg"
         if save_name is None:
             self._home.publish_msg(cmd, u"截图失败")
             INFO("capture faild.")
