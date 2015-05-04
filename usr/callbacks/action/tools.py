@@ -4,6 +4,7 @@
 
 from __future__ import division
 from decimal import Decimal  
+import subprocess
 import threading
 import urllib2
 import urllib
@@ -248,44 +249,67 @@ class cal_callback(Callback.Callback):
 class camera_quickshot_callback(Callback.Callback):
 
     IMAGE_SERVER_URL = "http://lehome.sinaapp.com/image"
+    IMAGE_HOST_URL = "http://lehome-image.stor.sinaapp.com/"
 
     def _upload_image(self, img_src):
-        img_hash = hashlib.md5(img_src).hexdigest()
-        INFO("img hash:%s" % img_hash)
+        if img_src is None or len(img_src) == 0:
+            return None
 
-        img_base64 = None
-        with open(img_src, "rb") as img_f:
-            img_base64 = base64.b64encode(img_f.read())
-            INFO("image base64 string len:%d" % len(img_base64))
-        if img_base64 is None:
-            return False
-
-        # img_base64 = zlib.compress(img_base64)
-        # INFO("image base64 compressed string len:%d" % len(img_base64))
-
-        device_id = Res.get('id')
-        url = camera_quickshot_callback.IMAGE_SERVER_URL + "/" + img_hash
-        url += "?id=" + device_id
-        req = urllib2.Request(url, img_base64)
-        try: 
-            response = urllib2.urlopen(req)
-            content = response.read()
-            INFO(content)
-            return url
-        except urllib2.HTTPError, e:
-            ERROR('HTTPError = ' + str(e.code))
-        except urllib2.URLError, e:
-            ERROR('URLError = ' + str(e.reason))
-        except httplib.HTTPException, e:
-            ERROR('HTTPException')
-        except Exception:
-            import traceback
-            ERROR('generic exception: ' + traceback.format_exc())
+        proc = subprocess.Popen(
+                    ["swift", "--insecure", "upload", "image", img_src],
+                    stdout=subprocess.PIPE
+                )
+        for i in range(1) :
+            try:
+                data = proc.stdout.readline().strip() #block / wait
+                # INFO("readline: %s" % data)
+                if data.endswith(".jpg"):
+                    INFO("save to storage:%s" % data)
+                    return camera_quickshot_callback.IMAGE_HOST_URL + data
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except Exception, ex:
+                ERROR(ex)
+                break
         return None
+
+    # def _upload_image(self, img_src):
+    #     img_hash = hashlib.md5(img_src).hexdigest()
+    #     INFO("img hash:%s" % img_hash)
+    #
+    #     img_base64 = None
+    #     with open(img_src, "rb") as img_f:
+    #         img_base64 = base64.b64encode(img_f.read())
+    #         INFO("image base64 string len:%d" % len(img_base64))
+    #     if img_base64 is None:
+    #         return False
+    #
+    #     # img_base64 = zlib.compress(img_base64)
+    #     # INFO("image base64 compressed string len:%d" % len(img_base64))
+    #
+    #     device_id = Res.get('id')
+    #     url = camera_quickshot_callback.IMAGE_SERVER_URL + "/" + img_hash
+    #     url += "?id=" + device_id
+    #     req = urllib2.Request(url, img_base64)
+    #     try: 
+    #         response = urllib2.urlopen(req)
+    #         content = response.read()
+    #         INFO(content)
+    #         return url
+    #     except urllib2.HTTPError, e:
+    #         ERROR('HTTPError = ' + str(e.code))
+    #     except urllib2.URLError, e:
+    #         ERROR('URLError = ' + str(e.reason))
+    #     except httplib.HTTPException, e:
+    #         ERROR('HTTPException')
+    #     except Exception:
+    #         import traceback
+    #         ERROR('generic exception: ' + traceback.format_exc())
+    #     return None
 
     def callback(self, cmd, msg):
         self._home.publish_msg(cmd, u"正在截图...")
-        save_path="/home/ubuntu/dev/LEHome/data/capture/"
+        save_path="data/capture/"
         save_name = CameraHelper().take_a_photo(save_path)
         # for test
         # save_name = "2015_05_02_164052.jpg"
