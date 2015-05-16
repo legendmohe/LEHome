@@ -756,8 +756,9 @@ class var_callback(Callback.Callback):
                 ERROR("invaild save var path:%s", var_callback.var_path)
 
     def var_by_name(self, name):
-        if name in self.vars:
-            return self.vars[name]
+        with self._lock:
+            if name in self.vars:
+                return self.vars[name]
         return None
 
     def add_var(self, name, content):
@@ -771,11 +772,12 @@ class var_callback(Callback.Callback):
         return True
 
     def remove_var_by_name(self, name):
-        if name in self.vars:
-            del self.vars[name]
-            self.save_vars()
-            return True
-        return False
+        with self._lock:
+            if name in self.vars:
+                del self.vars[name]
+                self.save_vars()
+                return True
+            return False
 
     def callback(self, cmd, action, msg, pre_value):
         if pre_value == "show":

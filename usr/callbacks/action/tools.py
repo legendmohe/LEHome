@@ -255,6 +255,7 @@ class camera_quickshot_callback(Callback.Callback):
         if img_src is None or len(img_src) == 0:
             return None
 
+        INFO("uploading: %s" % img_src)
         proc = subprocess.Popen(
                     ["swift", "--insecure", "upload", "image", img_src],
                     stdout=subprocess.PIPE
@@ -262,7 +263,7 @@ class camera_quickshot_callback(Callback.Callback):
         for i in range(1) :
             try:
                 data = proc.stdout.readline().strip() #block / wait
-                # INFO("readline: %s" % data)
+                DEBUG("swift readline: %s" % data)
                 if data.endswith(".jpg"):
                     INFO("save to storage:%s" % data)
                     return camera_quickshot_callback.IMAGE_HOST_URL + data
@@ -309,6 +310,9 @@ class camera_quickshot_callback(Callback.Callback):
 
     def callback(self, cmd, msg):
         self._home.publish_msg(cmd, u"正在截图...")
+
+        Sound.play(Res.get_res_path("sound/com_shoot"))
+
         save_path="data/capture/"
         save_name = CameraHelper().take_a_photo(save_path)
         # for test
@@ -322,9 +326,10 @@ class camera_quickshot_callback(Callback.Callback):
             self._home.publish_msg(cmd, u"截图失败")
             INFO("capture faild.")
             return True
-        self._home.publish_msg(
-                cmd,
-                msg=upload_result,
-                cmd_type="capture"
-                )
+        else:
+            self._home.publish_msg(
+                    cmd,
+                    msg=upload_result,
+                    cmd_type="capture"
+                    )
         return True

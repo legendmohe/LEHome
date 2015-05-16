@@ -45,6 +45,12 @@ class CameraHelper(object):
             "--no-banner",
             save_path + file_name
             ])
+        # subprocess.call([
+        #     "wget",
+        #     "-O",
+        #     save_path + file_name,
+        #     "http://192.168.1.111:22222/?action=snapshot"
+        #     ])
         INFO("save photo:" + file_name)
         return file_name
 
