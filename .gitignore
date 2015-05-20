@@ -10,3 +10,4 @@ noise.*
 data/
 # *.pcl
 *.swo
+*.log
