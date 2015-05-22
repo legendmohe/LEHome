@@ -184,7 +184,7 @@ callback主要如下所示：
 
 如下图所示：
 
-!(应用架构图)[http://i1334.photobucket.com/albums/w649/legendmohe/LEHome_zpsg57l1hlc.png]
+![应用架构图](http://i1334.photobucket.com/albums/w649/legendmohe/LEHome_zpsg57l1hlc.png)
 
 联系方式
 ========
