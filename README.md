@@ -53,6 +53,7 @@ LEHome 服务端基于Python，需要安装以下依赖：
     - fysom
     - mplayer
     - sox
+    - redis
 
 down下来后，配置init.json（后面会说明如何配置），然后在根目录下运行./start.sh即可（先用chmod添加执行权限）。
 
