@@ -27,6 +27,8 @@ import json
 import tornado.ioloop
 import tornado.web
 
+import redis
+
 from lib.command.Command import Command
 from lib.speech.Speech import Text2Speech
 from lib.helper.SwitchHelper import SwitchHelper
@@ -57,6 +59,7 @@ class Home:
 
         self._global_context = {}
         self._init_res = Res.init("init.json")
+        self._init_storage()
         self._init_cmd_socket()
         self._init_audio_server()
         self._init_helper()
@@ -126,6 +129,13 @@ class Home:
                     except Exception, e:
                         ERROR("init commands faild.")
                         print traceback.format_exc()
+
+    def _init_storage(self):
+        host = self._init_res["storage"]["host"]
+        port = self._init_res["storage"]["port"]
+        self._storage = redis.Redis(host=host, port=port)
+        if self._storage is None:
+            ERROR("storage init faild!")
 
     def _init_speaker(self):
         INFO("initlizing speaker...")
@@ -211,6 +221,12 @@ class CmdHandler(tornado.web.RequestHandler):
             self.write("error")
             return
         INFO("get cmd through http post:%s", cmd)
+
+        timestamp = int(time.time())
+        self.home._storage.rpush(
+                "lehome:cmd_history_list",
+                "%d:%s" % (timestamp, cmd)
+                )
         self.home.parse_cmd(cmd)
         # INFO("finish running http post cmd:%s", cmd)
         self.write("ok")

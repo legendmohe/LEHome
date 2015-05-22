@@ -470,9 +470,9 @@ class task_callback(Callback.Callback):
 
     def load_tasks(self):
         with self._lock:
+            self._tasks = {}
             try:
                 with open(task_callback.task_path, "rb") as f:
-                    self._tasks = []
                     self._tasks = pickle.load(f)
             except:
                 INFO("empty suspended task list.")
@@ -490,7 +490,7 @@ class task_callback(Callback.Callback):
         with self._lock:
             cmd, thread = self._home._cmd.threads[index]
             thread.stop()
-            self._tasks.append(cmd)
+            self._tasks[index] = cmd
             self.save_tasks()
 
     def resume_task(self, index):
@@ -516,9 +516,8 @@ class task_callback(Callback.Callback):
                 continue
             info += u"\n  序号：%d 内容：%s" % (idx, threads[idx][0])
         info += u"\n\n暂停中:\n" + u"="*20
-        for idx, val in enumerate(self._tasks):
-            if val is not None:
-                info += u"\n  序号：%d 内容：%s" % (idx, val)
+        for idx in self._tasks:
+            info += u"\n  序号：%d 内容：%s" % (idx, self._tasks[idx])
         INFO(u"\n" + info)
         self._home.publish_msg(cmd, info)
 

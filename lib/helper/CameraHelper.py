@@ -38,19 +38,19 @@ class CameraHelper(object):
             file_name = time.strftime("%Y_%m_%d_%H%M%S") + ".jpg"
 
         INFO("taking photo...")
-        subprocess.call([
-            "fswebcam",
-            "-d", "/dev/video1",
-            "-r", "1280*720",
-            "--no-banner",
-            save_path + file_name
-            ])
         # subprocess.call([
-        #     "wget",
-        #     "-O",
-        #     save_path + file_name,
-        #     "http://192.168.1.111:22222/?action=snapshot"
+        #     "fswebcam",
+        #     "-d", "/dev/video1",
+        #     "-r", "1280*720",
+        #     "--no-banner",
+        #     save_path + file_name
         #     ])
+        subprocess.call([
+            "wget",
+            "-O",
+            save_path + file_name,
+            "http://192.168.1.112:8080/?action=snapshot"
+            ])
         INFO("save photo:" + file_name)
         return file_name
 
