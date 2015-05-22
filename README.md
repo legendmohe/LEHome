@@ -12,7 +12,7 @@ LEHome 是一套完整的开源智能家居方案。LEHome拥有以下特性：
 1. 简单的控制命令编程
 2. ibeacon室内定位
 3. 高度模块设计
-4. 红外控制、开关控制、传感器采集
+4. 视频采集、红外控制、开关控制、传感器采集
 5. android，web app，微信版客户端
 
 项目地址：[https://github.com/legendmohe/LEHome](https://github.com/legendmohe/LEHome)
@@ -70,6 +70,7 @@ down下来后，配置init.json（后面会说明如何配置），然后在根�
 4. 蓝牙音箱      * 1
 5. 红外模块      * 1
 6. zigbee传感器  * 2
+7. UVC 摄像头    * 1
 
 #### reco WIFI插座
 
@@ -96,6 +97,10 @@ down下来后，配置init.json（后面会说明如何配置），然后在根�
 淘宝有许多zigbee开发板出售，选择其中之一即可。为了避免广告嫌疑，这里不提供链接，有需要的可以私下联系。
 
 注：要根据实际采用的红外模块和zigbee传感器模块来调整LEHome的源码（RILHelper.py和sensor_server.py）。
+
+#### UVC 摄像头
+
+如果使用截图功能，需要一个UVC摄像头，很容易就可以买到。我使用的是罗技C270。
 
 
 系统功能
@@ -174,6 +179,12 @@ callback主要如下所示：
             ...
 
 当命令词被触发时，相应callback的callback()方法会被调用，传入的参数由callback函数的定义决定。
+
+#### 应用架构
+
+如下图所示：
+
+![应用架构图](http://i1334.photobucket.com/albums/w649/legendmohe/LEHome_zpsg57l1hlc.png)
 
 联系方式
 ========

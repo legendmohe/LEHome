@@ -934,27 +934,27 @@ class normal_ril_callback(Callback.Callback):
                 if self._ac["status"] == "off":
                     res = self._home._ril.send_cmd(normal_ril_callback.ON)
                     if res == None:
-                        self._home.publish_msg(cmd, u"空调打开失败")
+                        self._home.publish_msg(cmd, u"%s打开失败" % action)
                     else:
-                        self._home.publish_msg(cmd, u"空调打开成功")
+                        self._home.publish_msg(cmd, u"%s打开成功" % action)
                         self._ac["status"] = "on"
                 else:
-                    self._home.publish_msg(cmd, u"空调已经打开")
+                    self._home.publish_msg(cmd, u"%s已经打开" % action)
             elif pre_value == "off":
                 if self._ac["status"] == "on":
                     res = self._home._ril.send_cmd(normal_ril_callback.OFF)
                     if res == None:
-                        self._home.publish_msg(cmd, u"空调关闭失败")
+                        self._home.publish_msg(cmd, u"%s关闭失败" % action)
                     else:
-                        self._home.publish_msg(cmd, u"空调关闭成功")
+                        self._home.publish_msg(cmd, u"%s关闭成功" % action)
                         self._ac["status"] = "off"
                 else:
-                    self._home.publish_msg(cmd, u"空调已经关闭")
+                    self._home.publish_msg(cmd, u"%s已经关闭" % action)
             elif pre_value == "show":
                 if self._ac["status"] == "on":
-                    self._home.publish_msg(cmd, u"空调已打开")
+                    self._home.publish_msg(cmd, u"%s已打开" % action)
                 else:
-                    self._home.publish_msg(cmd, u"空调已关闭")
+                    self._home.publish_msg(cmd, u"%s已关闭" % action)
             elif pre_value == "get":
                 if self._ac["status"] == "on":
                     return True, "on"
@@ -1292,15 +1292,3 @@ class volume_callback(Callback.Callback):
             return True, int(msg)
         else:
             return False
-
-# class str_value_callback(Callback.Callback):
-#     def callback(self, cmd, action, target, msg, pre_value):
-#         if pre_value == "show":
-#             if msg is None or len(msg) == 0:
-#                 self._home.publish_msg(cmd, u"请输入内容")
-#                 return True, None
-#             self._home.publish_msg(cmd, msg)
-#             DEBUG("str_value_callback: %s" % mg)
-#             return True, msg
-#         else:
-#             return False
