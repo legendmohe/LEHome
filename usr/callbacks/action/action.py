@@ -386,12 +386,10 @@ class new_callback(Callback.Callback):
                 if not path:
                     return
                 INFO("record : " + path)
-
                 if "record_process" in self._global_context:
                     record_process = self._global_context["record_process"]
                     if not record_process.poll():
                         record_process.kill()
-
                 try:
                     record_process = subprocess.Popen([
                             "sudo",
@@ -408,3 +406,11 @@ class new_callback(Callback.Callback):
 
             self._global_context["recorder"] = record
         return True, "new"
+
+
+class location_callback(Callback.Callback):
+    def callback(self, cmd, action, target, msg, pre_value):
+        INFO("send location request to %s" % target)
+        self._home.publish_msg(cmd, u"发起定位:%s" % target)
+        self._home.publish_msg(cmd, target, cmd_type="req_loc")
+        return True, "location"

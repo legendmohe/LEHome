@@ -27,7 +27,7 @@
                     "结束", "显示", "查看", "新增", "新建", "添加", "增加",
                     "逻辑", "数值", "字符", "时刻", "当前", "获取", "查询",
                     "翻译", "百科", "计算", "计时", "截图",
-                    "绑定", "等待", "当"],
+                    "绑定", "等待", "当", "定位"],
         "target" : ["豆瓣电台", "qq电台", "QQ电台", "新闻电台", "留言",
                     "提醒", "闹铃", "铃声", "公交车", "公车", "公交站",
                     "任务", "待办事项", "脚本", "变量", "警报", "时间",
@@ -87,6 +87,7 @@
             "绑定":"action.hook_callback",
             "等待":"action.hook_callback",
             "当":"action.hook_callback",
+            "定位":"action.location_callback",
             "翻译":"tools.translate_callback",
             "百科":"tools.baidu_wiki_callback",
             "计时":"tools.timer_callback",
@@ -123,8 +124,8 @@
             "电灯":"target.normal_switch_callback",
             "书桌":"target.normal_sensor_callback",
             "空调":"target.normal_ril_callback",
-            "新宇":"target.normal_tag_callback",
-            "芳莹":"target.normal_tag_callback"
+            "新宇":"target.normal_person_callback",
+            "芳莹":"target.normal_person_callback"
         },
         "stop":{
             "算了":"stop.stop_callback",

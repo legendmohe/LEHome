@@ -251,28 +251,43 @@ class camera_quickshot_callback(Callback.Callback):
     IMAGE_SERVER_URL = "http://lehome.sinaapp.com/image"
     IMAGE_HOST_URL = "http://lehome-image.stor.sinaapp.com/"
 
-    def _upload_image(self, img_src):
+    def _upload_image(self, img_src, thumbnail_src):
         if img_src is None or len(img_src) == 0:
-            return None
+            return None, None
 
-        INFO("uploading: %s" % img_src)
+        INFO("uploading: %s %s" % (img_src, thumbnail_src))
+        # swift --insecure upload image data/capture/2015_05_23_001856.jpg
         proc = subprocess.Popen(
-                    ["swift", "--insecure", "upload", "image", img_src],
+                    [
+                        "swift",
+                        "--insecure",
+                        "upload",
+                        "image",
+                        thumbnail_src,
+                        img_src
+                    ],
                     stdout=subprocess.PIPE
                 )
-        for i in range(1) :
+        read_img = None
+        read_thumbnail = None
+        for i in range(2) :
             try:
                 data = proc.stdout.readline().strip() #block / wait
                 DEBUG("swift readline: %s" % data)
-                if data.endswith(".jpg"):
+                if data.endswith(".thumbnail.jpg"):
                     INFO("save to storage:%s" % data)
-                    return camera_quickshot_callback.IMAGE_HOST_URL + data
+                    read_thumbnail = camera_quickshot_callback.IMAGE_HOST_URL + data
+                elif data.endswith(".jpg"):
+                    INFO("save to storage:%s" % data)
+                    read_img = camera_quickshot_callback.IMAGE_HOST_URL + data
+                if not read_img is None and not read_thumbnail is None:
+                    return read_img, read_thumbnail
             except (KeyboardInterrupt, SystemExit):
                 raise
             except Exception, ex:
                 ERROR(ex)
                 break
-        return None
+        return None, None
 
     # def _upload_image(self, img_src):
     #     img_hash = hashlib.md5(img_src).hexdigest()
@@ -314,22 +329,25 @@ class camera_quickshot_callback(Callback.Callback):
         Sound.play(Res.get_res_path("sound/com_shoot"))
 
         save_path="data/capture/"
-        save_name = CameraHelper().take_a_photo(save_path)
+        save_name, thumbnail_name = CameraHelper().take_a_photo(save_path)
         # for test
         # save_name = "2015_05_02_164052.jpg"
         if save_name is None:
             self._home.publish_msg(cmd, u"截图失败")
             INFO("capture faild.")
             return True
-        upload_result = self._upload_image(save_path + save_name)
-        if upload_result is None:
+        img_url, thumbnail_url = self._upload_image(
+                save_path + save_name,
+                save_path + thumbnail_name,
+                )
+        if img_url is None:
             self._home.publish_msg(cmd, u"截图失败")
             INFO("capture faild.")
             return True
         else:
             self._home.publish_msg(
                     cmd,
-                    msg=upload_result,
+                    msg=img_url,
                     cmd_type="capture"
                     )
         return True

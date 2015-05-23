@@ -18,6 +18,9 @@
 
 import subprocess
 import time
+import os.path
+
+from PIL import Image
 
 from util.log import *
 
@@ -25,6 +28,11 @@ class CameraHelper(object):
 
     def __init__(self):
         pass
+
+    def _get_thumbnail_file_name(save_path, file_name):
+        temp = file_name.rsplit(".", 1)
+        thumbnail_name = temp[0] + ".thumbnail." + temp[1]
+        return thumbnail_name
 
 # fswebcam -d /dev/video1 -r 1280x720 --no-banner /home/ubuntu/dev/LEHome/data/capture/$DATE.jpg
     def take_a_photo(self, save_path, file_name=None):
@@ -37,6 +45,7 @@ class CameraHelper(object):
         if file_name is None or len(file_name) == 0:
             file_name = time.strftime("%Y_%m_%d_%H%M%S") + ".jpg"
 
+        file_path = save_path + file_name
         INFO("taking photo...")
         # subprocess.call([
         #     "fswebcam",
@@ -48,11 +57,21 @@ class CameraHelper(object):
         subprocess.call([
             "wget",
             "-O",
-            save_path + file_name,
+            file_path,
             "http://192.168.1.112:8080/?action=snapshot"
             ])
-        INFO("save photo:" + file_name)
-        return file_name
+        if not os.path.isfile(file_path) :
+            INFO("snapshot faild. no such file:" + file_path)
+            return None, None
+        INFO("save orginal photo:" + file_name)
+
+        size = 320, 240
+        t_name = self._get_thumbnail_file_name(file_name)
+        im = Image.open(file_path)
+        im.thumbnail(size, Image.ANTIALIAS)
+        im.save(save_path + t_name, "JPEG")
+        INFO("save thumbnail photo:" + t_name)
+        return file_name, t_name
 
 
 if __name__ == "__main__":

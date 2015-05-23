@@ -732,6 +732,8 @@ class var_callback(Callback.Callback):
     def __init__(self):
         super(var_callback, self).__init__()
         self._lock = threading.Lock()
+
+    def init(self):
         self.load_vars()
 
     def load_vars(self):
@@ -1018,27 +1020,27 @@ class normal_sensor_callback(Callback.Callback):
             return False
 
 
-class normal_tag_callback(Callback.Callback):
+class normal_person_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
-        addr = self._home._tag.addr_for_name(target)
-        if addr is None:
-            self._home.publish_msg(cmd, u"无此目标：" + target)
-            return False
-        if msg.startswith(u'在'):
-            here = True
-            msg = msg[1:]
-        elif msg.startswith(u'不在'):
-            here = False
-            msg = msg[2:]
-        else:
-            self._home.publish_msg(cmd, u"格式错误：" + cmd)
-            return False
-        place = self._home._tag.place_ip_for_name(msg)
-        if place is None or len(place) == 0:
-            self._home.publish_msg(cmd, u"无此处所：" + msg)
-            return False
-
         if pre_value == "show" or pre_value == "get":
+            addr = self._home._tag.addr_for_name(target)
+            if addr is None:
+                self._home.publish_msg(cmd, u"无此目标：" + target)
+                return False
+            if msg.startswith(u'在'):
+                here = True
+                msg = msg[1:]
+            elif msg.startswith(u'不在'):
+                here = False
+                msg = msg[2:]
+            else:
+                self._home.publish_msg(cmd, u"格式错误：" + cmd)
+                return False
+            place = self._home._tag.place_ip_for_name(msg)
+            if place is None or len(place) == 0:
+                self._home.publish_msg(cmd, u"无此处所：" + msg)
+                return False
+
             res = self._home._tag.near(addr, place)
             if res is None:
                 INFO(u'无法获取位置：' + cmd)
@@ -1053,7 +1055,7 @@ class normal_tag_callback(Callback.Callback):
                 self._home.publish_msg(cmd, info)
             return True, res
         else:
-            return False
+            return True
 
 
 class speech_callback(Callback.Callback):

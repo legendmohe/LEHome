@@ -85,7 +85,7 @@ class ClearQeueuHandler(tornado.web.RequestHandler):
 
 class VolumeHandler(tornado.web.RequestHandler):
 
-    CARD_INDEX = 0
+    CARD_NAME = u'R19U'
 
     def get(self):
         m = alsaaudio.Mixer()
@@ -101,8 +101,9 @@ class VolumeHandler(tornado.web.RequestHandler):
             return
         cards = alsaaudio.cards()
         INFO(cards)
-        INFO("use card %d." % VolumeHandler.CARD_INDEX)
-        m = alsaaudio.Mixer(control='PCM', cardindex=VolumeHandler.CARD_INDEX)
+        card_idx = cards.index(VolumeHandler.CARD_NAME)
+        INFO("use card %d." % card_idx)
+        m = alsaaudio.Mixer(control='PCM', cardindex=card_idx)
         try:
             volume = int(v_str)
         except ValueError:

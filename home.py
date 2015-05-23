@@ -116,10 +116,12 @@ class Home:
                         if cb_object is None:
                             cb_module = importlib.import_module(cb_module_name)
                             cb_object = getattr(cb_module, class_name)()
-                        cb_object._global_context = self._global_context
-                        cb_object._class_context = {}
-                        cb_object._speaker = self._spk
-                        cb_object._home = self
+                        cb_object.initialize(
+                            _global_context = self._global_context,
+                            _class_context  = {},
+                            _speaker        = self._spk,
+                            _home           = self,
+                        )
                                    
                         DEBUG("load callback: " + cb_module_name + " for command token:" + cb_token)
                         self._cmd.register_callback(
@@ -128,11 +130,12 @@ class Home:
                                     cb_object)
                     except Exception, e:
                         ERROR("init commands faild.")
-                        print traceback.format_exc()
+                        ERROR(traceback.format_exc())
 
     def _init_storage(self):
         host = self._init_res["storage"]["host"]
         port = self._init_res["storage"]["port"]
+        INFO("initlizing storage:%s:%s" % (host, port))
         self._storage = redis.Redis(host=host, port=port)
         if self._storage is None:
             ERROR("storage init faild!")
@@ -188,8 +191,16 @@ class Home:
 
     def parse_cmd(self, cmd):
         if not self._resume:
+            timestamp = int(time.time())
+            self._storage.rpush(
+                    "lehome:cmd_history_list",
+                    "%d:%s" % (timestamp, cmd)
+                    )
             INFO("command: " + cmd)
-            self._cmd.parse(cmd)
+            if cmd.startswith("@"):
+                self.publish_msg(cmd, cmd[1:], cmd_type="bc_loc")
+            else:
+                self._cmd.parse(cmd)
 
     def activate(self):
         Sound.play(Res.get_res_path("sound/com_begin"))
@@ -221,12 +232,6 @@ class CmdHandler(tornado.web.RequestHandler):
             self.write("error")
             return
         INFO("get cmd through http post:%s", cmd)
-
-        timestamp = int(time.time())
-        self.home._storage.rpush(
-                "lehome:cmd_history_list",
-                "%d:%s" % (timestamp, cmd)
-                )
         self.home.parse_cmd(cmd)
         # INFO("finish running http post cmd:%s", cmd)
         self.write("ok")
