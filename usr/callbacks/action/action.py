@@ -410,6 +410,11 @@ class new_callback(Callback.Callback):
 
 class location_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
+        if Util.empty_str(target):
+            INFO("empty location target.")
+            self._home.publish_msg(cmd, u"无定位目标")
+            return False
+
         INFO("send location request to %s" % target)
         self._home.publish_msg(cmd, u"发起定位:%s" % target)
         self._home.publish_msg(cmd, target, cmd_type="req_loc")

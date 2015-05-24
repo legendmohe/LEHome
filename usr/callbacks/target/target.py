@@ -1294,3 +1294,44 @@ class volume_callback(Callback.Callback):
             return True, int(msg)
         else:
             return False
+
+
+class fund_callback(Callback.Callback):
+
+    FUND_SERVER_URL = "http://lehome.sinaapp.com/tool/fund?"
+    FUND_REQUEST_TIMEOUT = 15
+
+    def _req_fund_info(self, fund_id):
+        url = fund_callback.FUND_SERVER_URL + \
+                urllib.urlencode({
+                    'id': fund_id,
+                    })
+        try:
+            INFO("start fetching fund info:%s" % url)
+            rep_text = urllib2.urlopen(
+                    url,
+                    timeout=fund_callback.FUND_REQUEST_TIMEOUT) \
+                .read()
+            INFO("got fund info:%s" % rep_text)
+
+            rep = json.loads(rep_text)
+            return rep
+        except Exception, e:
+            ERROR(e)
+            return None
+
+    def _format_fund_info(self, fund_obj):
+        ret = u"名称：" + fund_obj["name"] + "\n"
+        ret += u"当前价格：" + fund_obj["price"] + "\n"
+        ret += u"当前涨幅：" + fund_obj["status"]
+        return ret
+
+    def callback(self, cmd, action, target, msg, pre_value):
+        if pre_value == "show":
+            fund_info = self._req_fund_info(msg.encode("utf-8"))
+            INFO("got fund info:%s" % fund_info)
+            if fund_info is None:
+                self._home.publish_msg(cmd, u"无此基金:%s" % msg)
+            else:
+                self._home.publish_msg(cmd, self._format_fund_info(fund_info))
+        return True
