@@ -192,14 +192,19 @@ class Home:
     def parse_cmd(self, cmd):
         if not self._resume:
             timestamp = int(time.time())
-            self._storage.rpush(
-                    "lehome:cmd_history_list",
-                    "%d:%s" % (timestamp, cmd)
-                    )
             INFO("command: " + cmd)
             if cmd.startswith("@"):
-                self.publish_msg(cmd, cmd[1:], cmd_type="bc_loc")
+                cmd = cmd[1:]
+                self._storage.rpush(
+                        "lehome:cmd_location_list",
+                        "%d:%s" % (timestamp, cmd)
+                        )
+                self.publish_msg(cmd, cmd, cmd_type="bc_loc")
             else:
+                self._storage.rpush(
+                        "lehome:cmd_history_list",
+                        "%d:%s" % (timestamp, cmd)
+                        )
                 self._cmd.parse(cmd)
 
     def activate(self):
