@@ -1320,8 +1320,9 @@ class fund_callback(Callback.Callback):
             ERROR(e)
             return None
 
-    def _format_fund_info(self, fund_obj):
+    def _format_fund_info(self, fund_id, fund_obj):
         ret = u"名称：" + fund_obj["name"] + "\n"
+        ret += u"编号：" + fund_id + "\n"
         ret += u"当前价格：" + fund_obj["price"] + "\n"
         ret += u"当前涨幅：" + fund_obj["status"]
         return ret
@@ -1333,5 +1334,8 @@ class fund_callback(Callback.Callback):
             if fund_info is None:
                 self._home.publish_msg(cmd, u"无此基金:%s" % msg)
             else:
-                self._home.publish_msg(cmd, self._format_fund_info(fund_info))
+                self._home.publish_msg(
+                            cmd,
+                            self._format_fund_info(msg, fund_info)
+                        )
         return True
