@@ -20,9 +20,9 @@ import urllib2
 import urllib
 import threading
 import json
-from lib.command.Command import Confirmation
+from lib.command.runtime import Confirmation
 from lib.sound import Sound
-from lib.command.Command import UserInput
+from lib.command.runtime import UserInput
 from util import Util
 from util.log import *
 from lib.model import Callback
@@ -368,7 +368,7 @@ class hook_callback(Callback.Callback):
             return True, None
 
         INFO("hook:%s run:%s" % (msg, cmd))
-        wait_event = self._home._cmd.add_hook(msg)
+        wait_event = self._home.runtime.add_hook(msg)
         if not wait_event is None:
             wait_event.wait()
             INFO("run hook:%s" % cmd)
