@@ -20,11 +20,10 @@ from collections import OrderedDict
 from Queue import Queue, Empty
 from types import MethodType
 import threading
-# import pickle
-# import json
 import sys
 import io
-from CommandParser import CommandParser
+
+from parser import Parser
 from lib.model.Elements import Statement, Block, IfStatement, WhileStatement, LogicalOperator, CompareOperator
 from lib.sound import Sound
 from util.Res import Res
@@ -32,7 +31,7 @@ from util.log import *
 from util.thread import StoppableThread
 
 
-class Command:
+class Rumtime:
     def __init__(self, coms, backup_path="data/backup.pcl"):
         DEBUG("Command __init__.")
         self._lock = threading.Lock()
@@ -42,7 +41,7 @@ class Command:
         self.threads = {}
 
         self._registered_callbacks = {}
-        self._fsm = CommandParser(coms)
+        self._fsm = Parser(coms)
         self.setDEBUG(False)
 
         self._fsm.finish_callback = self._finish_callback
@@ -51,7 +50,7 @@ class Command:
         self._keep_running = True
         self.backup_path = backup_path
 
-        self._cmd_hook = Command.CommandHook()
+        self._cmd_hook = Rumtime.CommandHook()
 
     def init_tasklist(self):
         backup_path = self.backup_path
@@ -144,7 +143,7 @@ class Command:
         self._local.cmd = command
         self._local.thread = threading.current_thread()
         self._local.thread.thread_idx = thread_index
-        block_stack = Command.BlockStack()
+        block_stack = Rumtime.BlockStack()
         try:
             DEBUG("begin invoke cmd block: %s", command)
             self._invoke_block(block, block_stack)
@@ -561,30 +560,36 @@ class Command:
     class BlockStack:
         def __init__(self):
             self._stack = []
+            self._lock = threading.Lock()
 
         def push_context(self):
-            self._stack.append({})
+            with self._lock:
+                self._stack.append({})
 
         def pop_context(self):
-            if len(self._stack) > 0:
-                self._stack.pop()
+            with self._lock:
+                if len(self._stack) > 0:
+                    self._stack.pop()
 
         def cur_layer(self):
-            return len(self._stack)
+            with self._lock:
+                return len(self._stack)
 
         def set_var(self, var_name, value):
-            if len(self._stack) > 0:
-                self._stack[-1][var_name] = value
-            else:
-                ERROR("var_name outside block.")
+            with self._lock:
+                if len(self._stack) > 0:
+                    self._stack[-1][var_name] = value
+                else:
+                    ERROR("var_name outside block.")
 
         def get_value(self, var_name):
-            if len(self._stack) == 0:
+            with self._lock:
+                if len(self._stack) == 0:
+                    return None
+                for context in reversed(self._stack):
+                    if var_name in context:
+                        return context[var_name]
                 return None
-            for context in reversed(self._stack):
-                if var_name in context:
-                    return context[var_name]
-            return None
 
 
 class Confirmation:
@@ -718,7 +723,7 @@ if __name__ == '__main__':
         return True, "while"
 
     parser_target = "你好启动重复定时5分钟开灯1那么关门2结束"
-    commander = Command({
+    commander = Rumtime({
             "whiles":["循环", "重复"],
             "ifs":["如果"],
             "thens":["那么"],

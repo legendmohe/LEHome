@@ -15,7 +15,7 @@ import hashlib
 import base64
 # import zlib
 
-from lib.command.Command import UserInput
+from lib.command.runtime import UserInput
 from lib.helper.CameraHelper import CameraHelper
 from lib.sound import Sound
 from util import Util

@@ -31,7 +31,7 @@ from datetime import datetime
 
 from bs4 import BeautifulSoup
 
-from lib.command.Command import UserInput
+from lib.command.runtime import UserInput
 from util.Res import Res
 from util import Util
 from lib.sound import Sound
@@ -488,7 +488,7 @@ class task_callback(Callback.Callback):
 
     def suspend_task(self, index):
         with self._lock:
-            cmd, thread = self._home._cmd.threads[index]
+            cmd, thread = self._home.runtime.threads[index]
             thread.stop()
             self._tasks[index] = cmd
             self.save_tasks()
@@ -505,12 +505,12 @@ class task_callback(Callback.Callback):
             else:
                 del self._tasks[index]
                 self.save_tasks()
-                self._home._cmd._fsm.put_cmd_into_parse_stream(cmd)
+                self._home.runtime._fsm.put_cmd_into_parse_stream(cmd)
                 return True
 
     def show_current_task(self, cmd):
         info = u"运行中:\n" + u"="*20
-        threads = self._home._cmd.threads
+        threads = self._home.runtime.threads
         for idx in threads:
             if threads[idx][0] == cmd:
                 continue
@@ -523,7 +523,7 @@ class task_callback(Callback.Callback):
 
     def callback(self, cmd, action, msg, pre_value):
         if pre_value == "show":
-            threads = self._home._cmd.threads
+            threads = self._home.runtime.threads
             info = u""
             if len(threads) <= 1 and len(self._tasks) == 0: #  当前任务不计入
                 info += u"当前无任务"
@@ -554,8 +554,8 @@ class task_callback(Callback.Callback):
                 return False, None
             else:
                 thread_index = int(thread_index)
-            if thread_index in self._home._cmd.threads:
-                cmd, thread = self._home._cmd.threads[thread_index]
+            if thread_index in self._home.runtime.threads:
+                cmd, thread = self._home.runtime.threads[thread_index]
                 thread.stop()
                 self._home.publish_msg(cmd, u"停止执行任务%d" % (thread_index, ))
                 INFO("stop thread: %d with cmd: %s" % (thread_index, cmd))
@@ -572,7 +572,7 @@ class task_callback(Callback.Callback):
                 return False, None
             else:
                 thread_index = int(thread_index)
-            if thread_index in self._home._cmd.threads:
+            if thread_index in self._home.runtime.threads:
                 self.suspend_task(thread_index)
                 self._home.publish_msg(cmd, u"暂停执行任务%d" % (thread_index, ))
                 INFO("suspend thread: %d with cmd: %s" % (thread_index, cmd))
