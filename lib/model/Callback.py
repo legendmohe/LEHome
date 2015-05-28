@@ -66,15 +66,3 @@ class Callback(object):
                 call_dict[key] = None
         # DEBUG("canceled: %s" % (kwargs, ))
         return self.canceled(**call_dict)
-
-    def redirect(self, c_type, c_name, **kwargs):
-        if c_type is None or c_name is None:
-            ERROR("invaild redirect params.")
-            return
-        else:
-            cbs = self._home._cmd._registered_callbacks
-            if not cbs is None and c_type in cbs and c_name in cbs[c_type]:
-                return cbs[c_type][c_name].internal_callback(kwargs)
-            else:
-                ERROR("callback type or name is not exist.")
-                return
