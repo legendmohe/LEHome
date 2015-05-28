@@ -19,17 +19,15 @@
 import sys
 import importlib
 import traceback
-import threading
 import signal
 import time
-import json
 
 import tornado.ioloop
 import tornado.web
 
 import redis
 
-from lib.command.Command import Command
+from lib.command.runtime import Rumtime
 from lib.speech.Speech import Text2Speech
 from lib.helper.SwitchHelper import SwitchHelper
 from lib.helper.RilHelper import RilHelper
@@ -39,7 +37,6 @@ from lib.helper.TagHelper import TagHelper
 from util.Res import Res
 from lib.sound import Sound
 from util.log import *
-from util.thread import TimerThread
 
 
 # class TracePrints(object):
@@ -67,7 +64,7 @@ class Home:
         self._init_command()
 
         self._resume = False
-        self._cmd.init_tasklist()  # load unfinished task
+        self.runtime.init_tasklist()  # load unfinished task
 
         self.publish_msg("init", u"==========服务器启动==========")
 
@@ -77,7 +74,7 @@ class Home:
         settings = self._init_res
         if settings:
             com_json = settings['command']
-            self._cmd = Command({
+            self.runtime = Rumtime({
                         "whiles":com_json["while"],
                         "ifs":com_json["if"],
                         "thens":com_json["then"],
@@ -92,9 +89,9 @@ class Home:
                         "logical":com_json["logical"],
                         "compare":com_json["compare"],
                         })
-            self._cmd.setDEBUG(False)
-            self._cmd.cmd_begin_callback = self._cmd_begin_callback
-            self._cmd.cmd_end_callback = self._cmd_end_callback
+            self.runtime.setDEBUG(False)
+            self.runtime.cmd_begin_callback = self._cmd_begin_callback
+            self.runtime.cmd_end_callback = self._cmd_end_callback
 
             module_cache = {}
             cb_json = settings["callback"]
@@ -124,7 +121,7 @@ class Home:
                         )
                                    
                         DEBUG("load callback: " + cb_module_name + " for command token:" + cb_token)
-                        self._cmd.register_callback(
+                        self.runtime.register_callback(
                                     com_name,
                                     cb_token,
                                     cb_object)
@@ -205,12 +202,12 @@ class Home:
                         "lehome:cmd_history_list",
                         "%d:%s" % (timestamp, cmd)
                         )
-                self._cmd.parse(cmd)
+                self.runtime.parse(cmd)
 
     def activate(self):
         Sound.play(Res.get_res_path("sound/com_begin"))
         self._spk.start()
-        self._cmd.start()
+        self.runtime.start()
 
         application = tornado.web.Application([
             (r"/home/cmd", CmdHandler, dict(home=self)),
@@ -222,7 +219,7 @@ class Home:
 
     def deactivate(self):
         self._spk.stop()
-        self._cmd.stop()
+        self.runtime.stop()
 
     def setResume(self, resume):
         self._resume = resume
