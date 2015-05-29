@@ -69,28 +69,30 @@ class weather_report_callback(Callback.Callback):
                 re = urllib2.urlopen(url, timeout=10).read()
                 re = re.decode('utf-8-sig')  # WTF!
                 we = json.loads(re)['weatherinfo']
+                INFO("weather data: %s" % we)
+
+                content = ""
+                content += u'城市：' + we['city'] + "\n"
+                if msg == u"明天":
+                    content += u'明天天气：%s, %s\n' % (we['temp2'], we['weather2'])
+                elif msg == u"今天":
+                    content += u'今天天气：%s, %s\n' % (we['temp1'], we['weather1'])
+                else:
+                    content += u'今天天气：%s, %s\n' % (we['temp1'], we['weather1'])
+                    content += u'明天天气：%s, %s\n' % (we['temp2'], we['weather2'])
+                    content += u'后天天气：%s, %s\n' % (we['temp3'], we['weather3'])
+                content += u'穿衣指数：%s\n' % we['index_d']
+
+                if pre_value == 'show':
+                    self._home.publish_msg(cmd, content)
+                    # self._speaker.speak(content.split('\n'))
+                return True, we
             except Exception, ex:
                 ERROR(ex)
                 ERROR("weather target faild.")
+                self._home.publish_msg(cmd, u"获取天气信息失败")
                 return True
-
-            content = ""
-            content += u'城市：' + we['city'] + "\n"
-            if msg == u"明天":
-                content += u'明天天气：' + we['temp2'] + ', ' + we['weather2'] + '\n'
-            elif msg == u"今天":
-                content += u'今天天气：' + we['temp1'] + ', ' + we['weather1'] + '\n'
-            else:
-                content += u'今天天气：' + we['temp1'] + ', ' + we['weather1'] + '\n'
-                content += u'明天天气：' + we['temp2'] + ', ' + we['weather2'] + '\n'
-                content += u'后天天气：' + we['temp3'] + ', ' + we['weather3'] + '\n'
-            content += u'穿衣指数：' + we['index_d']
-
-            if pre_value == 'show':
-                self._home.publish_msg(cmd, content)
-                self._speaker.speak(content.split('\n'))
-
-        return True, we
+        return True
 
 
 class douban_callback(Callback.Callback):

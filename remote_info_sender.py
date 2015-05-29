@@ -18,11 +18,15 @@
 
 import argparse
 import threading
+import traceback
 import time
 from Queue import Queue, Empty
 import urllib, urllib2
 import json
+import hashlib
+
 import zmq
+
 from util.Res import Res
 from util.log import *
 from vender.baidu_push.Channel import *
@@ -99,7 +103,11 @@ class remote_info_sender:
             DEBUG("xg push info %s to remote server." % (info, ))
             # xg push
             msg = self._build_msg(info)
+            if msg is None:
+                ERROR("xg msg is None.")
+                return False
             try:
+                # DEBUG("xg msg len: %d" % len(msg.content))
                 ret = self.xinge_app.PushTags(0, (tag_name,), "OR", msg)
                 DEBUG("xg push ret: %s,%s" % (ret[0], ret[1]))
             except Exception, e:
@@ -117,6 +125,28 @@ class remote_info_sender:
         msg.expireTime = 5*3600
         # 自定义键值对，key和value都必须是字符串
         # msg.custom = {'aaa':'111', 'bbb':'222'}
+        if len(msg.content) > 2500:
+            INFO("xg msg reach max len:%d" % len(msg.content))
+            try:
+                msg_json = json.loads(msg.content)
+                msg_id = hashlib.sha1(msg.content).hexdigest()
+                msg_data = urllib.urlencode({'msg':msg_json["msg"].encode('utf-8')})
+
+                url = remote_info_sender.HOST + "/api/text/%s?id=%s" \
+                    % (msg_id, self._device_id,)
+                rep = urllib2.urlopen(url, msg_data, timeout=10).read()
+                rep_json = json.loads(rep)
+                if rep_json["code"] != 200:
+                    ERROR("xg api text rep code: %s" % rep_json["desc"])
+                    return None
+
+                INFO("api text success: %s", msg_id)
+                msg_json["type"] = "long_msg"
+                msg_json["msg"] = url
+                msg.content = json.dumps(msg_json)
+            except Exception, e:
+                ERROR(traceback.format_exc())
+                return None
         return msg
     
     def _sae_info(self, info):
