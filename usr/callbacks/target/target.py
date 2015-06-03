@@ -1272,16 +1272,25 @@ class volume_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
         if pre_value == "show" or pre_value == "get":
             volume = Sound.get_volume()
-            if volume is None:
-                self._home.publish_msg(cmd, u"设置音量值失败")
+            if Util.empty_str(volume):
+                self._home.publish_msg(cmd, u"获取音量值失败")
                 return False
             if pre_value == "show":
                 self._home.publish_msg(cmd, u"当前音量值为：%s" % volume)
             return True, int(volume)
-        elif pre_value == "set":
+        elif pre_value == "set" or pre_value == "resume":
+            if pre_value == "resume":
+                msg = self._home._storage.get("lehome:last_volume")
             if msg is None or len(msg) == 0:
                 self._home.publish_msg(cmd, u"请输入音量值")
                 return False
+
+            # remember last volume value for resume volume
+            volume = Sound.get_volume()
+            if not Util.empty_str(volume):
+                INFO("save last volume:%s" % volume)
+                self._home._storage.set("lehome:last_volume", volume)
+
             ret = Sound.set_volume(msg)
             if ret is None:
                 self._home.publish_msg(cmd, u"设置音量值失败")

@@ -97,7 +97,7 @@ def get_volume():
     url = get_volume_url()
     if url is None:
         return
-    INFO("getting audio volume: %s" % value)
+    INFO("getting audio volume: %s" % url)
     response = None
     try:
         response = urllib2.urlopen(url).read()
@@ -109,6 +109,7 @@ def get_volume():
         WARN("audio server unavailable.")
     else:
         INFO("audio response: " + response)
+    INFO("getting audio volume: %s" % response)
     return response
 
 def clear_queue():

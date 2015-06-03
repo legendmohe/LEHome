@@ -87,11 +87,24 @@ class VolumeHandler(tornado.web.RequestHandler):
 
     CARD_NAME = u'R19U'
 
+    def initialize(self):
+        cards = alsaaudio.cards()
+        INFO(cards)
+        card_idx = cards.index(VolumeHandler.CARD_NAME)
+        self._m = alsaaudio.Mixer(control='PCM', cardindex=card_idx)
+        INFO("use card %d." % card_idx)
+
     def get(self):
-        m = alsaaudio.Mixer()
-        volume = str(int(m.getvolume()))
-        DEBUG(u"当前音量值为：%s" % volume)
-        self.write(volume)
+        DEBUG(u"正在获取音量值")
+        try:
+            volumes = self._m.getvolume()
+            INFO("get volumes:%s" % volumes)
+            volume = str(int(volumes[0]))
+            DEBUG(u"当前音量值为：%s" % volume)
+            self.write(volume)
+        except Exception, e:
+            ERROR(e)
+        self.write("")
 
     def post(self):
         v_str = self.get_argument("v", default=None, strip=False)
@@ -99,11 +112,6 @@ class VolumeHandler(tornado.web.RequestHandler):
             self.write("-1")
             DEBUG(u"请输入音量值")
             return
-        cards = alsaaudio.cards()
-        INFO(cards)
-        card_idx = cards.index(VolumeHandler.CARD_NAME)
-        INFO("use card %d." % card_idx)
-        m = alsaaudio.Mixer(control='PCM', cardindex=card_idx)
         try:
             volume = int(v_str)
         except ValueError:
@@ -118,7 +126,7 @@ class VolumeHandler(tornado.web.RequestHandler):
             self.write("-3")
             DEBUG(u"音量值无效：%s" % msg)
             return
-        m.setvolume(volume)
+        self._m.setvolume(volume)
         DEBUG(u"设置音量值为：%s" % str(volume))
         self.write(RETURNCODE.SUCCESS)
 

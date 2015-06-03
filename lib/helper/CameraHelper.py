@@ -34,6 +34,11 @@ class CameraHelper(object):
         thumbnail_name = temp[0] + ".thumbnail." + temp[1]
         return thumbnail_name
 
+    def _get_opt_file_name(save_path, file_name):
+        temp = file_name.rsplit(".", 1)
+        opt_filename = temp[0] + ".opt." + temp[1]
+        return opt_filename
+
 # fswebcam -d /dev/video1 -r 1280x720 --no-banner /home/ubuntu/dev/LEHome/data/capture/$DATE.jpg
     def take_a_photo(self, save_path, file_name=None):
         if save_path is None or len(save_path) == 0:

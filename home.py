@@ -234,9 +234,13 @@ class CmdHandler(tornado.web.RequestHandler):
             self.write("error")
             return
         INFO("get cmd through http post:%s", cmd)
-        self.home.parse_cmd(cmd)
-        # INFO("finish running http post cmd:%s", cmd)
-        self.write("ok")
+        if cmd.count('#')%2 == 0:
+            self.home.parse_cmd(cmd)
+            self.write("ok")
+        else:
+            WARN("unmatch '%s'." % "#")
+            self.write("ok")
+            self.publish_msg("error", u"%s不匹配" % "#")
 
 is_closing = False
 def signal_handler(signum, frame):

@@ -20,11 +20,15 @@ import urllib2
 import urllib
 import threading
 import json
+
+import redis
+
 from lib.command.runtime import Confirmation
 from lib.sound import Sound
 from lib.command.runtime import UserInput
 from util import Util
 from util.log import *
+from lib.sound import Sound
 from lib.model import Callback
 
 
@@ -418,4 +422,20 @@ class location_callback(Callback.Callback):
         INFO("send location request to %s" % target)
         self._home.publish_msg(cmd, u"发起定位:%s" % target)
         self._home.publish_msg(cmd, target, cmd_type="req_loc")
+        return True, "location"
+
+
+class mute_callback(Callback.Callback):
+    def callback(self, cmd, action, target, msg, pre_value):
+        volume = Sound.get_volume()
+        if volume is None:
+            self._home.publish_msg(cmd, u"系统错误，静音失败")
+            return False
+
+        self._home._storage.set("lehome:last_volume", volume)
+        ret = Sound.set_volume(0)
+        if ret is None:
+            self._home.publish_msg(cmd, u"设置音量值失败")
+            return False
+        self._home.publish_msg(cmd, u"音量已设置为0")
         return True, "location"
