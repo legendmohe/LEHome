@@ -18,141 +18,127 @@
 import threading
 import json
 import time
+import socket
 # import urllib
 # import urllib2
-import zmq
+# import zmq
 from util.Res import Res
 from util.log import *
 
 
 class SensorHelper:
+    TYPE_TEMP = "T"
+    TYPE_HUM = "H"
+    TYPE_PIR = "P"
+    TYPE_LUM = "L"
+    TYPE_ALL = "A"
 
     def __init__(self):
+        self._sock = None
         init_json = Res.init("init.json")
-        self.server_ip = init_json["connection"]["sensor_server"]
-        self.name2addr = init_json["sensors"]
+        try:
+            self.place2ip = init_json["place"]
+        except Exception, e:
+            ERROR(e)
+            ERROR("invaild SensorHelper init json.")
+            self.place2ip = {}
 
         self._send_lock = threading.Lock()
-        self.init_sensors()
 
-    def init_sensors(self):
-        self.sensors = self.list_state()
-        if self.sensors is None:
-            self.sensors = []
+    def get_places(self):
+        if self.place2ip is None:
+            return None
+        return self.place2ip.keys()
 
-    def addr_for_name(self, name):
-        return self.name2addr.get(name, None)
+    def addr_for_place(self, place):
+        return self.place2ip.get(place, None)
 
-    def name_for_addr(self, addr):
-        for name in self.name2addr:
-            if self.name2addr[name] == addr:
-                return name
+    def place_for_addr(self, addr):
+        for place in self.place2ip:
+            if self.place2ip[place] == addr:
+                return place
         return None
 
-    def get_vaild_cmd(self, target_addr, cmd):
-        if target_addr and not target_addr in self.sensors:
-            return None
-        vaild_cmd = json.dumps({"cmd": cmd, "target": target_addr})
-        return vaild_cmd
+    def get_all(self, target_addr):
+        return self.get_sensor_value(target_addr, SensorHelper.TYPE_ALL)
 
     def get_temp(self, target_addr):
-        return self.get_sensor_value(target_addr, "temp")
+        return self.get_sensor_value(target_addr, SensorHelper.TYPE_TEMP)
 
     def get_humidity(self, target_addr):
-        return self.get_sensor_value(target_addr, "hum")
+        return self.get_sensor_value(target_addr, SensorHelper.TYPE_HUM)
 
     def get_pir(self, target_addr):
-        return self.get_sensor_value(target_addr, "pir")
+        return self.get_sensor_value(target_addr, SensorHelper.TYPE_PIR)
 
-    def get_lig(self, target_addr):
-        lig = self.get_sensor_value(target_addr, "lig")
+    def get_brightness(self, target_addr):
+        lig = self.get_sensor_value(target_addr, SensorHelper.TYPE_LUM)
         return lig
 
-    def get_sensor_value(self, target_addr, sensor_type):
-        self.list_state()
-        cmd = self.get_vaild_cmd(target_addr, sensor_type)
-        rep = self.send_cmd(cmd)
+    def get_sensor_value(self, addr, cmd):
         try:
-            rep = json.loads(rep)["res"]
-        except:
-            ERROR("error: invaild sensor response")
-            return
+            addr, port = addr.split(":")
+            port = int(port)
+        except Exception, e:
+            ERROR(e)
+            ERROR("invaild place address format: %s" % addr)
+        rep = self.send_cmd(addr, port, cmd)
         return rep
 
-    def send_cmd(self, cmd):
+    def send_cmd(self, addr, port, cmd):
         if cmd is None or len(cmd) == 0:
             ERROR("invaild sensor cmd.")
             return
-        DEBUG("sending cmd to sensor server:" + cmd)
+        DEBUG("sending cmd to place: %s:%d %s" % (addr, port, cmd))
 
-        self._send_lock.acquire()
-        message = ""
-        # try:
-        #     url = self.server_addr + '?'
-        #     url += urllib.urlencode({"json": cmd.encode("utf-8")})
-        #     message = urllib2.urlopen(url, timeout=30).read()
-        #     INFO("recv msgs:" + message)
-        # except Exception, ex:
-        #     ERROR(ex)
-        #     WARN("request timeout.")
-        # ----------------------------
-        context = zmq.Context()
-        self.socket = context.socket(zmq.REQ)
-        self.socket.setsockopt(zmq.LINGER, 0)
-        self.socket.connect(self.server_ip)
-        self.socket.send_string(cmd)
-        try:
-            poller = zmq.Poller()
-            poller.register(self.socket, zmq.POLLIN)
-            if poller.poll(5*1000):
-                message = self.socket.recv_string()
-                DEBUG("recv msgs:" + message)
-        except:
-            WARN("socket timeout.")
-        # --------------
-        # import pdb
-        # pdb.set_trace()
-        # import socket
-        # try:
-        #     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #     s.connect(('192.168.1.239', 8004))
-        #     s.send(cmd + '\n')
-        #     message = s.recv(2048)
-        #     INFO("recv msgs:" + message)
-        #     s.close()
-        # except Exception, ex:
-        #     ERROR(ex)
-        #     ERROR("can't connect to sensor server.")
-        self.socket.close()
-        self._send_lock.release()
-        return message
+        rep = ""
+        with self._send_lock:
+            # import pdb
+            # pdb.set_trace()
+            if self._sock is None:
+                self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self._sock.settimeout(5)
+                self._sock.connect((addr, port))
+            try:
+                self._sock.send(cmd)
+                rep = self._sock.recv(2048)
+                DEBUG("place rep:" + rep)
+            except Exception, ex:
+                ERROR(ex)
+                ERROR("can't connect to place.")
+                if self._sock is not None:
+                    self._sock.close()
+                    self._sock = None
+        return rep
 
-    def list_state(self):
+    def readable(self, src, cmd_type):
+        if src is None or len(src) == 0:
+            return ""
         try:
-            cmd = self.get_vaild_cmd("", "list")
-            response = self.send_cmd(cmd)
-            self.sensors = json.loads(response)["res"]
-        except Exception, e:
-            ERROR("error: " + str(e))
-            self.sensors = []
-        return self.sensors
-
-    def get_sensor_state(self, target_addr):
-        if target_addr and not target_addr in self.sensors:
-            return None
-        self.list_state()
-        return self.sensors[target_addr]
-    
-    def readable_state(self, state):
-        try:
-            res = u"温度:%s℃, 湿度:%s%%, 是否有人:%s, 光照:%d" \
-                      % (
-                         state['temp'],
-                         state['hum'],
-                         (u'否' if state['pir'] == 0 else u'是'),
-                         int(state['lig'])
-                        )
-            return res
+            if cmd_type == SensorHelper.TYPE_TEMP:
+                return u"温度:%s℃" % src
+            elif cmd_type == SensorHelper.TYPE_HUM:
+                return u"湿度:%s%%" % src
+            elif cmd_type == SensorHelper.TYPE_PIR:
+                return u"是否有人:%s" % u'否' if src == "0" else u'是'
+            elif cmd_type == SensorHelper.TYPE_LUM:
+                return u"光照:%s" % src
+            elif cmd_type == SensorHelper.TYPE_ALL:
+                data = src.split(",")
+                ret = u"温度:%s℃, 湿度:%s%%" \
+                          % (
+                             data[0],
+                             data[1],
+                            )
+                # ret = u"温度:%s℃, 湿度:%s%%, 是否有人:%s, 光照:%s" \
+                #           % (
+                #              data[0],
+                #              data[1],
+                #              (u'否' if data[2] == "0" else u'是'),
+                #              data[3]
+                #             )
+                return ret
         except Exception, ex:
             ERROR(ex)
+            ERROR("invaild readable src:%s" % src)
             return ""

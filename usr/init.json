@@ -5,7 +5,6 @@
         "publisher" : "tcp://*:9000",
         "msg_cmd_bind" : "tcp://*:9001",
         "audio_server" : "http://localhost:8001",
-        "sensor_server" : "tcp://localhost:8005",
         "tag_server":{
             "家里":"tcp://localhost:8006"
         }
@@ -31,8 +30,8 @@
         "target" : ["豆瓣电台", "qq电台", "QQ电台", "新闻电台", "留言",
                     "提醒", "闹铃", "铃声", "公交车", "公车", "公交站",
                     "任务", "待办事项", "脚本", "变量", "警报", "时间",
-                    "开关", "传感器", "热水器", "电饭煲", "风扇", "书桌",
-                    "电灯", "空调", "音量",
+                    "开关", "传感器", "热水器", "电饭煲", "风扇",
+                    "温度", "湿度", "电灯", "空调", "音量",
                     "新宇", "芳莹",
                     "天气", "录音", "语音", "基金"],
         "stop" : ["算了", "取消"],
@@ -120,11 +119,12 @@
             "传感器":"target.sensor_callback",
             "语音":"target.speech_callback",
             "音量":"target.volume_callback",
+            "温度":"target.temperature_sensor_callback",
+            "湿度":"target.humidity_sensor_callback",
             "热水器":"target.normal_switch_callback",
             "电饭煲":"target.normal_switch_callback",
             "风扇":"target.normal_switch_callback",
             "电灯":"target.normal_switch_callback",
-            "书桌":"target.normal_sensor_callback",
             "空调":"target.normal_ril_callback",
             "新宇":"target.normal_person_callback",
             "芳莹":"target.normal_person_callback"
@@ -173,8 +173,8 @@
     },
     "ril_address":"192.168.1.199"
     ,
-    "sensors":{
-        "书桌":"00124B00041183FE"
+    "place":{
+        "房间":"192.168.1.138:8080"
     },
     "tag":{
         "新宇":"E2C56DB5-DFFB-48D2-B060-D0F5A71096E0",

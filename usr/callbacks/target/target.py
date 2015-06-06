@@ -37,6 +37,7 @@ from util import Util
 from lib.sound import Sound
 from util.log import *
 from lib.model import Callback
+from lib.helper.SensorHelper import SensorHelper
 
 
 class target_callback(Callback.Callback):
@@ -878,19 +879,21 @@ class switch_callback(Callback.Callback):
 class sensor_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
         if pre_value == "show":
-            states = self._home._sensor.list_state()
-            if states is None:
+            places = self._home._sensor.get_places()
+            if places is None:
                 self._home.publish_msg(cmd, u"内部错误")
-            elif len(states) == 0:
+            elif len(places) == 0:
                 self._home.publish_msg(cmd, target + u"列表为空")
             else:
                 info = target + u"列表:"
-                for sensor_addr in states:
-                    sensor_name = self._home._sensor.name_for_addr(sensor_addr)
+                for place in places:
+                    addr = self._home._sensor.addr_for_place(place)
+                    state = self._home._sensor.get_all(addr)
                     info += u"\n  名称:" \
-                            + sensor_name \
+                            + place \
                             + u"\n  状态:" \
-                            + self._home._sensor.readable_state(states[sensor_addr])
+                            + self._home._sensor.readable(state, SensorHelper.TYPE_ALL)
+                INFO(info)
                 self._home.publish_msg(cmd, info)
         return True
 
@@ -969,58 +972,7 @@ class normal_ril_callback(Callback.Callback):
 
 class normal_sensor_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
-        addr = self._home._sensor.addr_for_name(target)
-        if pre_value == "show" or pre_value == "get":
-            if msg == u'温度':
-                state = self._home._sensor.get_temp(addr)
-                info = u'当前%s的温度为:%s℃' % (target, state)
-            elif msg == u'湿度':
-                state = self._home._sensor.get_humidity(addr)
-                info = u'当前%s的湿度为:%s%%' % (target, state)
-            elif msg == u'有人':
-                state = self._home._sensor.get_pir(addr)
-                if state == 1:
-                    return True, True
-                elif state == 0:
-                    return True, False
-                else:
-                    INFO(u'无法获取状态：' + msg)
-                    return True, False
-            elif msg == u'无人' or msg == u'没人':
-                state = self._home._sensor.get_pir(addr)
-                if state == 0:
-                    return True, True
-                elif state == 1:
-                    return True, False
-                else:
-                    INFO(u'无法获取状态：' + msg)
-                    return True, True
-            elif msg == u'是否有人':
-                state = self._home._sensor.get_pir(addr)
-                info = u'当前%s%s人' % (target, u'有' if state == 1 else u'无')
-            elif msg == u'亮度' or msg == u'光照':
-                state = self._home._sensor.get_lig(addr)
-                info = u'当前%s的亮度为%s' % (target, state)
-            else:
-                state = self._home._sensor.get_sensor_state(addr)
-                info = self._home._sensor.readable_state(state)
-                if state is None:
-                    INFO(u'无法获取状态：' + msg)
-                    self._home.publish_msg(cmd, u"内部错误")
-                    return False
-                else:
-                    self._home.publish_msg(cmd, info)
-                    return True, state
-            if state is None:
-                INFO(u'无法获取状态：' + msg)
-                self._home.publish_msg(cmd, u"内部错误")
-                return False
-            if pre_value == "show":
-                self._home.publish_msg(cmd, info)
-            return True, state
-        else:
-            return False
-
+        pass
 
 class normal_person_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
@@ -1350,3 +1302,67 @@ class fund_callback(Callback.Callback):
                             self._format_fund_info(msg, fund_info)
                         )
         return True
+
+
+class temperature_sensor_callback(Callback.Callback):
+    def callback(self, cmd, action, target, msg, pre_value):
+        addr = self._home._sensor.addr_for_place(msg)
+        if addr is None:
+            if pre_value == "show":
+                self._home.publish_msg(cmd, u"无此处所%s" % msg)
+            WARN("no such place:%s" % msg)
+            return False
+        if pre_value == "show" or pre_value == "get":
+            state = self._home._sensor.get_temp(addr)
+            try:
+                state = int(state)
+            except Exception, e:
+                ERROR(e)
+                ERROR("invaild temp value")
+                self._home.publish_msg(cmd, u"无效的温度值")
+                return False
+            info = u'当前%s的温度为:%d℃' % (msg, state)
+            if state is None:
+                if pre_value == "show":
+                    info = u'无法获取%s当前温度' % msg
+                    INFO(info)
+                    self._home.publish_msg(cmd, info)
+                return False
+            if pre_value == "show":
+                INFO(info)
+                self._home.publish_msg(cmd, info)
+            return True, state
+        else:
+            return False
+
+
+class humidity_sensor_callback(Callback.Callback):
+    def callback(self, cmd, action, target, msg, pre_value):
+        addr = self._home._sensor.addr_for_place(msg)
+        if addr is None:
+            if pre_value == "show":
+                self._home.publish_msg(cmd, u"无此处所%s" % msg)
+            WARN("no such place:%s" % msg)
+            return False
+        if pre_value == "show" or pre_value == "get":
+            state = self._home._sensor.get_humidity(addr)
+            try:
+                state = int(state)
+            except Exception, e:
+                ERROR(e)
+                ERROR("invaild hum value")
+                self._home.publish_msg(cmd, u"无效的湿度值")
+                return False
+            info = u'当前%s的湿度为:%d%' % (msg, state)
+            if state is None:
+                if pre_value == "show":
+                    info = u'无法获取%s当前湿度' % msg
+                    INFO(info)
+                    self._home.publish_msg(cmd, info)
+                return False
+            if pre_value == "show":
+                INFO(info)
+                self._home.publish_msg(cmd, info)
+            return True, state
+        else:
+            return False

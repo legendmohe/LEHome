@@ -165,8 +165,7 @@ class Home:
         INFO("init ril helper")
         self._ril = RilHelper()
 
-        sensor_server_ip = self._init_res["connection"]["sensor_server"]
-        INFO("init sensor server: " + sensor_server_ip)
+        INFO("init sensor helper")
         self._sensor = SensorHelper()
 
         tag_server_ips = self._init_res["connection"]["tag_server"]
