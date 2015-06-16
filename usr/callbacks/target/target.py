@@ -1353,7 +1353,7 @@ class humidity_sensor_callback(Callback.Callback):
                 ERROR("invaild hum value")
                 self._home.publish_msg(cmd, u"无效的湿度值")
                 return False
-            info = u'当前%s的湿度为:%d%' % (msg, state)
+            info = u'当前%s的湿度为:%d%%' % (msg, state)
             if state is None:
                 if pre_value == "show":
                     info = u'无法获取%s当前湿度' % msg

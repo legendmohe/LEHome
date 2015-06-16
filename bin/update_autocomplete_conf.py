@@ -10,7 +10,7 @@ g_conf = {
     {
         "while" : ["action", "delay"],
         "if" : ["action", "delay"],
-        "then" : ["action", "delay"],
+        "then" : ["if", "while", "action", "delay"],
         "else" : ["action", "delay"],
         "delay" : ["time", "action"],
         "trigger" : ["while", "if", "delay", "action"],

@@ -109,7 +109,8 @@ class tag_endpoint(object):
                 data = proc.stdout.readline() #block / wait
                 if data == "":
                     WARN("no broadcast data.")
-                    break
+                    time.sleep(1)
+                    continue
                 print data
                 datas = data.split()
                 addr = datas[0]

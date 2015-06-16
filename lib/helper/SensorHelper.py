@@ -95,10 +95,10 @@ class SensorHelper:
         with self._send_lock:
             # import pdb
             # pdb.set_trace()
-            if self._sock is None:
-                self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self._sock.settimeout(5)
-                self._sock.connect((addr, port))
+            # if self._sock is None:
+            self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self._sock.settimeout(5)
+            self._sock.connect((addr, port))
             try:
                 self._sock.send(cmd)
                 rep = self._sock.recv(2048)
@@ -106,9 +106,8 @@ class SensorHelper:
             except Exception, ex:
                 ERROR(ex)
                 ERROR("can't connect to place.")
-                if self._sock is not None:
-                    self._sock.close()
-                    self._sock = None
+            self._sock.close()
+            self._sock = None
         return rep
 
     def readable(self, src, cmd_type):

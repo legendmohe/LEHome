@@ -438,4 +438,4 @@ class mute_callback(Callback.Callback):
             self._home.publish_msg(cmd, u"设置音量值失败")
             return False
         self._home.publish_msg(cmd, u"音量已设置为0")
-        return True, "location"
+        return True, "mute"
