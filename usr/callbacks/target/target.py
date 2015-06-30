@@ -1366,3 +1366,54 @@ class humidity_sensor_callback(Callback.Callback):
             return True, state
         else:
             return False
+
+
+class github_trending_callback(Callback.Callback):
+
+    SERVICE_URL = "http://lehome.sinaapp.com/tool/github/trending"
+
+    def _format_github_data(self, items):
+        if items is None:
+            return None
+        ret = u""
+        for item in items:
+            ret += u"[ %s ]\n" % item["title"]
+            ret += u"%s\n" % item["desc"]
+            ret += u"%s\n" % item["href"]
+            ret += u"\n"
+        INFO(ret)
+        return ret.strip()
+
+    def _get_github_trending(self, lang, since):
+        url = github_trending_callback.SERVICE_URL + "?" + \
+                urllib.urlencode({'l':lang.encode('utf8'), 'since': since})
+        INFO("sending:" + url)
+        try:
+            rep = urllib2.urlopen(url, timeout=10).read()
+            rep_data = json.loads(rep)
+            if rep_data["code"] != 200:
+                return None
+            return self._format_github_data(rep_data["data"])
+        except Exception, e:
+            EXCEPTION(e)
+            return None
+
+    def callback(self, cmd, action, target, msg, pre_value):
+        if pre_value == "show" or pre_value == "push":
+            since = "daily"
+            if Util.empty_str(msg):
+                msg = "java"
+            params = msg.split("|")
+            if len(params) == 2:
+                msg = params[0]
+                since = params[1]
+            self._home.publish_msg(cmd, u"正在抓取数据...")
+            content = self._get_github_trending(msg, since)
+            if Util.empty_str(content):
+                info = u'无法获取%s的Github trending' % msg
+                INFO(info)
+                self._home.publish_msg(cmd, info)
+                return True
+            INFO(content)
+            self._home.publish_msg(cmd, content)
+        return True

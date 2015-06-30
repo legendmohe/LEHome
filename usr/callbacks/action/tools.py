@@ -289,40 +289,6 @@ class camera_quickshot_callback(Callback.Callback):
                 break
         return None, None
 
-    # def _upload_image(self, img_src):
-    #     img_hash = hashlib.md5(img_src).hexdigest()
-    #     INFO("img hash:%s" % img_hash)
-    #
-    #     img_base64 = None
-    #     with open(img_src, "rb") as img_f:
-    #         img_base64 = base64.b64encode(img_f.read())
-    #         INFO("image base64 string len:%d" % len(img_base64))
-    #     if img_base64 is None:
-    #         return False
-    #
-    #     # img_base64 = zlib.compress(img_base64)
-    #     # INFO("image base64 compressed string len:%d" % len(img_base64))
-    #
-    #     device_id = Res.get('id')
-    #     url = camera_quickshot_callback.IMAGE_SERVER_URL + "/" + img_hash
-    #     url += "?id=" + device_id
-    #     req = urllib2.Request(url, img_base64)
-    #     try: 
-    #         response = urllib2.urlopen(req)
-    #         content = response.read()
-    #         INFO(content)
-    #         return url
-    #     except urllib2.HTTPError, e:
-    #         ERROR('HTTPError = ' + str(e.code))
-    #     except urllib2.URLError, e:
-    #         ERROR('URLError = ' + str(e.reason))
-    #     except httplib.HTTPException, e:
-    #         ERROR('HTTPException')
-    #     except Exception:
-    #         import traceback
-    #         ERROR('generic exception: ' + traceback.format_exc())
-    #     return None
-
     def callback(self, cmd, msg):
         self._home.publish_msg(cmd, u"正在截图...")
 
@@ -351,3 +317,15 @@ class camera_quickshot_callback(Callback.Callback):
                     cmd_type="capture"
                     )
         return True
+
+class push_info_callback(Callback.Callback):
+
+    def callback(self, cmd, target, msg):
+        if target is None or len(target) == 0:
+            if msg is None or len(msg) == 0:
+                self._home.publish_msg(cmd, u"请输入内容")
+                return True, None
+            self._home.publish_msg(cmd, msg)
+            DEBUG("show_callback: %s" % msg)
+            return True, msg
+        return True, "push"

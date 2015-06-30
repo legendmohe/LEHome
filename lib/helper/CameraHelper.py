@@ -63,7 +63,7 @@ class CameraHelper(object):
             "wget",
             "-O",
             file_path,
-            "http://192.168.1.112:8080/?action=snapshot"
+            "http://192.168.1.100:8080/?action=snapshot"
             ])
         if not os.path.isfile(file_path) :
             INFO("snapshot faild. no such file:" + file_path)

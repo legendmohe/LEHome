@@ -25,13 +25,13 @@
                     "恢复",
                     "结束", "显示", "查看", "新增", "新建", "添加", "增加",
                     "逻辑", "数值", "字符", "时刻", "当前", "获取", "查询",
-                    "翻译", "百科", "计算", "计时", "截图",
+                    "翻译", "百科", "计算", "计时", "截图", "推送",
                     "绑定", "等待", "当", "定位", "静音"],
         "target" : ["豆瓣电台", "qq电台", "QQ电台", "新闻电台", "留言",
                     "提醒", "闹铃", "铃声", "公交车", "公车", "公交站",
                     "任务", "待办事项", "脚本", "变量", "警报", "时间",
                     "开关", "传感器", "热水器", "电饭煲", "风扇",
-                    "温度", "湿度", "电灯", "空调", "音量",
+                    "温度", "湿度", "电灯", "空调", "音量", "Github趋势",
                     "新宇", "芳莹",
                     "天气", "录音", "语音", "基金"],
         "stop" : ["算了", "取消"],
@@ -92,7 +92,8 @@
             "百科":"tools.baidu_wiki_callback",
             "计时":"tools.timer_callback",
             "计算":"tools.cal_callback",
-            "截图":"tools.camera_quickshot_callback"
+            "截图":"tools.camera_quickshot_callback",
+            "推送":"tools.push_info_callback"
         },
         "target":{
             "闹铃":"target.alarm_callback",
@@ -127,7 +128,8 @@
             "电灯":"target.normal_switch_callback",
             "空调":"target.normal_ril_callback",
             "新宇":"target.normal_person_callback",
-            "芳莹":"target.normal_person_callback"
+            "芳莹":"target.normal_person_callback",
+            "Github趋势":"target.github_trending_callback"
         },
         "stop":{
             "算了":"stop.stop_callback",
@@ -166,15 +168,15 @@
         "com_trash":"com_trash.mp3"
     },
     "switchs":{
-        "风扇":"192.168.1.104",
-        "电灯":"192.168.1.103",
-        "热水器":"192.168.1.102",
+        "风扇":"192.168.1.101",
+        "电灯":"192.168.1.104",
+        "热水器":"192.168.1.103",
         "电饭煲":"192.168.1.160"
     },
     "ril_address":""
     ,
     "place":{
-        "房间":"192.168.1.105:8080"
+        "房间":"192.168.1.106:8080"
     },
     "tag":{
         "新宇":"E2C56DB5-DFFB-48D2-B060-D0F5A71096E0",
