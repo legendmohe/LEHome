@@ -51,43 +51,53 @@ class target_callback(Callback.Callback):
 
 
 class weather_report_callback(Callback.Callback):
+
+    BAIDU_WEATHER_AK = "7P5ZCG6WTAGWr5TuURBgndRH"
+
     def callback(self, cmd, action, target, msg, pre_value):
         if pre_value == 'show' or pre_value == 'get':
             if pre_value == 'show':
                 self._home.publish_msg(cmd, u'正在获取天气讯息...')
             try:
-                city_code_url = "http://hao.weidunewtab.com/tianqi/city.php?"
                 if Util.empty_str(msg):
-                    city_code = '101280101'  # Guangzhou
+                    city_name = u'广州'  # Guangzhou
                 else:
-                    city_code_url += urllib.urlencode({'city': msg.encode('utf8')})
-                    city_code = urllib2.urlopen(city_code_url, timeout=10).read()
-                    if city_code == 'ERROR':
-                        self._home.publish_msg(cmd, u'城市代码无效')
-                        ERROR("weather-city code error.")
-                        return True, False
-                url = 'http://hao.weidunewtab.com/myapp/weather/data/index.php?cityID=' + city_code
-                re = urllib2.urlopen(url, timeout=10).read()
-                re = re.decode('utf-8-sig')  # WTF!
-                we = json.loads(re)['weatherinfo']
-                INFO("weather data: %s" % we)
+                    city_name = msg
+                url = "http://api.map.baidu.com/telematics/v3/weather?"
+                url += urllib.urlencode({
+                    'location': city_name.encode('utf8'),
+                    'output': "json",
+                    'ak': weather_report_callback.BAIDU_WEATHER_AK
+                    })
+                ret = urllib2.urlopen(url, timeout=10).read()
+                data = json.loads(ret)
+                INFO("weather request: %s" % url)
+                INFO("weather data: %s" % data)
+                if data["error"] != 0:
+                    self._home.publish_msg(cmd, u"获取天气信息失败")
+                    return True
 
-                content = ""
-                content += u'城市：' + we['city'] + "\n"
-                if msg == u"明天":
-                    content += u'明天天气：%s, %s\n' % (we['temp2'], we['weather2'])
-                elif msg == u"今天":
-                    content += u'今天天气：%s, %s\n' % (we['temp1'], we['weather1'])
-                else:
-                    content += u'今天天气：%s, %s\n' % (we['temp1'], we['weather1'])
-                    content += u'明天天气：%s, %s\n' % (we['temp2'], we['weather2'])
-                    content += u'后天天气：%s, %s\n' % (we['temp3'], we['weather3'])
-                content += u'穿衣指数：%s\n' % we['index_d']
-
+                content = []
+                content.append(u"日期：" + data["date"])
+                w_results = data["results"]
+                for city in w_results:
+                    content.append(u"城市：" + city["currentCity"])
+                    content.append(u"PM25：" + city["pm25"])
+                    content.append(u"小提示:")
+                    for w_index in city["index"]:
+                        if w_index["title"] in [u"穿衣", u"紫外线强度"]:
+                            content.append(u"        " + w_index["des"])
+                    content.append(u"==========")
+                    for w_data in city["weather_data"]:
+                        content.append(u"" + w_data["date"])
+                        content.append(u"    %s, %s" % (w_data["weather"], w_data["wind"]))
+                        content.append(u"    %s" % (w_data["temperature"],))
+                        # content.append(u"") 
+                content = u"\n".join(content)
                 if pre_value == 'show':
                     self._home.publish_msg(cmd, content)
                     # self._speaker.speak(content.split('\n'))
-                return True, we
+                return True, data
             except Exception, ex:
                 ERROR(ex)
                 ERROR("weather target faild.")

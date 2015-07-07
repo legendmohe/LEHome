@@ -108,7 +108,7 @@ class remote_server_proxy:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-                    description='cmd_http_server.py -a address')
+                    description='remote_server_proxy.py -a address')
     parser.add_argument('-a',
                         action="store",
                         dest="address",
