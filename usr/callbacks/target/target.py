@@ -875,7 +875,11 @@ class switch_callback(Callback.Callback):
                 for switch_ip in switchs:
                     infos = self._home._switch.show_info(switch_ip)
                     readable_info = self._home._switch.readable_info(infos)
+                    if Util.empty_str(readable_info) is True:
+                        readable_info = u"未知"
                     switch_name = self._home._switch.name_for_ip(switch_ip)
+                    if Util.empty_str(switch_name)is True:
+                        switch_name = u"未知"
                     info += u"\n  名称:" \
                             + switch_name \
                             + u" 状态:" \

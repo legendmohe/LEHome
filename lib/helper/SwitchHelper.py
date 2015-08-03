@@ -94,7 +94,7 @@ class SwitchHelper:
     def show_state(self, target_ip):
         if not target_ip in self.switchs:
             ERROR("target_ip not exist: " + target_ip)
-            return
+            return None
         return self.switchs[target_ip]["status"]
 
     def show_info(self, target_ip):
