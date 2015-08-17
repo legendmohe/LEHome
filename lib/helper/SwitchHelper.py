@@ -178,6 +178,8 @@ class SwitchHelper:
                     return recv.strip()
                 except socket.timeout:
                     ERROR("SwitchHelper cmd socket timeout.")
+                except Exception, ex:
+                    ERROR(ex)
             return None
 
     def _heartbeat_send(self):
