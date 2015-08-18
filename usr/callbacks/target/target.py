@@ -679,7 +679,7 @@ class script_callback(Callback.Callback):
             ERROR("empty script content or invaild script name.")
             return False
         else:
-            self._home.parse_cmd(script)
+            self._home.parse_cmd(script, persist=False)
             return True
 
     def callback(self, cmd, action, target, msg, pre_value):

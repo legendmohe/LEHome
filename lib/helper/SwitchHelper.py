@@ -77,7 +77,8 @@ class SwitchHelper:
             return
         cmd = self._get_switch_cmd("ON")
         res = self._send_cmd(target_ip, cmd)
-        if res == "+OK":
+        INFO("send_open:%s" % res)
+        if res == "+OK" or res == "+ok":
             self.switchs[target_ip]['status'] = "on"
         return res
 
@@ -87,7 +88,8 @@ class SwitchHelper:
             return
         cmd = self._get_switch_cmd("OFF")
         res = self._send_cmd(target_ip, cmd)
-        if res == "+OK":
+        INFO("send_close:%s" % res)
+        if res == "+OK" or res == "+ok":
             self.switchs[target_ip]['status'] = "off"
         return res
 
@@ -127,13 +129,14 @@ class SwitchHelper:
         E = info["E"] + "WH"
         EQ = info["EQ"] + "WH"
         return "".join([
+                u"功率:%s " % P,
                 u"电流:%s " % I,
                 u"电压:%s " % U,
-                u"频率:%s " % F,
-                u"有功功率:%s " % P,
-                u"无功功率:%s " % PQ,
-                u"有功能量值:%s " % E,
-                u"无功能量值:%s" % EQ,
+                # u"频率:%s " % F,
+                # u"有功功率:%s " % P,
+                # u"无功功率:%s " % PQ,
+                # u"有功能量值:%s " % E,
+                # u"无功能量值:%s" % EQ,
                 ])
 
     def _format_time(self):

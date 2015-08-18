@@ -107,7 +107,7 @@ class switch_on_callback(Callback.Callback):
             if res is None:
                 self._home.publish_msg(cmd, u"打开" + target + u"失败")
                 return True, False
-            elif res == "+OK":
+            elif res == "+OK" or res == "+ok":
                 self._home.publish_msg(cmd, u"已打开" + target)
                 return True, "on"
             else:
@@ -141,7 +141,7 @@ class switch_off_callback(Callback.Callback):
             if res is None:
                 self._home.publish_msg(cmd, u"关闭" + target + u"失败")
                 return True, False
-            elif res == "+OK":
+            elif res == "+OK" or res == "+ok":
                 self._home.publish_msg(cmd, u"已关闭" + target)
                 return True, "off"
             else:
