@@ -54,6 +54,12 @@ if [[ $rc != 0 ]] ; then
     exit $rc
 fi
 
+echo 'running quick_button.py'
+sudo python quick_button.py > /dev/null 2>&1 &
+rc=$?
+if [[ $rc != 0 ]] ; then
+    exit $rc
+fi
 
 if [[ $1 == "s2t" ]]
 then
