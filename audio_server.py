@@ -110,24 +110,25 @@ class VolumeHandler(tornado.web.RequestHandler):
         v_str = self.get_argument("v", default=None, strip=False)
         if v_str is None:
             self.write("-1")
-            DEBUG(u"请输入音量值")
+            WARN(u"请输入音量值")
             return
         try:
+            DEBUG("set volume:%s" % v_str)
             volume = int(v_str)
         except ValueError:
             try:
                 volume = float(v_str)
                 self.write("-2")
-                DEBUG(u"音量值必须为整数")
+                ERROR(u"音量值必须为整数")
                 return
             except ValueError:
                 volume = -1
         if volume == -1:
             self.write("-3")
-            DEBUG(u"音量值无效：%s" % msg)
+            ERROR(u"音量值无效：%s" % msg)
             return
         self._m.setvolume(volume)
-        DEBUG(u"设置音量值为：%s" % str(volume))
+        INFO(u"设置音量值为：%s" % str(volume))
         self.write(RETURNCODE.SUCCESS)
 
 

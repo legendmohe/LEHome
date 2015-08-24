@@ -1244,6 +1244,46 @@ class volume_callback(Callback.Callback):
             if pre_value == "show":
                 self._home.publish_msg(cmd, u"当前音量值为：%s" % volume)
             return True, int(volume)
+        elif pre_value == "add" or pre_value == "new":
+            volume = Sound.get_volume()
+            if Util.empty_str(volume):
+                self._home.publish_msg(cmd, u"获取音量值失败")
+                return False
+            if msg is None or len(msg) == 0:
+                msg = "15"
+            volume = int(volume) + int(msg)
+            ret = Sound.set_volume(volume)
+            if ret is None:
+                self._home.publish_msg(cmd, u"设置音量值失败")
+                return False
+            if ret == "-2":
+                self._home.publish_msg(cmd, u"音量值必须为整数")
+                return False
+            elif ret == "-3":
+                self._home.publish_msg(cmd, u"音量值无效：%s" % volume)
+                return False
+            self._home.publish_msg(cmd, u"设置音量值为：%s" % volume)
+            return True, volume
+        elif pre_value == "lower":
+            volume = Sound.get_volume()
+            if Util.empty_str(volume):
+                self._home.publish_msg(cmd, u"获取音量值失败")
+                return False
+            if msg is None or len(msg) == 0:
+                msg = "15"
+            volume = int(volume) - int(msg)
+            ret = Sound.set_volume(volume)
+            if ret is None:
+                self._home.publish_msg(cmd, u"设置音量值失败")
+                return False
+            if ret == "-2":
+                self._home.publish_msg(cmd, u"音量值必须为整数")
+                return False
+            elif ret == "-3":
+                self._home.publish_msg(cmd, u"音量值无效：%s" % volume)
+                return False
+            self._home.publish_msg(cmd, u"设置音量值为：%s" % volume)
+            return True, volume
         elif pre_value == "set" or pre_value == "resume":
             if pre_value == "resume":
                 msg = self._home._storage.get("lehome:last_volume")
