@@ -28,6 +28,8 @@ from Queue import Queue, Empty
 import collections
 import urllib, urllib2
 
+import pygame
+
 from util.log import *
 import vender.gpio
 
@@ -45,12 +47,16 @@ class RemoteButtonController(object):
         time.sleep(1.0*ms/1000)
 
     def beep(self):
-        subprocess.call(["sudo", "mplayer", "./usr/res/com_start.mp3"])
+        # subprocess.call(["sudo", "mplayer", "./usr/res/com_start.mp3"])
+        pass
 
     def setup(self):
         for pin in self.input_pin:
             gpio.pinMode(pin, gpio.INPUT)
             self.pin_state[pin] = gpio.LOW
+
+        pygame.init()
+        self._beep = pygame.mixer.Sound("./usr/res/com_btn2.wav")
 
     def get(self):
         ret = []
@@ -60,6 +66,7 @@ class RemoteButtonController(object):
                 self.pin_state[pin] = state
                 # print "btn press!", self.mapping_btn[pin], state
                 if state == gpio.HIGH:
+                    self._beep.play()
                     ret.append(self.mapping_btn[pin])
         # self.delay(10)
         if len(ret) == 0:
@@ -90,6 +97,12 @@ class quick_button(object):
         self._timeout = self._conf["timeout"]
         self._trigger_cmd = self._conf['trigger'].encode("utf-8")
         self._finish_cmd = self._conf['finish'].encode("utf-8")
+        self._reset_cmd = self._conf['reset']
+        self._cmds = self._conf["command"]
+
+    def reload_cmds(self):
+        self._configure(conf_path="./usr/btn_conf.json")
+        self._init_params()
 
     def _fetch_event(self):
         # time.sleep(random.uniform(0.0, 1.5))
@@ -100,6 +113,9 @@ class quick_button(object):
         if event is None:
             return False
         return True
+
+    def _is_reset_cmd(self, cmd):
+        return cmd == self._reset_cmd
 
     def _event_produce_worker(self):
         while True :
@@ -131,7 +147,12 @@ class quick_button(object):
                     print "timeout:", cmd_buf
                     # self.beep()
                     DEBUG('dequeue event timeout. now collecting buffer.')
-                    self._map_buffer_to_command(cmd_buf)
+                    cmd = "".join(cmd_buf)
+                    if self._is_reset_cmd(cmd):
+                        INFO("reload cmds.")
+                        self.reload_cmds()
+                    else:
+                        self._map_buffer_to_command(cmd)
                 del cmd_buf[:]
             except (KeyboardInterrupt, SystemExit):
                 self.stop()
@@ -140,11 +161,9 @@ class quick_button(object):
                 ERROR(ex)
                 time.sleep(1)
 
-    def _map_buffer_to_command(self, cmd_buf):
-        cmds = self._conf["command"]
-        cmd = "".join(cmd_buf)
-        if cmd in cmds:
-            self._send_cmd_to_home(cmds[cmd].encode("utf-8"))
+    def _map_buffer_to_command(self, cmd):
+        if cmd in self._cmds:
+            self._send_cmd_to_home(self._cmds[cmd].encode("utf-8"))
 
     def _send_cmd_to_home(self, cmd):
         print "find mapping! send to home:", cmd
