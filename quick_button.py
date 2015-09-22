@@ -48,7 +48,7 @@ class RemoteButtonController(object):
 
     def beep(self):
         # subprocess.call(["sudo", "mplayer", "./usr/res/com_start.mp3"])
-        pass
+        self._beep.play()
 
     def setup(self):
         for pin in self.input_pin:
@@ -66,7 +66,8 @@ class RemoteButtonController(object):
                 self.pin_state[pin] = state
                 # print "btn press!", self.mapping_btn[pin], state
                 if state == gpio.HIGH:
-                    self._beep.play()
+                    self.beep()
+                elif state == gpio.LOW:
                     ret.append(self.mapping_btn[pin])
         # self.delay(10)
         if len(ret) == 0:

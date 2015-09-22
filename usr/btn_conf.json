@@ -1,6 +1,6 @@
 {
     "server_ip": "http://192.168.1.111:8000/home/cmd",
-    "timeout": 2,
+    "timeout": 1.5,
     "trigger": "你好",
     "finish": "谢谢",
     "command": {

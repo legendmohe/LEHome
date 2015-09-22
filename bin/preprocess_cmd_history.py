@@ -18,6 +18,7 @@
 
 import sys
 import time
+import json
 
 import redis
 
@@ -34,8 +35,8 @@ print "history size:", len(historys)
 
 # r.delete(HISTORY_CMD_KEY)
 
-# for i in range(1, 10):
-#     print historys[-i]
+for i in range(1, 10):
+    print historys[-i]
 
 look_up_dict = {}
 for item in historys:
@@ -45,4 +46,7 @@ for item in historys:
     if cmd not in look_up_dict:
         look_up_dict[cmd] = {'count': 0}
     look_up_dict[cmd]['count'] = look_up_dict[cmd]['count'] + 1
-print look_up_dict
+
+print "dict size:", len(look_up_dict)
+with open("../usr/history.json", "w") as f:
+    f.write(json.dumps(look_up_dict))

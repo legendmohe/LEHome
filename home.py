@@ -241,7 +241,7 @@ class CmdHandler(tornado.web.RequestHandler):
         else:
             WARN("unmatch '%s'." % "#")
             self.write("ok")
-            self.publish_msg("error", u"%s不匹配" % "#")
+            self.home.publish_msg("error", u"%s不匹配" % "#")
 
 is_closing = False
 def signal_handler(signum, frame):

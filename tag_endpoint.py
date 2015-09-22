@@ -32,10 +32,12 @@ from util.log import *
 
 class tag_endpoint(object):
 
+    TAG_TIMEOUT = 10
+
     # tag 的蓝牙地址
     tag_addrs = [
                 "E2C56DB5-DFFB-48D2-B060-D0F5A71096E0",
-                "E2C56DB5-DFFB-48D2-B060-D0F5A71096E1"
+                "FDA50693-A4E2-4FB1-AFCF-C6EB07647825"
                 ]
 
     def __init__(self, name):
@@ -131,7 +133,7 @@ class tag_endpoint(object):
         while True:
             try:
                 # 从缓冲队列里取出数据
-                datas = queue.get(timeout=10)
+                datas = queue.get(timeout=tag_endpoint.TAG_TIMEOUT)
                 queue.task_done()
                 txPower = int(datas[3])
                 rssi = int(datas[4])

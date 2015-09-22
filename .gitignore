@@ -11,3 +11,4 @@ data/
 # *.pcl
 *.swo
 *.log
+history.json
