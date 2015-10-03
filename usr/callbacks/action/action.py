@@ -423,7 +423,7 @@ class location_callback(Callback.Callback):
             return False
 
         INFO("send location request to %s" % target)
-        self._home.publish_msg(cmd, u"发起定位:%s" % target)
+        # self._home.publish_msg(cmd, u"发起定位:%s" % target)
         self._home.publish_msg(cmd, target, cmd_type="req_loc")
         return True, "location"
 

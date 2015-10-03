@@ -63,6 +63,9 @@ class RemoteButtonController(object):
         for pin in self.input_pin:
             state = gpio.digitalRead(pin)
             if not self.pin_state[pin] == state:
+                self.delay(50)
+                if not state == gpio.digitalRead(pin):
+                    continue
                 self.pin_state[pin] = state
                 # print "btn press!", self.mapping_btn[pin], state
                 if state == gpio.HIGH:
