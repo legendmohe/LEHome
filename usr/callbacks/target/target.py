@@ -503,6 +503,8 @@ class task_callback(Callback.Callback):
         with self._lock:
             cmd, thread = self._home.runtime.threads[index]
             thread.stop()
+            while index in self._tasks:
+                index += 1
             self._tasks[index] = cmd
             self.save_tasks()
 
@@ -991,8 +993,8 @@ class normal_sensor_callback(Callback.Callback):
 class normal_person_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
         if pre_value == "show" or pre_value == "get":
-            addr = self._home._tag.addr_for_name(target)
-            if addr is None:
+            member_id = self._home._tag.member_id_for_name(target)
+            if member_id is None:
                 self._home.publish_msg(cmd, u"无此目标：" + target)
                 return False
             if msg.startswith(u'在'):
@@ -1004,12 +1006,12 @@ class normal_person_callback(Callback.Callback):
             else:
                 self._home.publish_msg(cmd, u"格式错误：" + cmd)
                 return False
-            place = self._home._tag.place_ip_for_name(msg)
-            if place is None or len(place) == 0:
+            place_id = self._home._tag.place_id_for_name(msg)
+            if place_id is None or len(place_id) == 0:
                 self._home.publish_msg(cmd, u"无此处所：" + msg)
                 return False
 
-            res = self._home._tag.near(addr, place)
+            res = self._home._tag.near(member_id, place_id)
             if res is None:
                 INFO(u'无法获取位置：' + cmd)
                 self._home.publish_msg(cmd, u"无法获取位置信息：" + msg)

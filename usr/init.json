@@ -5,9 +5,7 @@
         "publisher" : "tcp://*:9000",
         "msg_cmd_bind" : "tcp://*:9001",
         "audio_server" : "http://localhost:8001",
-        "tag_server":{
-            "家里":"tcp://localhost:8006"
-        }
+        "tag_server" : "tcp://localhost:8006"
     },
     "storage": {
         "host" : "localhost",
@@ -177,12 +175,14 @@
     },
     "ril_address":""
     ,
-    "place":{
-        "房间":"192.168.1.106:8080"
-    },
     "tag":{
-        "芳莹":"E2C56DB5-DFFB-48D2-B060-D0F5A71096E0",
-        "新宇":"FDA50693-A4E2-4FB1-AFCF-C6EB07647825"
+        "place":{
+            "家里":"F4B85E03F44D"
+        },
+        "member": {
+            "芳莹":"E2C56DB5DFFB48D2B060D0F5A71096E0",
+            "新宇":"FDA50693A4E24FB1AFCFC6EB07647825"
+        }
     },
     "qqfm": {
         "server":"localhost:8888"

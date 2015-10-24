@@ -168,11 +168,9 @@ class Home:
         INFO("init sensor helper")
         self._sensor = SensorHelper()
 
-        tag_server_ips = self._init_res["connection"]["tag_server"]
-        INFO("init tag server.")
-        for tag in tag_server_ips:
-            INFO("  place:%s, ip:%s" % (tag, tag_server_ips[tag]))
-        self._tag = TagHelper(tag_server_ips, self._init_res["tag"])
+        tag_server_ip = self._init_res["connection"]["tag_server"]
+        INFO("init tag server. %s" % tag_server_ip)
+        self._tag = TagHelper(tag_server_ip, self._init_res["tag"])
 
     def _cmd_begin_callback(self, command):
         INFO("command begin: %s" % (command))

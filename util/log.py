@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import inspect
+import traceback
 import logging
 import logging.handlers
 
@@ -54,3 +55,6 @@ FERROR    = debug_logger.error
 FCRITICAL = debug_logger.critical
 
 EXCEPTION = comm_logger.exception
+
+def TRACE_EX():
+    traceback.print_exc()

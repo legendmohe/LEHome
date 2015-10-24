@@ -67,7 +67,7 @@ class RemoteButtonController(object):
                 if not state == gpio.digitalRead(pin):
                     continue
                 self.pin_state[pin] = state
-                # print "btn press!", self.mapping_btn[pin], state
+                DEBUG("btn press! %s %d" % (self.mapping_btn[pin], state))
                 if state == gpio.HIGH:
                     self.beep()
                 elif state == gpio.LOW:

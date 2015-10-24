@@ -23,24 +23,21 @@ from util.Res import Res
 from util.log import *
 
 class TagHelper(object):
-    def __init__(self, name_to_place_ip, name_to_addr):
-        self._name_to_place_ip = name_to_place_ip
-        self._name_to_addr = name_to_addr
 
-    def addr_for_name(self, name):
-        if name in self._name_to_addr:
-            return self._name_to_addr[name]
-        else:
-            return None
+    def __init__(self, server_ip, settings):
+        self._server_ip = server_ip
+        self._place = settings["place"]
+        self._member = settings["member"]
 
-    def place_ip_for_name(self, name):
-        if name in self._name_to_place_ip:
-            return self._name_to_place_ip[name]
-        else:
-            return None
+    def member_id_for_name(self, name):
+        return self._member.get(name)
 
-    def near(self, addr, place_ip):
-        rep = self._send_request(addr, place_ip)
+    def place_id_for_name(self, name):
+        return self._place.get(name)
+
+    def near(self, member_id, place_id):
+        cmd = "%s,%s" % (place_id, member_id)
+        rep = self._send_request(cmd)
         if rep is None:
             return None
         res = json.loads(rep)["res"]
@@ -50,13 +47,13 @@ class TagHelper(object):
         distance = res['distance']
         return True if distance > 0.0 else False
 
-    def _send_request(self, addr, place_ip):
-        DEBUG("send tag request to %s for %s" % (addr, place_ip))
+    def _send_request(self, cmd):
+        DEBUG("send tag request to %s for %s" % (self._server_ip, cmd))
         context = zmq.Context()
         socket = context.socket(zmq.REQ)
         socket.setsockopt(zmq.LINGER, 0)
-        socket.connect(place_ip)
-        socket.send_string(addr)
+        socket.connect(self._server_ip)
+        socket.send_string(cmd)
         rep = None
         try:
             poller = zmq.Poller()

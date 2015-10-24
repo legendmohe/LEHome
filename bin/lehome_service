@@ -1,0 +1,24 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          lehome service
+# Required-Start:    $all
+# Required-Stop:     
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Manage lehome service
+### END INIT INFO
+
+case "$1" in
+    start)
+      /home/ubuntu/dev/LEHome/start.sh
+      exit 0
+      ;;
+    stop)
+      /home/ubuntu/dev/LEHome/stop.sh
+      exit 0
+      ;;
+    *)
+      echo "Usage: /etc/init.d/lehome_service {start|stop}"
+      exit 1
+      ;;
+esac

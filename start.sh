@@ -31,11 +31,14 @@ if [[ $rc != 0 ]] ; then
     exit $rc
 fi
 
-echo 'running remote info sender.py'
-python remote_info_sender.py > log/remote_proxy.log 2>&1 &
-rc=$?
-if [[ $rc != 0 ]] ; then
-    exit $rc
+if [[ $1 != "silent" ]]
+then
+    echo 'running remote info sender.py'
+    python remote_info_sender.py > log/remote_proxy.log 2>&1 &
+    rc=$?
+    if [[ $rc != 0 ]] ; then
+        exit $rc
+    fi
 fi
 # echo 'running sensor_server.py...'
 # # python sensor_server.py > log/sensor.log 2>&1 &
