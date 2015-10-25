@@ -31,6 +31,13 @@ if [[ $rc != 0 ]] ; then
     exit $rc
 fi
 
+# echo 'running mqtt server proxy.py'
+# python mqtt_server_proxy.py > log/mqtt_server.log 2>&1 &
+# rc=$?
+# if [[ $rc != 0 ]] ; then
+#     exit $rc
+# fi
+
 if [[ $1 != "silent" ]]
 then
     echo 'running remote info sender.py'

@@ -41,6 +41,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(m
 #     stack_info = inspect.currentframe().f_back.f_code.co_name
 #     debug_logger.debug("%s:  %s" % (stack_info, info))
 
+def TRACE_EX():
+    comm_logger.error(traceback.format_exc())
+
 DEBUG = debug_logger.debug
 # DEBUG    = stack_info_debug # only output to file
 INFO     = comm_logger.info
@@ -56,5 +59,3 @@ FCRITICAL = debug_logger.critical
 
 EXCEPTION = comm_logger.exception
 
-def TRACE_EX():
-    traceback.print_exc()
