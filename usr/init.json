@@ -5,7 +5,8 @@
         "publisher" : "tcp://*:9000",
         "msg_cmd_bind" : "tcp://*:9001",
         "audio_server" : "http://localhost:8001",
-        "tag_server" : "tcp://localhost:8006"
+        "tag_server" : "tcp://localhost:8006",
+        "mqtt_server" : "119.29.102.249"
     },
     "storage": {
         "host" : "localhost",

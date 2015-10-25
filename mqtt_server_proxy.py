@@ -23,6 +23,8 @@ import json
 import subprocess
 import urllib, urllib2
 
+import paho.mqtt.client as mqtt
+
 from util.Res import Res
 from util.log import *
 
@@ -38,7 +40,8 @@ class mqtt_server_proxy:
             self._home_address = address
 
             settings = Res.init("init.json")
-            self._device_id = settings['id']
+            self._device_id = settings['id'].encode("utf-8")
+            self._server_addr = settings['connection']['mqtt_server'].encode("utf-8")
             self._trigger_cmd = settings['command']['trigger'][0].encode("utf-8")
             self._finish_cmd = settings['command']['finish'][0].encode("utf-8")
             INFO("load device id:%s" % self._device_id)
@@ -65,6 +68,9 @@ class mqtt_server_proxy:
             except urllib2.URLError, e:
                 ERROR(e)
                 return False
+            except Exception, e:
+                ERROR(e)
+                return False
             else:
                 INFO("home response: " + response)
                 return True
@@ -83,33 +89,25 @@ class mqtt_server_proxy:
 
     def _fetch_worker(self):
         INFO("start fetching cmds.")
-        cmd = " ".join([
-                    './vender/yunba/stdinpub_present',
-                    self._device_id,
-                    '--appkey',
-                    mqtt_server_proxy.BROKER_APP_KEY,
-                    '--deviceid',
-                    self._device_id
-                    ]
-                )
-        proc = subprocess.Popen(
-                [
-                    cmd
-                    # './vender/yunba/stdinpub_present',
-                    # self._device_id,
-                    # '--appkey', mqtt_server_proxy.BROKER_APP_KEY
-                    ],
-                shell=True,
-                stdout=subprocess.PIPE)
-        while True :
-            line = proc.stdout.readline()
-            if line != '' and line.startswith("$$$"):
-                line = line.rstrip()[3:]
-                DEBUG("fetch:%s" % line)
-                print line
-                self._send_cmd_to_home(line)
-        WARN("fetch worker exit!")
+        self._mqtt_client = mqtt.Client()
+        self._mqtt_client.on_connect = self._on_mqtt_connect
+        self._mqtt_client.on_message = self._on_mqtt_message 
+        self._mqtt_client.connect(self._server_addr, 1883, 60)
+        self._mqtt_client.loop_forever() 
 
+    def _on_mqtt_connect(self, client, userdata, flags, rc):
+        print("Connected with result code "+str(rc))  
+        client.subscribe(self._device_id)
+
+    def _on_mqtt_message(self, client, userdata, msg):
+        print(msg.topic+" "+str(msg.payload)) 
+        payload = str(msg.payload)
+        if payload is not None and len(payload) != 0:
+            INFO("sending payload to home:%s" % payload)
+            try:
+                self._send_cmd_to_home(payload)
+            except Exception, ex:
+                print "exception in _on_mqtt_message:", ex
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

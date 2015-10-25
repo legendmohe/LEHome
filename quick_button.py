@@ -131,7 +131,7 @@ class quick_button(object):
                 print "event", event
                 INFO("quick_btn got event:%s" % event)
                 self._event_queue.put(event)
-                self._btn_ctler.delay(10)
+                self._btn_ctler.delay(200)
             except (KeyboardInterrupt, SystemExit):
                 self.stop()
                 raise
