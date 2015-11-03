@@ -295,7 +295,9 @@ class message_callback(Callback.Callback):
         elif pre_value == "show":
             info = []
             for idx, filepath in enumerate(glob.glob("usr/message/*.mp3")):
-                info.append(u"%d: %s")
+                _, filename = os.path.split(filepath)
+                info.append(u"%d: %s" % (idx, filename))
+            self._home.publish_msg(cmd, u"\n".join(info))
         return True
 
 
