@@ -154,6 +154,7 @@ class qqfm_callback(Callback.Callback):
     channel_url = base_url + '/list'
     next_url = base_url + '/next'
     pause_url = base_url + '/pause'
+    cur_url = base_url + '/current'
 
     def init_channcels(self):
         self._fm_state = 0
@@ -167,6 +168,19 @@ class qqfm_callback(Callback.Callback):
             self._home.publish_msg("init qqfm", u"连接失败")
             self.channels = []
 
+    def get_current_song(self):
+        try:
+            rep = urllib2.urlopen(qqfm_callback.cur_url, timeout=5).read()
+            DEBUG("get current song:" + rep)
+            data = json.loads(rep)
+            if len(data) == 0:
+                return None
+            return data
+        except Exception, ex:
+            ERROR("get current song error.")
+            ERROR(ex)
+            return None
+
     def callback(self, cmd, action, target, msg, pre_value):
         try:
             if not hasattr(self, "channels") or len(self.channels) == 0:
@@ -178,7 +192,14 @@ class qqfm_callback(Callback.Callback):
                 if len(self.channels) == 0:
                     self._home.publish_msg(cmd, u"无电台列表")
                 else:
-                    info = u"电台列表:\n"
+                    info = ""
+                    song = self.get_current_song()
+                    if song is not None:
+                        info += u"正在播放:\n"
+                        info += u"  频道:%s\n" % song["channel"]
+                        info += u"  歌曲:%s\n" % song["name"]
+                        info += u"  歌手:%s\n" % song["singer"]
+                    info += u"电台列表:\n"
                     info += u", ".join(self.channels)
                     self._home.publish_msg(cmd, info)
             elif pre_value == "play" \
@@ -271,6 +292,10 @@ class message_callback(Callback.Callback):
             Sound.play(
                         Res.get_res_path("sound/com_trash")
                         )
+        elif pre_value == "show":
+            info = []
+            for idx, filepath in enumerate(glob.glob("usr/message/*.mp3")):
+                info.append(u"%d: %s")
         return True
 
 
