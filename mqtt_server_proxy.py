@@ -22,6 +22,8 @@ import time
 import json
 import subprocess
 import urllib, urllib2
+import base64
+from datetime import datetime
 
 import paho.mqtt.client as mqtt
 
@@ -32,7 +34,7 @@ from util.log import *
 class mqtt_server_proxy:
     
     NO_HEAD_FLAG = "*"
-    BROKER_APP_KEY = "562b490abe17bc415cfbf5a5"
+    BASE64_SUB_KEY = "/lehome/base64"
 
     def __init__(self, address):
         if not address is None:
@@ -96,18 +98,42 @@ class mqtt_server_proxy:
         self._mqtt_client.loop_forever() 
 
     def _on_mqtt_connect(self, client, userdata, flags, rc):
-        print("Connected with result code "+str(rc))  
+        print("mqtt server connected with result code "+str(rc))  
         client.subscribe(self._device_id)
+        client.subscribe(self._device_id + mqtt_server_proxy.BASE64_SUB_KEY)
 
     def _on_mqtt_message(self, client, userdata, msg):
         print(msg.topic+" "+str(msg.payload)) 
         payload = str(msg.payload)
         if payload is not None and len(payload) != 0:
-            INFO("sending payload to home:%s" % payload)
+            if msg.topic == self._device_id:
+                INFO("sending payload to home:%s" % payload)
+                try:
+                    self._send_cmd_to_home(payload)
+                except Exception, ex:
+                    print "exception in _on_mqtt_message:", ex
+            elif msg.topic == self._device_id + mqtt_server_proxy.BASE64_SUB_KEY:
+                try:
+                    data = json.loads(payload)
+                    self._handle_base64_payload(data["type"], data["payload"])
+                except Exception, ex:
+                    print "exception in _on_mqtt_message:", ex
+
+    def _handle_base64_payload(self, mtype, payload):
+        if mtype == "message":
             try:
-                self._send_cmd_to_home(payload)
+                audio_data = base64.b64decode(payload)
+                filepath = "./usr/message/" \
+                        + datetime.now().strftime("%m_%d_%H_%M") \
+                        + ".mp3"
+                with open(filepath, "wb") as f:
+                    f.write(audio_data)
+                INFO("finish writing message file:%s" % filepath)
             except Exception, ex:
-                print "exception in _on_mqtt_message:", ex
+                ERROR(ex)
+                ERROR("decoding message error")
+        else:
+            print "unknown payload type in base64"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

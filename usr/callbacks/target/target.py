@@ -280,8 +280,8 @@ class message_callback(Callback.Callback):
             for idx, filepath in enumerate(glob.glob("usr/message/*.mp3")):
                 # self._speaker.speak(u'第%d条留言' % (idx + 1))
                 INFO(u'第%d条留言:%s' % (idx + 1, filepath))
-                play(filepath)
                 play(Res.get_res_path("sound/com_stop"))
+                play(filepath)
 
             self._home.setResume(False)
         elif pre_value == "remove":
@@ -293,11 +293,11 @@ class message_callback(Callback.Callback):
                         Res.get_res_path("sound/com_trash")
                         )
         elif pre_value == "show":
-            info = []
+            info = [u"[留言列表]"]
             for idx, filepath in enumerate(glob.glob("usr/message/*.mp3")):
                 _, filename = os.path.split(filepath)
-                info.append(u"%d: %s" % (idx, filename))
-            if len(info) == 0:
+                info.append(u"  %d: %s" % (idx, filename))
+            if len(info) == 1:
                 self._home.publish_msg(cmd, u"无留言")
             else:
                 self._home.publish_msg(cmd, u"\n".join(info))
