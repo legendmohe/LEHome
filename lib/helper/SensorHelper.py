@@ -37,7 +37,7 @@ class SensorHelper:
         self._sock = None
         init_json = Res.init("init.json")
         try:
-            self.place2ip = init_json["place"]
+            self.place2ip = init_json["sensoR"]
         except Exception, e:
             ERROR(e)
             ERROR("invaild SensorHelper init json.")

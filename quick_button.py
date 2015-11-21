@@ -48,7 +48,8 @@ class RemoteButtonController(object):
 
     def beep(self):
         # subprocess.call(["sudo", "mplayer", "./usr/res/com_start.mp3"])
-        self._beep.play()
+        if self._beep is not None:
+            self._beep.play()
 
     def setup(self):
         for pin in self.input_pin:
@@ -56,7 +57,11 @@ class RemoteButtonController(object):
             self.pin_state[pin] = gpio.LOW
 
         pygame.init()
-        self._beep = pygame.mixer.Sound("./usr/res/com_btn2.wav")
+        try:
+            self._beep = pygame.mixer.Sound("./usr/res/com_btn2.wav")
+        except Exception, ex:
+            ERROR("quick button beep init error!")
+            self._beep = None
 
     def get(self):
         ret = []
