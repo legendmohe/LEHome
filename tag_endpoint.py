@@ -135,6 +135,7 @@ class tag_endpoint(object):
             self.tags[sniffer_id] = {}
         tag = self.tags[sniffer_id]
         tag[addr] = -1.0
+        txPower = 1
         while True:
             try:
                 # 从缓冲队列里取出数据
@@ -145,7 +146,8 @@ class tag_endpoint(object):
                 rssi = self.rssi_filter(sniffer_id, addr, beacon["rssi"])
                 tag[addr] = self.calDistance(txPower, rssi)
             except Empty:
-                tag[addr] = -1.0
+                rssi = self.rssi_filter(sniffer_id, addr, 0)
+                tag[addr] = self.calDistance(txPower, rssi)
                 DEBUG('parse %s timeout.' % addr)
             except (KeyboardInterrupt, SystemExit):
                 self.socket.close()
