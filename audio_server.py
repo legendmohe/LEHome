@@ -31,30 +31,7 @@ import alsaaudio
 
 from util.log import *
 
-
-
-
-#
-# class RunCmd(threading.Thread):
-#     def __init__(self, cmd, timeout):
-#         threading.Thread.__init__(self)
-#         self.cmd = cmd
-#         self.timeout = timeout
-#
-#     def run(self):
-#         self.p = sub.Popen(self.cmd)
-#         self.p.wait()
-#
-#     def Run(self):
-#         self.start()
-#         self.join(self.timeout)
-#
-#         if self.is_alive():
-#             self.p.terminate()      #use self.p.kill() if process needs a kill -9
-#             self.join()
-
-# handlers
-
+SOUNDCARD_NAME = u'R19U'
 
 class RETURNCODE:
     SUCCESS = '1'
@@ -85,12 +62,10 @@ class ClearQeueuHandler(tornado.web.RequestHandler):
 
 class VolumeHandler(tornado.web.RequestHandler):
 
-    CARD_NAME = u'R19U'
-
     def initialize(self):
         cards = alsaaudio.cards()
         INFO(cards)
-        card_idx = cards.index(VolumeHandler.CARD_NAME)
+        card_idx = cards.index(SOUNDCARD_NAME)
         self._m = alsaaudio.Mixer(control='PCM', cardindex=card_idx)
         INFO("use card %d." % card_idx)
 
@@ -198,7 +173,11 @@ def worker(play_url, loop):
     #     del mp_context[play_url]
     # cmd = ['mplayer', '-ao', 'alsa:device=btheadset', play_url, '-loop', str(loop)]
     # print cmd
-    cmd = ['mplayer', play_url, '-loop', str(loop)]
+    cmd = ['mplayer',
+            '-ao', 'alsa:device=hw=%s' % SOUNDCARD_NAME,
+            play_url,
+            '-loop', str(loop)]
+    DEBUG("play cmd:%s" % cmd)
     with open(os.devnull, 'w') as tempf:
         player = subprocess.Popen(cmd, stdout=tempf, stderr=tempf)
         mp_context[play_url] = player
@@ -282,7 +261,10 @@ def queue_worker():
         url, loop = mp_queue.get()
         print "get from queue:" + str(url)
         # cmd = ['mplayer', '-ao', 'alsa:device=btheadset', url, '-loop', str(loop)]
-        cmd = ['mplayer', url, '-loop', str(loop)]
+        cmd = ['mplayer',
+                '-ao', 'alsa:device=hw=%s' % SOUNDCARD_NAME,
+                url,
+                '-loop', str(loop)]
         # print cmd
         with open(os.devnull, 'w') as tempf:
             player = subprocess.Popen(cmd, stdout=tempf, stderr=tempf)
