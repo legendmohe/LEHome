@@ -34,7 +34,7 @@ from util.log import *
 
 class tag_endpoint(object):
 
-    TAG_TIMEOUT = 10
+    TAG_TIMEOUT = 5
 
     # tag 的蓝牙地址
     tag_addrs = [
@@ -54,7 +54,7 @@ class tag_endpoint(object):
         self._init_filter()
 
     def _init_filter(self):
-        N = 5.0
+        N = 1.0 # 划动平均
         A = 1.0
         for sniffer_id in tag_endpoint.sniffer_ids:
             sniffer = {}
@@ -63,7 +63,7 @@ class tag_endpoint(object):
                 tag['N'] = N
                 tag['A'] = A
                 tag['S'] = tag['N']*tag['A']
-                tag['queue'] = collections.deque([1]*10, maxlen=10)
+                tag['queue'] = collections.deque([255]*10, maxlen=10)
                 sniffer[tag_addr] = tag
             self._filter[sniffer_id] = sniffer
 
@@ -135,7 +135,7 @@ class tag_endpoint(object):
             self.tags[sniffer_id] = {}
         tag = self.tags[sniffer_id]
         tag[addr] = -1.0
-        txPower = 1
+        txPower = 197
         while True:
             try:
                 # 从缓冲队列里取出数据
@@ -146,7 +146,7 @@ class tag_endpoint(object):
                 rssi = self.rssi_filter(sniffer_id, addr, beacon["rssi"])
                 tag[addr] = self.calDistance(txPower, rssi)
             except Empty:
-                rssi = self.rssi_filter(sniffer_id, addr, 0)
+                rssi = self.rssi_filter(sniffer_id, addr, 255)
                 tag[addr] = self.calDistance(txPower, rssi)
                 DEBUG('parse %s timeout.' % addr)
             except (KeyboardInterrupt, SystemExit):
@@ -160,6 +160,8 @@ class tag_endpoint(object):
                 time.sleep(3)
             DEBUG("sniffer:%s, addr:%s, distance:%f"\
                     % (sniffer_id, addr, tag[addr]))
+            print "sniffer:%s, addr:%s, distance:%f"\
+                    % (sniffer_id, addr, tag[addr])
 
     def _str_to_beacon_item(self, src):
         if src is None or len(src) == 0:

@@ -44,8 +44,11 @@ class TagHelper(object):
         if res == "error":
             INFO('tag server error.')
             return None
+        status = res['status']
+        if status == 'unknown':
+            return False
         distance = res['distance']
-        return True if distance > 0.0 else False
+        return False if distance > 6.0 else True
 
     def _send_request(self, cmd):
         DEBUG("send tag request to %s for %s" % (self._server_ip, cmd))
