@@ -87,11 +87,15 @@ class RemoteButtonController(object):
 
 class quick_button(object):
 
+    PRODUCE_FREQ_SLOW = 800
+    PRODUCE_FREQ_FAST = 50
+
     def __init__(self):
         self._event_queue = Queue()
         self._configure(conf_path="./usr/btn_conf.json")
         self._init_params()
         self._btn_ctler = RemoteButtonController()
+        self._produce_freq = quick_button.PRODUCE_FREQ_SLOW
 
     def _configure(self, conf_path):
         with open(conf_path) as f:
@@ -136,7 +140,7 @@ class quick_button(object):
                 print "event", event
                 INFO("quick_btn got event:%s" % event)
                 self._event_queue.put(event)
-                self._btn_ctler.delay(200)
+                self._btn_ctler.delay(self._produce_freq)
             except (KeyboardInterrupt, SystemExit):
                 self.stop()
                 raise
@@ -150,11 +154,11 @@ class quick_button(object):
             try:
                 event = self._event_queue.get(timeout=self._timeout)
                 self._event_queue.task_done()
+                self._produce_freq = quick_button.PRODUCE_FREQ_FAST
                 cmd_buf.extend(event)
             except Empty:
                 if len(cmd_buf) > 0:
                     print "timeout:", cmd_buf
-                    # self.beep()
                     DEBUG('dequeue event timeout. now collecting buffer.')
                     cmd = "".join(cmd_buf)
                     if self._is_reset_cmd(cmd):
@@ -162,6 +166,7 @@ class quick_button(object):
                         self.reload_cmds()
                     else:
                         self._map_buffer_to_command(cmd)
+                    self._produce_freq = quick_button.PRODUCE_FREQ_SLOW
                 del cmd_buf[:]
             except (KeyboardInterrupt, SystemExit):
                 self.stop()

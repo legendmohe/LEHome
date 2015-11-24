@@ -277,11 +277,17 @@ class message_callback(Callback.Callback):
             self._home.setResume(True)
 
             play = self._global_context["player"]
-            for idx, filepath in enumerate(glob.glob("usr/message/*.mp3")):
-                # self._speaker.speak(u'第%d条留言' % (idx + 1))
-                INFO(u'第%d条留言:%s' % (idx + 1, filepath))
+            if msg is None or len(msg) == 0:
+                for idx, filepath in enumerate(glob.glob("usr/message/*.*")):
+                    # self._speaker.speak(u'第%d条留言' % (idx + 1))
+                    INFO(u'第%d条留言:%s' % (idx + 1, filepath))
+                    play(Res.get_res_path("sound/com_stop"))
+                    play(filepath)
+            elif msg == u"最新" or msg == u"最后":
+                newest_filepath = max(glob.iglob('usr/message/*.*'), key=os.path.getctime)
+                INFO(u'最新留言:%s' % (newest_filepath, ))
                 play(Res.get_res_path("sound/com_stop"))
-                play(filepath)
+                play(newest_filepath)
 
             self._home.setResume(False)
         elif pre_value == "remove":

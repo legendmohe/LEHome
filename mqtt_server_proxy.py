@@ -22,7 +22,9 @@ import time
 import json
 import subprocess
 import urllib, urllib2
+import os
 import base64
+import errno
 from datetime import datetime
 
 import paho.mqtt.client as mqtt
@@ -35,6 +37,7 @@ class mqtt_server_proxy:
     
     NO_HEAD_FLAG = "*"
     BASE64_SUB_KEY = "/lehome/base64"
+    MESSAGE_DIRECTORY = "./usr/message/"
 
     def __init__(self, address):
         if not address is None:
@@ -123,12 +126,23 @@ class mqtt_server_proxy:
         if mtype == "message":
             try:
                 audio_data = base64.b64decode(payload)
-                filepath = "./usr/message/" \
-                        + datetime.now().strftime("%m_%d_%H_%M") \
-                        + ".mp3"
+                path = mqtt_server_proxy.MESSAGE_DIRECTORY
+                try:
+                    os.makedirs(path)
+                except OSError as exc:
+                    if exc.errno == errno.EEXIST and os.path.isdir(path):
+                        pass
+                    else:
+                        ERROR(exc)
+                        return
+
+                filepath = path + datetime.now().strftime("%m_%d_%H_%M_%S") + ".spx"
                 with open(filepath, "wb") as f:
                     f.write(audio_data)
-                INFO("finish writing message file:%s" % filepath)
+                INFO("finish writing message file:%s, now send it to home." % filepath)
+
+                self._send_cmd_to_home(u"播放留言最新".encode("utf-8"))
+
             except Exception, ex:
                 ERROR(ex)
                 ERROR("decoding message error")
