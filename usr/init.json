@@ -158,6 +158,8 @@
         }
     },
     "sound":{
+        "com_btn1":"com_btn1.wav",
+        "com_btn2":"com_btn2.wav",
         "com_finish":"com_finish.mp3",
         "com_knock":"com_knock.mp3",
         "com_warn":"com_warning.mp3",
