@@ -153,10 +153,10 @@ class Home:
 
     def _init_helper(self):
         publisher_ip = self._init_res["connection"]["publisher"]
-        msg_cmd_bind = self._init_res["connection"]["msg_cmd_bind"]
-        INFO("init message publisher: %s, cmd bind: %s" %
-                                            (publisher_ip, msg_cmd_bind))
-        self._msg_sender = MessageHelper(publisher_ip, msg_cmd_bind)
+        heartbeat_port = self._init_res["connection"]["heartbeat_port"]
+        INFO("init message publisher: %s, heartbeat port: %s" %
+                                            (publisher_ip, heartbeat_port))
+        self._msg_sender = MessageHelper(publisher_ip, heartbeat_port)
 
         switch_scan = SwitchHelper.BOARDCAST_ADDRESS
         INFO("init switch scan: " + switch_scan)
