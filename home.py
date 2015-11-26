@@ -206,7 +206,7 @@ class Home:
     def activate(self):
         Sound.play(Res.get_res_path("sound/com_begin"))
         self._spk.start()
-        self.runtime.start()
+        self.runtime.resume_parsing()
 
         application = tornado.web.Application([
             (r"/home/cmd", CmdHandler, dict(home=self)),
@@ -215,10 +215,6 @@ class Home:
         tornado.ioloop.PeriodicCallback(try_exit, 1000).start()
         tornado.ioloop.IOLoop.instance().start()
         INFO("home activate!")
-
-    def deactivate(self):
-        self._spk.stop()
-        self.runtime.stop()
 
     def setResume(self, resume):
         self._resume = resume
