@@ -291,7 +291,7 @@ class message_callback(Callback.Callback):
 
             self._home.setResume(False)
         elif pre_value == "remove":
-            filelist = glob.glob("usr/message/*.mp3")
+            filelist = glob.glob("usr/message/*.*")
             for f in filelist:
                 os.remove(f)
                 INFO("remove:%s" % (f, ))
@@ -300,7 +300,7 @@ class message_callback(Callback.Callback):
                         )
         elif pre_value == "show":
             info = [u"[留言列表]"]
-            for idx, filepath in enumerate(glob.glob("usr/message/*.mp3")):
+            for idx, filepath in enumerate(glob.glob("usr/message/*.*")):
                 _, filename = os.path.split(filepath)
                 info.append(u"  %d: %s" % (idx, filename))
             if len(info) == 1:
