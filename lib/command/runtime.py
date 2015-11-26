@@ -508,10 +508,10 @@ class Rumtime:
                 return
             self._fsm.put_into_parse_stream(word_stream)
 
-    def start(self):
+    def resume_parsing(self):
         self._keep_running = True
 
-    def stop(self):
+    def suspend_parsing(self):
         self._keep_running = False
 
     def setDEBUG(self, debug):
@@ -737,7 +737,7 @@ if __name__ == '__main__':
             "nexts":["然后", "接着"],
             })
     commander.setDEBUG(False)
-    commander.start()
+    commander.resume_parsing()
     
     commander.register_callback("whiles", "重复", while_callback)
     commander.register_callback("delay", "定时", delay_callback)
@@ -750,4 +750,4 @@ if __name__ == '__main__':
     commander.register_callback("nexts", "然后", next_callback)
     commander.parse(parser_target)
     sleep(5)
-    commander.stop()
+    commander.suspend_parsing()
