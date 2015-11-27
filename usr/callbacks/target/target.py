@@ -298,6 +298,7 @@ class message_callback(Callback.Callback):
             Sound.play(
                         Res.get_res_path("sound/com_trash")
                         )
+            self._home.publish_msg(cmd, u"删除成功")
         elif pre_value == "show":
             info = [u"[留言列表]"]
             for idx, filepath in enumerate(glob.glob("usr/message/*.*")):

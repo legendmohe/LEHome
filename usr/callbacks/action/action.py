@@ -188,16 +188,17 @@ class remove_callback(Callback.Callback):
             cmd=None,
             pre_value=None):
         
-        self._speaker.speak(u'确认' + cmd + u'?')
-        self._home.publish_msg(cmd, u'确认' + cmd + u'?', cmd_type='confirm')
-        cfm = Confirmation(self._home)
-        is_cfm = cfm.confirm(ok=u'确认', cancel=u'取消')
-        if is_cfm:
-            return True, "remove"
-        else:
-            self._home.publish_msg(cmd, u'取消删除')
-            INFO("cancel")
-            return False
+        # self._speaker.speak(u'确认' + cmd + u'?')
+        # self._home.publish_msg(cmd, u'确认' + cmd + u'?', cmd_type='confirm')
+        # cfm = Confirmation(self._home)
+        # is_cfm = cfm.confirm(ok=u'确认', cancel=u'取消')
+        # if is_cfm:
+        #     return True, "remove"
+        # else:
+        #     self._home.publish_msg(cmd, u'取消删除')
+        #     INFO("cancel")
+        #     return False
+        return True, "remove"
 
 
 class every_callback(Callback.Callback):

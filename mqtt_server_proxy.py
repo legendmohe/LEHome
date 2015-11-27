@@ -106,21 +106,25 @@ class mqtt_server_proxy:
         client.subscribe(self._device_id + mqtt_server_proxy.BASE64_SUB_KEY)
 
     def _on_mqtt_message(self, client, userdata, msg):
-        print(msg.topic+" "+str(msg.payload)) 
         payload = str(msg.payload)
+        print(msg.topic + " " + payload) 
         if payload is not None and len(payload) != 0:
             if msg.topic == self._device_id:
                 INFO("sending payload to home:%s" % payload)
                 try:
                     self._send_cmd_to_home(payload)
                 except Exception, ex:
-                    print "exception in _on_mqtt_message:", ex
+                    import traceback
+                    traceback.format_exc()
+                    print "exception in _on_mqtt_message, normal topic:", ex
             elif msg.topic == self._device_id + mqtt_server_proxy.BASE64_SUB_KEY:
                 try:
-                    data = json.loads(payload)
+                    data = json.loads(payload, strict=False)
                     self._handle_base64_payload(data["type"], data["payload"])
                 except Exception, ex:
-                    print "exception in _on_mqtt_message:", ex
+                    import traceback
+                    traceback.format_exc()
+                    print "exception in _on_mqtt_message, message topic", ex
 
     def _handle_base64_payload(self, mtype, payload):
         if mtype == "message":
