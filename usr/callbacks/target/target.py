@@ -285,13 +285,13 @@ class message_callback(Callback.Callback):
                     messages = messages[-int(digits[0]):]
             if pre_value == "play":
                 play = self._global_context["player"]
-                for idx, filepath in messages:
+                for idx, filepath in enumerate(messages):
                     INFO(u'第%d条留言:%s' % (idx + 1, filepath))
                     play(Res.get_res_path("sound/com_stop"))
                     play(filepath)
             elif pre_value == "show":
                 info = []
-                for idx, filepath in messages:
+                for idx, filepath in enumerate(messages):
                     filename = os.path.basename(filepath).split('.')[0]
                     info.append(u"  第%d条: %s" % (idx + 1, filename))
                 info.insert(0, u"[你有%d条留言]" % (len(info),))
