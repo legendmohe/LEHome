@@ -140,11 +140,12 @@ class mqtt_server_proxy:
                         ERROR(exc)
                         return
 
-                filepath = path + datetime.now().strftime("%m_%d_%H_%M_%S") + ".spx"
+                filepath = path + datetime.now().strftime("%m-%d-%H-%M-%S") + ".spx"
                 with open(filepath, "wb") as f:
                     f.write(audio_data)
                 INFO("finish writing message file:%s, now send it to home." % filepath)
 
+                self._send_cmd_to_home(u"显示#你有新留言#".encode("utf-8"))
                 self._send_cmd_to_home(u"播放留言最新".encode("utf-8"))
 
             except Exception, ex:
