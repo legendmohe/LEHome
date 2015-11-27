@@ -24,6 +24,7 @@ import glob
 import httplib
 import os
 import io
+import re
 import threading
 import errno
 import time
@@ -273,23 +274,28 @@ class message_callback(Callback.Callback):
             record(filepath)
             self._home.publish_msg(cmd, u"录音结束")
             self._home.setResume(False)
-        elif pre_value == "play":
-            self._home.setResume(True)
-
-            play = self._global_context["player"]
-            if msg is None or len(msg) == 0:
-                for idx, filepath in enumerate(glob.glob("usr/message/*.*")):
-                    # self._speaker.speak(u'第%d条留言' % (idx + 1))
+        elif pre_value == "play" or pre_value == "show":
+            messages = glob.glob("usr/message/*.*")
+            messages.sort(key=os.path.getctime)
+            if msg == u"最新" or msg == u"最后":
+                msg = "1"
+            if msg is not None and len(messages) > 0:
+                digits = re.findall('\d+', msg)
+                if len(digits) > 0:
+                    messages = messages[-int(digits[0]):]
+            if pre_value == "play":
+                play = self._global_context["player"]
+                for idx, filepath in messages):
                     INFO(u'第%d条留言:%s' % (idx + 1, filepath))
                     play(Res.get_res_path("sound/com_stop"))
                     play(filepath)
-            elif msg == u"最新" or msg == u"最后":
-                newest_filepath = max(glob.iglob('usr/message/*.*'), key=os.path.getctime)
-                INFO(u'最新留言:%s' % (newest_filepath, ))
-                play(Res.get_res_path("sound/com_stop"))
-                play(newest_filepath)
-
-            self._home.setResume(False)
+            elif pre_value == "show":
+                info = []
+                for idx, filepath in messages:
+                    filename = os.path.basename(filepath).split('.')[0]
+                    info.append(u"  第%d条: %s" % (idx + 1, filename))
+                info.insert(0, u"[你有%d条留言]" % (len(info),))
+                self._home.publish_msg(cmd, u"\n".join(info))
         elif pre_value == "remove":
             filelist = glob.glob("usr/message/*.*")
             for f in filelist:
@@ -299,15 +305,6 @@ class message_callback(Callback.Callback):
                         Res.get_res_path("sound/com_trash")
                         )
             self._home.publish_msg(cmd, u"删除成功")
-        elif pre_value == "show":
-            info = [u"[留言列表]"]
-            for idx, filepath in enumerate(glob.glob("usr/message/*.*")):
-                _, filename = os.path.split(filepath)
-                info.append(u"  %d: %s" % (idx, filename))
-            if len(info) == 1:
-                self._home.publish_msg(cmd, u"无留言")
-            else:
-                self._home.publish_msg(cmd, u"\n".join(info))
         return True
 
 
