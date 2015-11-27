@@ -295,6 +295,7 @@ class message_callback(Callback.Callback):
                     filename = os.path.basename(filepath).split('.')[0]
                     info.append(u"  第%d条: %s" % (idx + 1, filename))
                 info.insert(0, u"[你有%d条留言]" % (len(info),))
+                INFO(u"\n".join(info))
                 self._home.publish_msg(cmd, u"\n".join(info))
         elif pre_value == "remove":
             filelist = glob.glob("usr/message/*.*")
