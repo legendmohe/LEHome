@@ -14,9 +14,6 @@ ps -ef | awk '/python home\.py/ {print $2}' | xargs kill -9
 echo 'kill audio_server.py...'
 ps -ef | awk '/sudo python audio_server\.py/ {print $2}' | sudo xargs kill -INT
 
-# echo 'kill sensor_server.py...'
-# ps -ef | awk '/python sensor_server\.py/ {print $2}' | xargs kill
-#
 echo 'kill tag_endpoint.py'
 ps -ef | awk '/python tag_endpoint\.py/ {print $2}' | xargs kill -9
 
