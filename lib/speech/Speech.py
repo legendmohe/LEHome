@@ -33,15 +33,11 @@ import httplib
 import json
 import threading
 import logging
+
+import requests
+
 from util.log import *
 from lib.sound import Sound
-# logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
-#
-# DEBUG = logging.debug
-# INFO = logging.info
-# WARN = logging.warning
-# ERROR = logging.error
-# CRITICAL = logging.critical
 
 
 # urllib2.install_opener(
@@ -382,73 +378,71 @@ class Speech2Text(object):
 
 class Text2Speech:
 
+    BASE_OAUTH_URL = "http://openapi.baidu.com/oauth/2.0/token"
+    BASE_OAUTH_DATA = {
+        "grant_type": "client_credentials",
+        "client_id": "7P5ZCG6WTAGWr5TuURBgndRH",
+        "client_secret": "gggk30ubCSFGM5uXYfwGll4vILlnQ0em",
+    }
+    BASE_TTS_URL = "http://tsn.baidu.com/text2audio"
+
     def __init__(self):
-        self.__speak_queue = Queue()
-        self.__keep_speaking = False
+        self.__token = None
 
-    def __getGoogleSpeechURL(self, phrase):
-        googleTranslateURL = "http://translate.google.com/translate_tts"
-        parameters = {
-                "tl" : "zh-CN",
-                "q": phrase.encode("utf-8"),
-                "ie": "utf-8",
-                "oe" : "utf-8"
-                }
-        data = urllib.urlencode(parameters)
-        googleTranslateURL = "%s?%s" % (googleTranslateURL,data)
-        return googleTranslateURL
+    def __doTTS(self, phrase, inqueue):
+        if self.__token is None or len(self.__token) == 0:
+            ERROR("invalid tts token.")
+            return
+            
+        tts_data = {
+            "tok": self.__token,
+            "lan": "zh",
+            "tex": phrase.encode("utf-8"),
+            "ctp": 1,
+            "spd": 7,
+            "pit": 3,
+            "per": 1,
+            "cuid": "lehome"
+        }
+        data = urllib.urlencode(tts_data)
+        tts_url = "%s?%s" % (Text2Speech.BASE_TTS_URL, data)
+        Sound.play(tts_url, inqueue=inqueue)
+        
+    def __get_access_token(self):
+#        proxies = {
+#          "http": "109.131.7.11:8080",
+#        }
 
-    def __speak_worker(self):
-        while self.__keep_speaking:
-            try:
-                phrase = self.__speak_queue.get(block=True, timeout=2)
-                self.__speakSpeechFromText(phrase)
-                self.__speak_queue.task_done()
-            except Empty:
-                pass
-            except Exception, ex:
-                ERROR(ex)
+        r = requests.post(
+                        Text2Speech.BASE_OAUTH_URL,
+                        data = Text2Speech.BASE_OAUTH_DATA,
+#                        proxies=proxies
+        )
+        try:
+            auth_rep = json.loads(r.content)
+        except Exception, ex:
+            ERROR(ex)
+            ERROR("cannot get tts auth token.")
+            return None
 
-    def __speakSpeechFromText(self, phrase, inqueue=True):
-        googleSpeechURL = self.__getGoogleSpeechURL(phrase)
-        INFO("text2speech retrived.")
-        Sound.play(googleSpeechURL, inqueue)
-        # subprocess.call(["mpg123", "-q", googleSpeechURL])
+        access_token = auth_rep["access_token"]
+        INFO("got token %s" % access_token)
+        return access_token
 
     def start(self):
+        self.__token = self.__get_access_token()
         INFO("speaker start.")
-        self.__keep_speaking = True
-        self.__speak_thread = threading.Thread(target=self.__speak_worker)
-        self.__speak_thread.daemon = True
-        self.__speak_thread.start()
-
-    def stop(self):
-        self.__keep_speaking = False
-        with self.__speak_queue.mutex:
-            self.__speak_queue.queue.clear()
-        # self.__speak_queue.join()
-        self.__speak_thread.join()
-        INFO("speaker stop.")
 
     def speak(self, phrase, inqueue=True):
-        if not self.__keep_speaking:
-            WARN("__keep_speaking is False.")
-            return
         if isinstance(phrase, (list, tuple)):
             for item in phrase:
                 if isinstance(item, unicode):
-                    if inqueue is True:
-                        self.__speak_queue.put(item)
-                    else:
-                        self.__speakSpeechFromText(item, inqueue=False)
+                    self.__doTTS(item, inqueue)
                 else:
                     ERROR("phrase must be unicode")
         else:
             if isinstance(phrase, unicode):
-                if inqueue is True:
-                    self.__speak_queue.put(phrase)
-                else:
-                    self.__speakSpeechFromText(phrase, inqueue=False)
+                self.__doTTS(phrase, inqueue)
             else:
                 ERROR("phrase must be unicode")
 
