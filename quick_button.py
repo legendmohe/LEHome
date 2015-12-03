@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # encoding: utf-8
 
@@ -31,71 +30,55 @@ import urllib, urllib2
 import pygame
 
 from util.log import *
-import vender.gpio
+import RPi.GPIO as GPIO
 
-gpio = vender.gpio
+GPIO.setmode(GPIO.BOARD)
 
 class RemoteButtonController(object):
-    def __init__(self):
-        self.input_pin = ["gpio2", "gpio4", "gpio7", "gpio8"]
-        self.mapping_btn = {"gpio2":"B", "gpio4":"C", "gpio7":"D", "gpio8":"A"}
-        self.pin_state = {}
+    def __init__(self, state_queue):
+        self.input_pin = [13, 15, 16, 18]
+        self.mapping_btn = {13:"C", 15:"B", 16:"A", 18:"D"}
+        self._state_queue = state_queue
         self.setup()
 
     def delay(self, ms):
-        # time.sleep(ms)
         time.sleep(1.0*ms/1000)
 
     def beep(self):
-        # subprocess.call(["sudo", "mplayer", "./usr/res/com_start.mp3"])
         if self._beep is not None:
             self._beep.play()
 
     def setup(self):
         for pin in self.input_pin:
-            gpio.pinMode(pin, gpio.INPUT)
-            self.pin_state[pin] = gpio.LOW
+            GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+            GPIO.add_event_detect(
+                                pin,
+                                GPIO.RISING,
+                                callback=self._interupt,
+                                bouncetime=50
+            )
 
         pygame.init()
         try:
             self._beep = pygame.mixer.Sound("./usr/res/com_btn2.wav")
         except Exception, ex:
+            print "quick button beep init error!"
             ERROR("quick button beep init error!")
             self._beep = None
 
-    def get(self):
-        ret = []
-        for pin in self.input_pin:
-            state = gpio.digitalRead(pin)
-            if not self.pin_state[pin] == state:
-                self.delay(50)
-                if not state == gpio.digitalRead(pin):
-                    continue
-                self.pin_state[pin] = state
-                DEBUG("btn press! %s %d" % (self.mapping_btn[pin], state))
-                if state == gpio.HIGH:
-                    self.beep()
-                elif state == gpio.LOW:
-                    ret.append(self.mapping_btn[pin])
-        # self.delay(10)
-        if len(ret) == 0:
-            return None
-        return ret
-
-    # def activate(self):
-    #     self.loop()
+    def _interupt(self, pin):
+        if self._state_queue is not None:
+            if pin in self.mapping_btn:
+                INFO("interrupt: %s" % self.mapping_btn[pin])
+                self._state_queue.put(self.mapping_btn[pin])
 
 class quick_button(object):
-
-    PRODUCE_FREQ_SLOW = 800
-    PRODUCE_FREQ_FAST = 50
 
     def __init__(self):
         self._event_queue = Queue()
         self._configure(conf_path="./usr/btn_conf.json")
         self._init_params()
-        self._btn_ctler = RemoteButtonController()
-        self._produce_freq = quick_button.PRODUCE_FREQ_SLOW
+        self._btn_ctler = RemoteButtonController(self._event_queue)
 
     def _configure(self, conf_path):
         with open(conf_path) as f:
@@ -117,11 +100,6 @@ class quick_button(object):
         self._configure(conf_path="./usr/btn_conf.json")
         self._init_params()
 
-    def _fetch_event(self):
-        # time.sleep(random.uniform(0.0, 1.5))
-        # return "1"
-        return self._btn_ctler.get()
-
     def _is_event_vaild(self, event):
         if event is None:
             return False
@@ -130,31 +108,13 @@ class quick_button(object):
     def _is_reset_cmd(self, cmd):
         return cmd == self._reset_cmd
 
-    def _event_produce_worker(self):
-        while True :
-            try:
-                event = self._fetch_event()
-                if not self._is_event_vaild(event):
-                    # WARN("invaild event.")
-                    continue
-                print "event", event
-                INFO("quick_btn got event:%s" % event)
-                self._event_queue.put(event)
-                self._btn_ctler.delay(self._produce_freq)
-            except (KeyboardInterrupt, SystemExit):
-                self.stop()
-                raise
-            except Exception, ex:
-                ERROR(ex)
-                time.sleep(1)
-
     def _event_consume_worker(self):
         cmd_buf = []
         while True:
             try:
                 event = self._event_queue.get(timeout=self._timeout)
+                print "got event: ", event
                 self._event_queue.task_done()
-                self._produce_freq = quick_button.PRODUCE_FREQ_FAST
                 cmd_buf.extend(event)
             except Empty:
                 if len(cmd_buf) > 0:
@@ -166,7 +126,6 @@ class quick_button(object):
                         self.reload_cmds()
                     else:
                         self._map_buffer_to_command(cmd)
-                    self._produce_freq = quick_button.PRODUCE_FREQ_SLOW
                 del cmd_buf[:]
             except (KeyboardInterrupt, SystemExit):
                 self.stop()
@@ -206,25 +165,18 @@ class quick_button(object):
             return False
 
     def start(self):
-
         INFO("start quick_button server...")
         INFO("command server ip:" + self.server_ip)
 
-        produce_t = threading.Thread(
-                    target=self._event_produce_worker
-                    )
-        produce_t.daemon = True
-        produce_t.start()
-
-        # consume_t = threading.Thread(
-        #             target=self._event_consume_worker
-        #             )
-        # consume_t.daemon = True
-        # consume_t.start()
         self._event_consume_worker()
 
     def stop(self):
         INFO("quick_button stop.")
 
 if __name__ == '__main__':
-    quick_button().start()
+    try:
+        quick_button().start()
+    finally:
+        INFO("clean GPIO. now exit")
+        GPIO.cleanup()
+    print "exit"
