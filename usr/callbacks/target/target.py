@@ -97,7 +97,7 @@ class weather_report_callback(Callback.Callback):
                 content = u"\n".join(content)
                 if pre_value == 'show':
                     self._home.publish_msg(cmd, content)
-                    # self._speaker.speak(content.split('\n'))
+                    self._speaker.speak(content.split('\n'))
                 return True, data
             except Exception, ex:
                 ERROR(ex)
