@@ -29,8 +29,8 @@ import zmq
 
 from util.Res import Res
 from util.log import *
-from vender.baidu_push.Channel import *
-from vender.xg_push import xinge
+from vendor.baidu_push.Channel import *
+from vendor.xg_push import xinge
 
 PUSH_apiKey = "7P5ZCG6WTAGWr5TuURBgndRH"                                             
 PUSH_secretKey = "gggk30ubCSFGM5uXYfwGll4vILlnQ0em"                                  
