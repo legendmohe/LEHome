@@ -248,9 +248,6 @@ class tag_endpoint(object):
                 time.sleep(3)
 
     def stop(self):
-        subprocess.call(
-                        ["sudo", "killall", "-9", "hcitool"],
-                        )
         INFO("tag_endpoint stop.")
 
 if __name__ == '__main__':

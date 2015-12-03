@@ -1,7 +1,6 @@
 #!/bin/bash
 
-echo 'kill remote_server_proxy.py...'
-ps -ef | awk '/python remote_server_proxy\.py/ {print $2}' | xargs kill -9
+# echo 'kill remote_server_proxy.py...' ps -ef | awk '/python remote_server_proxy\.py/ {print $2}' | xargs kill -9
 
 echo 'kill mqtt_server_proxy.py...'
 ps -ef | awk '/python mqtt_server_proxy\.py/ {print $2}' | xargs kill -9

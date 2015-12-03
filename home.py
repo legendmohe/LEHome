@@ -27,6 +27,7 @@ import tornado.web
 
 import redis
 
+import config
 from lib.command.runtime import Rumtime
 from lib.speech.Speech import Text2Speech
 from lib.helper.SwitchHelper import SwitchHelper
@@ -53,6 +54,7 @@ class Home:
     def __init__(self):
 
         INFO(u"==========服务器启动==========")
+        INFO(u"DEBUG_ENABLE %s" % config.DEBUG_ENABLE)
 
         self._global_context = {}
         self._init_res = Res.init("init.json")

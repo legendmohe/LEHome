@@ -17,6 +17,11 @@ import traceback
 import logging
 import logging.handlers
 
+import config
+from util.Util import mkdir_p
+
+mkdir_p("log")
+
 file_name = 'log/home_debug.log'
 debug_logger = logging.getLogger('DebugLog')
 handler = logging.handlers.RotatingFileHandler(file_name, maxBytes=50*1024*1024)
@@ -25,6 +30,9 @@ handler.setFormatter(formatter)
 debug_logger.setLevel(logging.DEBUG)
 debug_logger.addHandler(handler)
 debug_logger.propagate = False # now if you use logger it will not log to console.
+
+if config.DEBUG_ENABLE is False:
+    debug_logger.setLevel(logging.CRITICAL)
 
 comm_name = 'log/home.log'
 comm_logger = logging.getLogger('CommonLog')

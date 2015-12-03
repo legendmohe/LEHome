@@ -423,9 +423,9 @@ class todo_callback(Callback.Callback):
 
     def load_todos(self):
         with self._lock:
+	    self.todos = []
             try:
                 with open(todo_callback.todo_path, "rb") as f:
-                    self.todos = []
                     self.todos = pickle.load(f)
             except:
                 INFO("empty todo list.")
@@ -661,12 +661,12 @@ class script_callback(Callback.Callback):
 
     def load_scripts(self):
         with self._lock:
+	    self.scripts = {}
             try:
                 with io.open(script_callback.script_path,
                                 "r",
                                 encoding="utf-8") as f:
                     # self.scripts = pickle.load(f)
-                    self.scripts = {}
                     for line in f.readlines():
                         script_token = line.split()
                         if(len(script_token) == 2):
@@ -788,9 +788,9 @@ class var_callback(Callback.Callback):
 
     def load_vars(self):
         with self._lock:
+	    self.vars = {}
             try:
                 with open(var_callback.var_path, "rb") as f:
-                    self.vars = {}
                     self.vars = pickle.load(f)
             except Exception, e:
                 ERROR(e)

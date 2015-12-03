@@ -19,8 +19,19 @@ import re
 import datetime
 import urllib2
 import json
+import os
+import errno
 from HTMLParser import HTMLParser
 
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc: # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
 
 UTIL_CN_NUM = {
                 u'零': 0,

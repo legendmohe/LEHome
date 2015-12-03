@@ -35,7 +35,7 @@ class MessageHelper(object):
 
     def __init__(self, pub_address, hb_port):
         self.pub_address = pub_address
-        self.heartbeat_port = hb_port
+        self.heartbeat_port = int(hb_port)
         self._data_lock = threading.Lock()
         self._msg_lock = threading.Lock()
         self._msg_queue = Queue()
@@ -94,6 +94,10 @@ class MessageHelper(object):
         return msg
 
     def _init_pub_heartbeat(self):
+        if self.heartbeat_port is None or self.heartbeat_port == 0:
+            WARN("heartbeat port is invalid. heartbeat is disabled")
+            return
+
         def heartbeat():
             self.publish_msg(None, "", "heartbeat")
         timer = TimerThread(interval=20, target=heartbeat)
