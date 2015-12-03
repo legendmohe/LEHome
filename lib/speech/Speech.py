@@ -401,7 +401,7 @@ class Text2Speech:
             "ctp": 1,
             "spd": 7,
             "pit": 3,
-            "per": 1,
+            "per": 0,
             "cuid": "lehome"
         }
         data = urllib.urlencode(tts_data)

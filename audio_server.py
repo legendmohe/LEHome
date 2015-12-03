@@ -174,7 +174,7 @@ def worker(play_url, loop):
     # cmd = ['mplayer', '-ao', 'alsa:device=btheadset', play_url, '-loop', str(loop)]
     # print cmd
     cmd = ['mplayer',
-            '-ao', 'alsa:device=hw=%s' % SOUNDCARD_NAME,
+            # '-ao', 'alsa:device=hw=%s' % SOUNDCARD_NAME,
             play_url,
             '-loop', str(loop)]
     DEBUG("play cmd:%s" % cmd)
@@ -262,7 +262,7 @@ def queue_worker():
         print "get from queue:" + str(url)
         # cmd = ['mplayer', '-ao', 'alsa:device=btheadset', url, '-loop', str(loop)]
         cmd = ['mplayer',
-                '-ao', 'alsa:device=hw=%s' % SOUNDCARD_NAME,
+                # '-ao', 'alsa:device=hw=%s' % SOUNDCARD_NAME,
                 url,
                 '-loop', str(loop)]
         # print cmd
