@@ -85,18 +85,4 @@ if [[ $rc != 0 ]] ; then
     exit $rc
 fi
 
-if [[ $1 == "s2t" ]]
-then
-    echo 'running s2t_server.py...'
-    file='log/s2t.log'
-    if [[ ! -f $file ]]; then
-        touch $file
-    fi
-    sudo python s2t_server.py > log/s2t.log 2>&1 &
-    rc=$?
-    if [[ $rc != 0 ]] ; then
-        exit $rc
-    fi
-fi
-
 echo 'LEHome started.'
