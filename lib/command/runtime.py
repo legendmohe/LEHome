@@ -25,7 +25,7 @@ import io
 
 from parser import Parser
 from lib.model.Elements import Statement, Block, IfStatement, WhileStatement, LogicalOperator, CompareOperator
-from lib.sound import Sound
+# from lib.sound import Sound
 from util.Res import Res
 from util.log import *
 from util.thread import StoppableThread
@@ -117,7 +117,7 @@ class Rumtime:
 
     def _stop_callback(self, command, stop):
         DEBUG(" _stop_callback: %s" % command)
-        Sound.play(Res.get_res_path("sound/com_stop"), inqueue=True)
+        # Sound.play(Res.get_res_path("sound/com_stop"), inqueue=True)
         if "stop" in self._registered_callbacks:
             callbacks = self._registered_callbacks["stop"]
             if stop in callbacks:

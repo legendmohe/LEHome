@@ -206,7 +206,7 @@ class Home:
                 self.runtime.parse(cmd)
 
     def activate(self):
-        Sound.play(Res.get_res_path("sound/com_begin"))
+        Sound.notice(Res.get_res_path("sound/com_begin"))
         self._spk.start()
         self.runtime.resume_parsing()
 

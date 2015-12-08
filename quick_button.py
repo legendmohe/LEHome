@@ -70,6 +70,7 @@ class RemoteButtonController(object):
         if self._state_queue is not None:
             if pin in self.mapping_btn:
                 INFO("interrupt: %s" % self.mapping_btn[pin])
+                self.beep()
                 self._state_queue.put(self.mapping_btn[pin])
 
 class quick_button(object):

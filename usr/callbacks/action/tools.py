@@ -54,7 +54,7 @@ class timer_callback(Callback.Callback):
             return False
         self._home.setResume(True)
         count = 7
-        Sound.play( Res.get_res_path("sound/com_bell") , True, count)
+        Sound.notice( Res.get_res_path("sound/com_bell"), True, count)
         self._home.setResume(False)
         return True
 
@@ -292,7 +292,7 @@ class camera_quickshot_callback(Callback.Callback):
     def callback(self, cmd, msg):
         self._home.publish_msg(cmd, u"正在截图...")
 
-        Sound.play(Res.get_res_path("sound/com_shoot"))
+        Sound.notice(Res.get_res_path("sound/com_shoot"))
 
         save_path="data/capture/"
         save_name, thumbnail_name = CameraHelper().take_a_photo(save_path)

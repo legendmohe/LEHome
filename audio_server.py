@@ -16,6 +16,8 @@
 # limitations under the License.
 
 
+# alsa settings refer to:
+# https://gist.github.com/legendmohe/83ba17c1e9b9c46480d2
 
 import threading
 import subprocess
@@ -116,17 +118,18 @@ class PlayHandler(tornado.web.RequestHandler):
             return
 
         is_inqueue = self.get_argument("inqueue", None)
+        channel = self.get_argument("channel", "default")
         loop = self.get_argument("loop", None)
         if is_inqueue is None:
             if loop is None:
-                play_audio(url)
+                play_audio(url, channel)
             else:
-                play_audio(url, int(loop))
+                play_audio(url, channel, int(loop))
         else:
             if loop is None:
-                play_audio_inqueue(url)
+                play_audio_inqueue(url, channel)
             else:
-                play_audio_inqueue(url, int(loop))
+                play_audio_inqueue(url, channel, int(loop))
         self.write(str(RETURNCODE.SUCCESS))
 
 
@@ -156,7 +159,7 @@ class PlayHandler(tornado.web.RequestHandler):
 #         sleep(0.1)
 
 
-def worker(play_url, loop):
+def worker(play_url, channel, loop):
     global mp_context
 
     # mp = Player()
@@ -174,7 +177,7 @@ def worker(play_url, loop):
     # cmd = ['mplayer', '-ao', 'alsa:device=btheadset', play_url, '-loop', str(loop)]
     # print cmd
     cmd = ['mplayer',
-            # '-ao', 'alsa:device=hw=%s' % SOUNDCARD_NAME,
+            '-ao', 'alsa:device=%s' % channel,
             play_url,
             '-loop', str(loop)]
     DEBUG("play cmd:%s" % cmd)
@@ -188,23 +191,23 @@ def worker(play_url, loop):
     print "play finished:%s" % (play_url,)
 
 
-def play_audio(url, loop=1):
+def play_audio(url, channel='default', loop=1):
     global mp_context
 
     if url in mp_context:
         mp = mp_context[url]
         if not mp is None:  # for thread-safe
             mp.terminate()
-    t = threading.Thread(target=worker, args=(url, loop))
+    t = threading.Thread(target=worker, args=(url, channel, loop))
     t.setDaemon(True)
     t.start()
 
     return True
 
 
-def play_audio_inqueue(url, loop=1):
+def play_audio_inqueue(url, channel='default', loop=1):
     global mp_queue
-    mp_queue.put((url, loop))
+    mp_queue.put((url, channel, loop))
     INFO("%s was added to queue." % (url,))
 
 
@@ -258,11 +261,11 @@ def queue_worker():
     global mp_queue
 
     while True:
-        url, loop = mp_queue.get()
+        url, channel, loop = mp_queue.get()
         print "get from queue:" + str(url)
         # cmd = ['mplayer', '-ao', 'alsa:device=btheadset', url, '-loop', str(loop)]
         cmd = ['mplayer',
-                # '-ao', 'alsa:device=hw=%s' % SOUNDCARD_NAME,
+                '-ao', 'alsa:device=%s' % channel,
                 url,
                 '-loop', str(loop)]
         # print cmd

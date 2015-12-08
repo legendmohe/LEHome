@@ -24,7 +24,6 @@ import json
 import redis
 
 from lib.command.runtime import Confirmation
-from lib.sound import Sound
 from lib.command.runtime import UserInput
 from util import Util
 from util.log import *
@@ -171,10 +170,10 @@ class play_callback(Callback.Callback):
     def callback(self, action = None, target = None,
             msg = None, pre_value = None):
         if target != None:
-            def play(path = None, inqueue=True, loop=-1):
+            def play(path = None, inqueue=True, channel='default', loop=-1):
                 if not path:
                     return
-                Sound.play(path, inqueue, loop)
+                Sound.play(path, inqueue, channel, loop)
                 INFO("%s going to audio queue." % (path, ))
             if not "player" in self._global_context:
                 self._global_context["player"] = play

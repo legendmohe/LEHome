@@ -23,14 +23,16 @@ from util.log import *
 
 AUDIO_SERVER_ADDRESS = None
 
-def get_play_request_url(path, inqueue=False, loop=-1):
+def get_play_request_url(path, inqueue, channel, loop=-1):
     global AUDIO_SERVER_ADDRESS
     if AUDIO_SERVER_ADDRESS is None:
         WARN("audio server address is empty.")
         return None
     values = {'url': path}
-    if inqueue:
+    if inqueue is not None:
         values["inqueue"] = True
+    if channel is not None:
+        values["channel"] = channel
     if not loop == -1:
         values["loop"] = loop
     data = urllib.urlencode(values)
@@ -53,8 +55,8 @@ def get_volume_url():
     return AUDIO_SERVER_ADDRESS + '/volume'
 
 
-def play(path, inqueue=False, loop=-1):
-    url = get_play_request_url(path, inqueue, loop)
+def play(path, inqueue=False, channel='default', loop=-1):
+    url = get_play_request_url(path, inqueue, channel, loop)
     if url is None:
         return
     INFO("sending audio url: " + url)
@@ -69,6 +71,8 @@ def play(path, inqueue=False, loop=-1):
     else:
         INFO("audio response: " + response)
 
+def notice(path, inqueue=False, loop=-1):
+    play(path, inqueue, channel='notice', loop=loop)
 
 def stop(path):
     pass

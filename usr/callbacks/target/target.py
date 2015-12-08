@@ -268,7 +268,7 @@ class message_callback(Callback.Callback):
 
             self._home.setResume(True)
             filepath = path + datetime.now().strftime("%m_%d_%H_%M") + ".mp3"
-            Sound.play(Res.get_res_path("sound/com_stop"))
+            Sound.notice(Res.get_res_path("sound/com_stop"))
             record = self._global_context["recorder"]
             self._home.publish_msg(cmd, u"录音开始...")
             record(filepath)
@@ -302,7 +302,7 @@ class message_callback(Callback.Callback):
             for f in filelist:
                 os.remove(f)
                 INFO("remove:%s" % (f, ))
-            Sound.play(
+            Sound.notice(
                         Res.get_res_path("sound/com_trash")
                         )
             self._home.publish_msg(cmd, u"删除成功")
@@ -335,7 +335,7 @@ class record_callback(Callback.Callback):
             self._home.publish_msg(cmd, u"录音开始...")
             record(filepath)
             self._home.publish_msg(cmd, u"录音结束")
-            Sound.play(
+            Sound.notice(
                         Res.get_res_path("sound/com_stop")
                         )
             self._home.setResume(False)
@@ -407,7 +407,7 @@ class alarm_callback(Callback.Callback):
                 return False
             self._home.setResume(True)
             count = 7
-            Sound.play( Res.get_res_path("sound/com_bell") , True, count)
+            Sound.notice( Res.get_res_path("sound/com_bell") , True, count)
             self._home.setResume(False)
             return True
 

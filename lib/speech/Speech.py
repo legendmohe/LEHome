@@ -406,7 +406,7 @@ class Text2Speech:
         }
         data = urllib.urlencode(tts_data)
         tts_url = "%s?%s" % (Text2Speech.BASE_TTS_URL, data)
-        Sound.play(tts_url, inqueue=inqueue)
+        Sound.play(tts_url, channel="notice", inqueue=inqueue)
         
     def __get_access_token(self):
 #        proxies = {
