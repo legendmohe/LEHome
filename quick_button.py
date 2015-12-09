@@ -73,6 +73,12 @@ class RemoteButtonController(object):
                 self.beep()
                 self._state_queue.put(self.mapping_btn[pin])
 
+    def cleanup(self):
+        GPIO.setmode(GPIO.BOARD)
+        for pin in self.input_pin:
+            GPIO.remove_event_detect(pin)
+        # GPIO.cleanup()
+
 class quick_button(object):
 
     def __init__(self):
@@ -173,11 +179,13 @@ class quick_button(object):
 
     def stop(self):
         INFO("quick_button stop.")
+        self._btn_ctler.cleanup()
 
 if __name__ == '__main__':
+    qb = quick_button()
     try:
-        quick_button().start()
+        qb.start()
     finally:
+        qb.stop()
         INFO("clean GPIO. now exit")
-        GPIO.cleanup()
-    print "exit"
+    print "exit."

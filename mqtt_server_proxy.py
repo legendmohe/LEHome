@@ -119,17 +119,22 @@ class mqtt_server_proxy:
                     print "exception in _on_mqtt_message, normal topic:", ex
             elif msg.topic == self._device_id + mqtt_server_proxy.BASE64_SUB_KEY:
                 try:
-                    data = json.loads(payload, strict=False)
-                    self._handle_base64_payload(data["type"], data["payload"])
+                    datas = json.loads(payload, strict=False)
+                    self._handle_base64_payload(datas)
                 except Exception, ex:
                     import traceback
                     traceback.format_exc()
                     print "exception in _on_mqtt_message, message topic", ex
 
-    def _handle_base64_payload(self, mtype, payload):
+    def _handle_base64_payload(self, datas):
+        mtype = datas["type"]
         if mtype == "message":
             try:
-                audio_data = base64.b64decode(payload)
+                audio_data = base64.b64decode(datas["payload"])
+                file_name = datas["filename"]
+                if file_name is None or len(file_name) == 0:
+                    ERROR("no filename for message base64 request")
+                    return
                 path = mqtt_server_proxy.MESSAGE_DIRECTORY
                 try:
                     os.makedirs(path)
@@ -141,6 +146,7 @@ class mqtt_server_proxy:
                         return
 
                 filepath = path + datetime.now().strftime("%m-%d-%H-%M-%S") + ".spx"
+                # filepath = path + file_name
                 with open(filepath, "wb") as f:
                     f.write(audio_data)
                 INFO("finish writing message file:%s, now send it to home." % filepath)

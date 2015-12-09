@@ -288,7 +288,7 @@ class message_callback(Callback.Callback):
                 for idx, filepath in enumerate(messages):
                     INFO(u'第%d条留言:%s' % (idx + 1, filepath))
                     play(Res.get_res_path("sound/com_stop"))
-                    play(filepath)
+                    play(filepath, channel="notice")
             elif pre_value == "show":
                 info = []
                 for idx, filepath in enumerate(messages):
@@ -354,7 +354,7 @@ class bell_callback(Callback.Callback):
                 count = int(Util.cn2dig(msg[:-1]))
             self._home.setResume(True)
             play = self._global_context["player"]
-            play(Res.get_res_path("sound/com_bell"), loop=count)
+            play(Res.get_res_path("sound/com_bell"), channel='notice', loop=count)
             self._home.setResume(False)
         return True
 
@@ -372,7 +372,7 @@ class warning_bell_callback(Callback.Callback):
                 count = int(Util.cn2dig(msg[:-1]))
             self._home.setResume(True)
             play = self._global_context["player"]
-            play(Res.get_res_path("sound/com_warn"), loop=count)
+            play(Res.get_res_path("sound/com_warn"), channel='notice', loop=count)
             self._home.setResume(False)
         return True
 

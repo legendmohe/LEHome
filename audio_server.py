@@ -133,54 +133,20 @@ class PlayHandler(tornado.web.RequestHandler):
         self.write(str(RETURNCODE.SUCCESS))
 
 
-# class PauseHandler(tornado.web.RequestHandler):
-#     def get(self):
-#         # url = self.get_argument("url", None)
-#         # if url is None or url == "":
-#         if pause_audio_queue():
-#             self.write(str(RETURNCODE.SUCCESS))
-#         else:
-#             self.write(str(RETURNCODE.ERROR))
-#         # else:
-#         #     if pause_audio(url):
-#         #         self.write(str(RETURNCODE.SUCCESS))
-#         #     else:
-#         #         self.write(str(RETURNCODE.ERROR))
-
-
 # ============== functions ============
 
 
-# def wait_util_player_finished(mp):
-#     sleep(0.1)
-#     while mp.time_pos < mp.length \
-#                         or mp.paused:
-#         # print mp.time_pos
-#         sleep(0.1)
-
-
 def worker(play_url, channel, loop):
-    global mp_context
+    global mp_context, mixer_normal, mixer_notice
 
-    # mp = Player()
-    # mp.loop = loop
-    # try:
-    #     mp.loadfile(play_url)
-    #     INFO("playing %s." % (play_url,))
-    #     wait_util_player_finished(mp)
-    # except Exception, ex:
-    #     print ex
-    # mp.loop = -1
-    # mp.exit()
-    # if play_url in mp_context:
-    #     del mp_context[play_url]
-    # cmd = ['mplayer', '-ao', 'alsa:device=btheadset', play_url, '-loop', str(loop)]
-    # print cmd
     cmd = ['mplayer',
             '-ao', 'alsa:device=%s' % channel,
             play_url,
             '-loop', str(loop)]
     DEBUG("play cmd:%s" % cmd)
+    nor_vol = mixer_normal.getvolume()[0]
+    if channel == 'notice':
+        mixer_normal.setvolume(20)
     with open(os.devnull, 'w') as tempf:
         player = subprocess.Popen(cmd, stdout=tempf, stderr=tempf)
         mp_context[play_url] = player
@@ -189,6 +155,7 @@ def worker(play_url, channel, loop):
     if play_url in mp_context:
         del mp_context[play_url]
     print "play finished:%s" % (play_url,)
+    mixer_normal.setvolume(nor_vol)
 
 
 def play_audio(url, channel='default', loop=1):
@@ -225,26 +192,6 @@ def stop_audio(url):
         return True
 
 
-# def pause_audio(url):
-#     global mp_context
-#     if not url in mp_context:
-#         WARN("%s is not playing" % (url, ))
-#         return False
-#     else:
-#         INFO("pause: " + url)
-#         mp = mp_context[url]
-#         mp.pause()
-#         return True
-
-
-# def pause_audio_queue():
-#     global mp_context
-#     INFO("pause audio queue.")
-#     mp = mp_context["queue"]
-#     mp.pause()
-#     return True
-
-
 def clear_audio_queue():
     global mp_context
     global mp_queue
@@ -257,18 +204,21 @@ def clear_audio_queue():
 
 
 def queue_worker():
-    global mp_context
+    global mp_context, mixer_normal, mixer_notice
     global mp_queue
 
     while True:
         url, channel, loop = mp_queue.get()
-        print "get from queue:" + str(url)
-        # cmd = ['mplayer', '-ao', 'alsa:device=btheadset', url, '-loop', str(loop)]
+        print "get from queue:%s \n channel:%s" % (str(url), channel)
         cmd = ['mplayer',
                 '-ao', 'alsa:device=%s' % channel,
                 url,
                 '-loop', str(loop)]
         # print cmd
+        nor_vol = mixer_normal.getvolume()[0]
+        if channel == 'notice':
+            # INFO("set nor_vol to 20")
+            mixer_normal.setvolume(20)
         with open(os.devnull, 'w') as tempf:
             player = subprocess.Popen(cmd, stdout=tempf, stderr=tempf)
             mp_context["queue"] = player
@@ -276,6 +226,7 @@ def queue_worker():
             print url + u" stopped."
             if "queue" in  mp_context:
                 del mp_context["queue"]
+        mixer_normal.setvolume(nor_vol)
         mp_queue.task_done()
     sleep(1)
 
@@ -288,6 +239,8 @@ def init_queue_player():
 
 mp_context = {}
 mp_queue = Queue()
+mixer_normal = alsaaudio.Mixer(control='chan_norl_amp')
+mixer_notice = alsaaudio.Mixer(control='chan_noti_amp')
 # http://stackoverflow.com/questions/17101502/how-to-stop-the-tornado-web-server-with-ctrlc
 is_closing = False
 def signal_handler(signum, frame):
@@ -311,7 +264,6 @@ application = tornado.web.Application([
     (r"/clear", ClearQeueuHandler),
     (r"/stop", StopHandler),
     (r"/volume", VolumeHandler),
-    # (r"/pause", PauseHandler),
 ])
 
 if __name__ == "__main__":
