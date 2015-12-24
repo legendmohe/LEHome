@@ -273,7 +273,7 @@ class camera_quickshot_callback(Callback.Callback):
         for i in range(2) :
             try:
                 data = proc.stdout.readline().strip() #block / wait
-                DEBUG("swift readline: %s" % data)
+                INFO("swift readline: %s" % data)
                 if data.endswith(".thumbnail.jpg"):
                     INFO("save to storage:%s" % data)
                     read_thumbnail = camera_quickshot_callback.IMAGE_HOST_URL + data
@@ -308,7 +308,7 @@ class camera_quickshot_callback(Callback.Callback):
                 )
         if img_url is None:
             self._home.publish_msg(cmd, u"截图失败")
-            INFO("capture faild.")
+            INFO("upload capture faild.")
             return True
         else:
             self._home.publish_msg(

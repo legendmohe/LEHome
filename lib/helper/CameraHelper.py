@@ -23,6 +23,7 @@ import os.path
 from PIL import Image
 
 from util.log import *
+from util.Util import mkdir_p
 
 class CameraHelper(object):
 
@@ -45,6 +46,7 @@ class CameraHelper(object):
             ERROR("save path is invaild")
             return None
 
+        mkdir_p(save_path)
         if not save_path.endswith("/"):
             save_path += "/"
         if file_name is None or len(file_name) == 0:
@@ -52,19 +54,19 @@ class CameraHelper(object):
 
         file_path = save_path + file_name
         INFO("taking photo...")
-        # subprocess.call([
-        #     "fswebcam",
-        #     "-d", "/dev/video1",
-        #     "-r", "1280*720",
-        #     "--no-banner",
-        #     save_path + file_name
-        #     ])
         subprocess.call([
-            "wget",
-            "-O",
-            file_path,
-            "http://192.168.1.100:8080/?action=snapshot"
+            "fswebcam",
+            # "-d", "/dev/video0",
+            "-r", "1280*720",
+            # "--no-banner",
+            file_path
             ])
+        # subprocess.call([
+        #     "wget",
+        #     "-O",
+        #     file_path,
+        #     "http://192.168.1.100:8080/?action=snapshot"
+        #     ])
         if not os.path.isfile(file_path) :
             INFO("snapshot faild. no such file:" + file_path)
             return None, None

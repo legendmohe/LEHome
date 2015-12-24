@@ -139,14 +139,16 @@ class PlayHandler(tornado.web.RequestHandler):
 def worker(play_url, channel, loop):
     global mp_context, mixer_normal, mixer_notice
 
-    cmd = ['mplayer',
+    cmd = [
+            # 'sudo',
+            'mplayer',
             '-ao', 'alsa:device=%s' % channel,
             play_url,
             '-loop', str(loop)]
-    DEBUG("play cmd:%s" % cmd)
+    INFO("play cmd:%s" % cmd)
     nor_vol = mixer_normal.getvolume()[0]
     if channel == 'notice':
-        mixer_normal.setvolume(20)
+        mixer_normal.setvolume(int(nor_vol*0.8))
     with open(os.devnull, 'w') as tempf:
         player = subprocess.Popen(cmd, stdout=tempf, stderr=tempf)
         mp_context[play_url] = player
@@ -210,15 +212,18 @@ def queue_worker():
     while True:
         url, channel, loop = mp_queue.get()
         print "get from queue:%s \n channel:%s" % (str(url), channel)
-        cmd = ['mplayer',
+        cmd = [
+                # 'sudo',
+                'mplayer',
                 '-ao', 'alsa:device=%s' % channel,
                 url,
                 '-loop', str(loop)]
         # print cmd
+        INFO("queue play cmd:%s" % cmd)
         nor_vol = mixer_normal.getvolume()[0]
         if channel == 'notice':
             # INFO("set nor_vol to 20")
-            mixer_normal.setvolume(20)
+            mixer_normal.setvolume(int(nor_vol*0.8))
         with open(os.devnull, 'w') as tempf:
             player = subprocess.Popen(cmd, stdout=tempf, stderr=tempf)
             mp_context["queue"] = player
