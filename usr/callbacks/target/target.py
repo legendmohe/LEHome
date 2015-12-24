@@ -857,6 +857,7 @@ class var_callback(Callback.Callback):
                 self._home.publish_msg(cmd, u"缺少变量名称")
                 return False
             # import pdb; pdb.set_trace()
+            #return True, self.var_by_name(msg)
             if msg not in self.vars:
                 self._home.publish_msg(cmd, u"无变量:" + msg)
                 return False

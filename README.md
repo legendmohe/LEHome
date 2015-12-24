@@ -54,18 +54,7 @@ example：
 
 LEHome 服务端基于Python，需要安装以下依赖：
 
-    - tornado
-    - pyzmq
-    - numpy
-    - BeautifulSoup
-    - scipy
-    - audioop
-    - alsaaudio
-    - pyaudio
-    - fysom
-    - mplayer
-    - sox
-    - redis
+[请看这里](https://gist.github.com/legendmohe/71bb6355687b5f7dfc07)
 
 down下来后，配置init.json（后面会说明如何配置），然后在根目录下运行./start.sh即可（先用chmod添加执行权限）。
 
