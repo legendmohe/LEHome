@@ -249,7 +249,7 @@ class every_callback(Callback.Callback):
             period = msg.split(u'到')
             if len(period) == 2:
                 t = Util.wait_for_period(period)
-                if t > 0:
+                if t > 0 and not first_every_invoke:
                     DEBUG("period wait for %d sec" % (t, ))
                     threading.current_thread().waitUtil(t)
                 if check_weekday is True:
@@ -266,7 +266,7 @@ class every_callback(Callback.Callback):
                 return True, True
             else:
                 t = Util.gap_for_timestring(msg)
-            if t > 0:
+            if t > 0 and not first_every_invoke:
                 INFO("gap wait for %d sec" % (t, ))
                 threading.current_thread().waitUtil(t)
                 if check_weekday is True:
@@ -291,7 +291,7 @@ class every_callback(Callback.Callback):
                 return False, False
             return True, True
         else:
-            INFO("new loop for %d sec" % (t, ))
+            INFO("new loop for %d sec, invoke now" % (t, ))
             stack.set_var(var_name, False)
             if threading.current_thread().stopped():
                 return False, False
