@@ -209,8 +209,9 @@ class every_callback(Callback.Callback):
         var_name = "first_every_invoke" + str(stack.cur_layer())
         first_every_invoke = stack.get_value(var_name)
         if first_every_invoke is None:
+            first_every_invoke = True
+            stack.set_var(var_name, False)
             self._home.publish_msg(cmd, u"循环建立:" + cmd)
-            stack.set_var(var_name, True)
 
         # INFO("every_callback invoke:%s" % (msg, ))
         if msg.endswith(u"天"):
@@ -249,7 +250,7 @@ class every_callback(Callback.Callback):
             period = msg.split(u'到')
             if len(period) == 2:
                 t = Util.wait_for_period(period)
-                if t > 0 and not first_every_invoke:
+                if t > 0:
                     DEBUG("period wait for %d sec" % (t, ))
                     threading.current_thread().waitUtil(t)
                 if check_weekday is True:
@@ -266,7 +267,7 @@ class every_callback(Callback.Callback):
                 return True, True
             else:
                 t = Util.gap_for_timestring(msg)
-            if t > 0 and not first_every_invoke:
+            if t > 0:
                 INFO("gap wait for %d sec" % (t, ))
                 threading.current_thread().waitUtil(t)
                 if check_weekday is True:
@@ -285,14 +286,13 @@ class every_callback(Callback.Callback):
             self._home.publish_msg(cmd, u"时间格式有误")
             return False, False
 
-        if stack.get_value(var_name) is False:
+        if first_every_invoke is False:
             threading.current_thread().waitUtil(t)
             if threading.current_thread().stopped():
                 return False, False
             return True, True
         else:
             INFO("new loop for %d sec, invoke now" % (t, ))
-            stack.set_var(var_name, False)
             if threading.current_thread().stopped():
                 return False, False
             return True, True

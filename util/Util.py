@@ -259,11 +259,10 @@ def is_workday_today():
     check_date =datetime.datetime.today()
     if g_workday_fetched is None or g_workday_fetched.day < check_date.day:
         print "init workday"
-        weekday_api = "http://www.easybots.cn/api/holiday.php?d=" + check_date.strftime('%Y%m%d')
+        weekday_api = "http://lehome.sinaapp.com/tool/workdaychecker?d=" + check_date.strftime('%Y%m%d')
         try:
-            workday_json = urllib2.urlopen(weekday_api).read()
-            workday_obj = json.loads(workday_json)
-            g_workday_cache = workday_obj[check_date.strftime("%Y%m%d")]
+            day_type = urllib2.urlopen(weekday_api).read()
+            g_workday_cache = int(day_type)
             g_workday_fetched = check_date
             return g_workday_cache
         except Exception, ex:
