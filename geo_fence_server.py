@@ -50,7 +50,7 @@ class GeoResolver:
                 distance = GeoResolver.cal_distance(cur_loc.lat, cur_loc.lon, area.lat, area.lon)
                 print "distance from", cur_loc.dump(), "to", area.dump(), "is", distance
 
-                interval = self.cal_interval(dev, distance)
+                interval = self.cal_interval(dev, distance, self._sensitivity)
                 intervals.append(interval)
 
                 if distance <= self._sensitivity and self._area_state[area_name][dev.name] == Event.LEAVE:
@@ -84,17 +84,26 @@ class GeoResolver:
         distance = radius_of_earth * c
         return distance
 
-    def cal_interval(self, dev, distance):
+    def cal_interval(self, dev, distance, sensitivity):
         # calculation
+        interval = 0
 
-        cur_loc = dev.loc_queue[-1]
-        last_loc = dev.loc_queue[-2]
-        velocity = dev.movements[-1]*1000/(cur_loc.timestamp - last_loc.timestamp)  # m/s
-        velocity_interval = -2.9*velocity + 150
+        velocity = 0
+        for i in range(1, len(dev.loc_queue)):
+            cur_loc = dev.loc_queue[i]
+            last_loc = dev.loc_queue[i - 1]
+            velocity += dev.movements[i - 1]*1000/(cur_loc.timestamp - last_loc.timestamp)  # m/s
+        velocity /= len(dev.loc_queue) - 1
+
+        velocity_interval = 0
+        if velocity <= 0.7:
+            velocity_interval = (-295*velocity + 210)/0.7
+            velocity_interval = velocity_interval if velocity_interval > 0 else 0
+            interval += velocity_interval
 
         distance_interval = 29.5*distance + 5
+        interval += distance_interval
 
-        interval = velocity_interval + distance_interval
         print "interval:", interval, "velocity", velocity, "velocity_interval:", velocity_interval, "distance_interval", distance_interval
 
         # avg_movement = sum(dev.movements)/float(len(dev.movements))
@@ -162,29 +171,29 @@ g_sensitivity = 0.05
 def fetch_loc_worker(device, loc_queue):
 
     test_loc_data = [
-        # (23.1210200000, 113.2732000000),
-        # (23.1178290000, 113.2745660000),
-        # (23.1147050000, 113.2762900000),
-        # (23.1104510000, 113.2781590000),
-        # (23.1071930000, 113.2793810000),
-        # (23.1049990000, 113.2807460000),
-        # (23.1018750000, 113.2819680000),
-        # (23.0984840000, 113.2834770000),
-        # (23.0967550000, 113.2844110000),
-        # (23.0967550000, 113.2844110000),
-        # (23.0967550000, 113.2844110000),
-        # (23.0967550000, 113.2844110000),
-        # (23.0967550000, 113.2844110000),
-        # (23.0928330000, 113.2860640000),
-        # (23.0928330000, 113.2860640000),
-        # (23.0848540000, 113.2904480000),
-        # (23.0821940000, 113.2957660000),
-        # (23.0798000000, 113.2997900000),
-        # (23.0777390000, 113.3018020000),
-        # (23.0777390000, 113.3018020000),
-        # (23.0777390000, 113.3018020000),
-        # (23.0777390000, 113.3018020000),
-        # (23.0777390000, 113.3018020000),
+        (23.1210200000, 113.2732000000),
+        (23.1178290000, 113.2745660000),
+        (23.1147050000, 113.2762900000),
+        (23.1104510000, 113.2781590000),
+        (23.1071930000, 113.2793810000),
+        (23.1049990000, 113.2807460000),
+        (23.1018750000, 113.2819680000),
+        (23.0984840000, 113.2834770000),
+        (23.0967550000, 113.2844110000),
+        (23.0967550000, 113.2844110000),
+        (23.0967550000, 113.2844110000),
+        (23.0967550000, 113.2844110000),
+        (23.0967550000, 113.2844110000),
+        (23.0928330000, 113.2860640000),
+        (23.0928330000, 113.2860640000),
+        (23.0848540000, 113.2904480000),
+        (23.0821940000, 113.2957660000),
+        (23.0798000000, 113.2997900000),
+        (23.0777390000, 113.3018020000),
+        (23.0777390000, 113.3018020000),
+        (23.0777390000, 113.3018020000),
+        (23.0777390000, 113.3018020000),
+        (23.0777390000, 113.3018020000),
         (23.0773530000, 113.2999740000),
         (23.0781090000, 113.2998130000),
         (23.0782500000, 113.2993540000),
@@ -193,15 +202,6 @@ def fetch_loc_worker(device, loc_queue):
         (23.0779350000, 113.2982410000),
         (23.0781760000, 113.2984340000),
         (23.0782710000, 113.2986670000),
-        (23.0782550000, 113.2987620000),
-        (23.0782550000, 113.2987620000),
-        (23.0782550000, 113.2987620000),
-        (23.0782550000, 113.2987620000),
-        (23.0782550000, 113.2987620000),
-        (23.0782550000, 113.2987620000),
-        (23.0782550000, 113.2987620000),
-        (23.0782550000, 113.2987620000),
-        (23.0782550000, 113.2987620000),
         (23.0782550000, 113.2987620000),
         (23.0782550000, 113.2987620000),
         (23.0782550000, 113.2987620000),
