@@ -1,0 +1,18 @@
+{
+  "devices": [
+    "xinyu"
+  ],
+  "area": {
+    "home":{
+      "lat": 23.0782590000,
+      "lon": 113.2987390000
+    },
+    "work":{
+      "lat": 23.1206570000,
+      "lon": 113.2728630000
+    }
+  },
+  "min_interval": 10,
+  "max_interval": 300,
+  "sensitivity": 0.02
+}

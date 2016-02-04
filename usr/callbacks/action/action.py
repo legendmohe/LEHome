@@ -421,11 +421,14 @@ class location_callback(Callback.Callback):
             INFO("empty location target.")
             self._home.publish_msg(cmd, u"无定位目标")
             return False
-
-        INFO("send location request to %s" % target)
-        # self._home.publish_msg(cmd, u"发起定位:%s" % target)
-        self._home.publish_msg(cmd, target, cmd_type="req_loc")
-        return True, "location"
+        
+        if msg is None or len(msg) == 0:
+            INFO("send location request to %s" % target)
+            # self._home.publish_msg(cmd, u"发起定位:%s" % target)
+            self._home.publish_msg(cmd, target, cmd_type="req_loc")
+            return True, "location"
+        else:
+            return True
 
 
 class mute_callback(Callback.Callback):
