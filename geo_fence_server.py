@@ -60,7 +60,6 @@ class GeoResolver:
                     self.notify_state(area, dev, Event.LEAVE)
                     self._area_state[area_name][dev.name] = Event.LEAVE
 
-
             dev.loc_interval = min(intervals)
             print "="*80
             print "%s sleep for %f sec" % (dev.name, dev.loc_interval)
@@ -92,7 +91,8 @@ class GeoResolver:
         for i in range(1, len(dev.loc_queue)):
             cur_loc = dev.loc_queue[i]
             last_loc = dev.loc_queue[i - 1]
-            velocity += dev.movements[i - 1]*1000/(cur_loc.timestamp - last_loc.timestamp)  # m/s
+            velocity += dev.movements[i]*1000/(cur_loc.timestamp - last_loc.timestamp)  # m/s
+            print "velocity from", cur_loc.dump(), "to", last_loc.dump(), "velocity", velocity, "interval", (-295*velocity + 210)/0.7
         velocity /= len(dev.loc_queue) - 1
 
         velocity_interval = 0
@@ -129,7 +129,7 @@ class GeoResolver:
 class Device:
     def __init__(self, name, default_interval=15):
         self.loc_queue = collections.deque(maxlen=5)
-        self.movements = collections.deque(maxlen=self.loc_queue.maxlen)
+        self.movements = collections.deque([0], maxlen=self.loc_queue.maxlen)
         self.name = name
         self.loc_interval = default_interval
 
