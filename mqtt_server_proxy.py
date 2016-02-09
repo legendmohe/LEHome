@@ -37,6 +37,7 @@ class mqtt_server_proxy:
     
     NO_HEAD_FLAG = "*"
     BASE64_SUB_KEY = "/lehome/base64"
+    GEO_FENCING_SUB_KEY = "/lehome/geofencing"
     MESSAGE_DIRECTORY = "./usr/message/"
 
     def __init__(self, address):
@@ -125,6 +126,14 @@ class mqtt_server_proxy:
                     import traceback
                     traceback.format_exc()
                     print "exception in _on_mqtt_message, message topic", ex
+            elif msg.topic == self._device_id + mqtt_server_proxy.GEO_FENCING_SUB_KEY:
+                try:
+                    datas = json.loads(payload, strict=False)
+                    self._handle_geo_fencing_payload(datas)
+                except Exception, ex:
+                    import traceback
+                    traceback.format_exc()
+                    print "exception in _on_mqtt_message, geofencing topic", ex
 
     def _handle_base64_payload(self, datas):
         mtype = datas["type"]
@@ -159,6 +168,18 @@ class mqtt_server_proxy:
                 ERROR("decoding message error")
         else:
             print "unknown payload type in base64"
+
+
+    def _handle_geo_fencing_payload(self, datas):
+        mtype = datas["type"]
+        if mtype == "loc_report":
+            try:
+                pass
+            except Exception, ex:
+                ERROR(ex)
+                ERROR("decoding geo data error")
+        else:
+            print "unknown payload type in geofencing"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

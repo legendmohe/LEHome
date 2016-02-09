@@ -9,8 +9,15 @@ import time
 import math
 import threading
 import random
+import os
+import signal
+import argparse
 
+import tornado.ioloop
+import tornado.web
+import redis
 
+from util.log import *
 # ----------------------Util
 
 def enum(**enums):
@@ -158,9 +165,10 @@ class Area:
 # ---------------------- Global
 
 g_loc_queue = Queue.Queue(maxsize=25)
+g_data_queues = {}
 g_devices = {}
 g_area = {}
-g_wait_lock = threading.Event()
+g_wait_locks = {}
 
 g_min_interval = 10
 g_max_interval = 15*60
@@ -168,85 +176,78 @@ g_sensitivity = 0.05
 
 # ----------------------- Logic
 
-def fetch_loc_worker(device, loc_queue):
+class LocationReportHandler(tornado.web.RequestHandler):
 
-    test_loc_data = [
-        (23.1210200000, 113.2732000000),
-        (23.1178290000, 113.2745660000),
-        (23.1147050000, 113.2762900000),
-        (23.1104510000, 113.2781590000),
-        (23.1071930000, 113.2793810000),
-        (23.1049990000, 113.2807460000),
-        (23.1018750000, 113.2819680000),
-        (23.0984840000, 113.2834770000),
-        (23.0967550000, 113.2844110000),
-        (23.0967550000, 113.2844110000),
-        (23.0967550000, 113.2844110000),
-        (23.0967550000, 113.2844110000),
-        (23.0967550000, 113.2844110000),
-        (23.0928330000, 113.2860640000),
-        (23.0928330000, 113.2860640000),
-        (23.0848540000, 113.2904480000),
-        (23.0821940000, 113.2957660000),
-        (23.0798000000, 113.2997900000),
-        (23.0777390000, 113.3018020000),
-        (23.0777390000, 113.3018020000),
-        (23.0777390000, 113.3018020000),
-        (23.0777390000, 113.3018020000),
-        (23.0777390000, 113.3018020000),
-        (23.0773530000, 113.2999740000),
-        (23.0781090000, 113.2998130000),
-        (23.0782500000, 113.2993540000),
-        (23.0780090000, 113.2989230000),
-        (23.0777770000, 113.2985640000),
-        (23.0779350000, 113.2982410000),
-        (23.0781760000, 113.2984340000),
-        (23.0782710000, 113.2986670000),
-        (23.0782550000, 113.2987620000),
-        (23.0782550000, 113.2987620000),
-        (23.0782550000, 113.2987620000),
-        (23.0782550000, 113.2987620000),
-        (23.0782550000, 113.2987620000),
-        (23.0782550000, 113.2987620000),
-        (23.0782550000, 113.2987620000),
-    ]
+    def initialize(self, data_queues):
+        self._data_queues = data_queues
 
+    def post(self):
+        pass
+        # location = Location(device, test_data[0], test_data[1])
+
+
+class LocationRequestHandler(tornado.web.RequestHandler):
+    def get(self):
+        name = self.get_argument("name", None)
+        if name is None or name == "":
+            INFO("name is empty")
+            self.write("name param is needed")
+            return
+        request_for_location(name)
+
+
+def fetch_loc_worker(device, data_queue, process_queue, wait_lock):
     print "%s worker thread start." % device.name
     process_lock = threading.Event()
-    for test_data in test_loc_data:
+    while True:  # TODO - will it block here?
+        location = data_queue.get()
         if 1 > 0:  # TODO - seq
-            device.loc_queue.append(Location(device, test_data[0], test_data[1]))
-            loc_queue.put((process_lock, device.name))
-            loc_queue.task_done()
-            # time.sleep(device.loc_interval)
+            device.process_queue.append(location)
+            process_queue.put((process_lock, device.name))
+            process_queue.task_done()
             process_lock.wait()
             process_lock.clear()
 
-            g_wait_lock.wait(timeout=device.loc_interval)
-            g_wait_lock.clear()
+            wait_lock.wait(timeout=device.loc_interval)
+            wait_lock.clear()
 
-    print "%s worker thread stop." % device.name
+            send_geo_req_by_home(device)
+
+    INFO("%s worker thread stop." % device.name)
+
+
+def resolver_worker():
+    try:
+        resolver = GeoResolver(g_devices, g_area, g_min_interval, g_max_interval, g_sensitivity)  # min 10sec, max 15min, sen 200m
+        while True:
+            lock, target_name = g_loc_queue.get()
+            resolver.resolve(target_name)
+            lock.set()
+    except KeyboardInterrupt:
+        pass
+    INFO("resolver worker thread exit.")
 
 
 def init():
     load_data_from_conf("geo_conf.json")
+    init_threads()
 
 
 def load_data_from_conf(path):
     global g_max_interval, g_min_interval, g_sensitivity
 
-    print "load conf:", path
+    INFO("load conf:%s" % path)
     with open(path) as f:
         conf = json.load(f)
 
     devices = conf["devices"]
     for name in devices:
-        print "load device:", name
+        INFO("load device:%s" % name)
         g_devices[name] = Device(name)
 
     area = conf["area"]
     for name, item in area.items():
-        print "load area:", name
+        INFO("load area:%s" % name)
         g_area[name] = Area(name, item["lat"], item["lon"])
 
     g_min_interval = conf["min_interval"]
@@ -254,35 +255,72 @@ def load_data_from_conf(path):
     g_sensitivity = conf["sensitivity"]
 
 
-def request_for_location():
-    g_wait_lock.set()
+def request_for_location(name):
+    if name in g_wait_locks:
+        g_wait_locks[name].set()
 
 
-def start():
+def send_geo_req_by_home(device):
+    pass
+
+
+def init_threads():
     for name, device in g_devices.items():
+        wait_lock = threading.Event()
+        data_queue = Queue.Queue()
         fetch_t = threading.Thread(
             target=fetch_loc_worker,
-            args=(device, g_loc_queue)
+            args=(device, data_queue, g_loc_queue, wait_lock)
         )
         fetch_t.daemon = True
         fetch_t.start()
 
-    try:
-        resolver = GeoResolver(g_devices, g_area, g_min_interval, g_max_interval, g_sensitivity)  # min 10sec, max 15min, sen 200m
-        while True:
-            lock, target_name = g_loc_queue.get()
-            lock.set()
-            resolver.resolve(target_name)
-    except KeyboardInterrupt:
-        pass
+        g_wait_locks[name] = wait_lock
+        g_data_queues[name] = data_queue
 
-    print "main thread exit."
+    resolver_t = threading.Thread(
+        target=resolver_worker,
+    )
+    resolver_t.daemon = True
+    resolver_t.start()
 
 
 def main():
     init()
-    start()
 
+    application.listen(port)
+    application = tornado.web.Application([
+        (r"/report", LocationReportHandler, dict(data_queues=g_data_queues)),
+        (r"/request", LocationRequestHandler),
+    ])
+
+    tornado.ioloop.PeriodicCallback(try_exit, 100).start()
+    tornado.ioloop.IOLoop.instance().start()
+
+
+is_closing = False
+def signal_handler(signum, frame):
+    global is_closing
+    is_closing = True
+
+
+def try_exit():
+    global is_closing, mp_context
+    if is_closing:
+        # clean up here
+        tornado.ioloop.IOLoop.instance().stop()
+        logging.info('exit success')
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+                    description='geo_fencing_server.py -p port')
+    parser.add_argument('-p',
+                        action="store",
+                        dest="port",
+                        default="8004",
+                        )
+    port = parser.parse_args().port
+    INFO("bind to %s " % (port))
+
+    signal.signal(signal.SIGINT, signal_handler)
     main()
