@@ -415,6 +415,21 @@ class lower_callback(Callback.Callback):
     def callback(self, cmd, target, pre_value):
         return True, "lower"
 
+class geo_location_callback(Callback.Callback):
+    def callback(self, cmd, action, target, msg, pre_value):
+        if Util.empty_str(target):
+            INFO("empty geo location target.")
+            return False
+        
+        if msg is None or len(msg) == 0:
+            INFO("send geo location request to %s" % target)
+            # self._home.publish_msg(cmd, u"发起定位:%s" % target)
+            self._home.publish_msg(cmd, target, cmd_type="req_geo")
+            return True, "geo_location"
+        else:
+            return True
+
+
 class location_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):
         if Util.empty_str(target):

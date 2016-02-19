@@ -1,6 +1,6 @@
 {
   "devices": [
-    "xinyu"
+    "新宇"
   ],
   "area": {
     "home":{
@@ -14,5 +14,9 @@
   },
   "min_interval": 10,
   "max_interval": 300,
-  "sensitivity": 0.02
+  "sensitivity": 0.02,
+  "trigger": "你好",
+  "finish": "谢谢",
+  "home_address": "http://localhost:8000/home/cmd",
+  "listen_port": 8009
 }

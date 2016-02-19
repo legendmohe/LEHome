@@ -35,6 +35,7 @@ from lib.helper.RilHelper import RilHelper
 from lib.helper.SensorHelper import SensorHelper
 from lib.helper.MessageHelper import MessageHelper
 from lib.helper.TagHelper import TagHelper
+from lib.helper.GeoFencingHelper import GeoFencingHelper
 from util.Res import Res
 from lib.sound import Sound
 from util.log import *
@@ -174,6 +175,10 @@ class Home:
         INFO("init tag server. %s" % tag_server_ip)
         self._tag = TagHelper(tag_server_ip, self._init_res["tag"])
 
+        geo_server_ip = self._init_res["connection"]["geo_fencing_server"]
+        INFO("init geo-fencing server. %s" % geo_server_ip)
+        self._geo = GeoFencingHelper(geo_server_ip)
+
     def _cmd_begin_callback(self, command):
         INFO("command begin: %s" % (command))
         # self.publish_msg(command, u"执行: " + command)
@@ -197,6 +202,14 @@ class Home:
                             "%d:%s" % (timestamp, cmd)
                             )
                 self.publish_msg(cmd, cmd, cmd_type="bc_loc")
+            elif cmd.startswith("^"):
+                cmd = cmd[1:]
+                if persist is True:
+                    self._storage.rpush(
+                            "lehome:cmd_geo_location_list",
+                            "%d:%s" % (timestamp, cmd)
+                            )
+                self._geo.send_geo_report(cmd)
             else:
                 if persist is True:
                     self._storage.rpush(

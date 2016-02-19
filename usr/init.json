@@ -6,7 +6,8 @@
         "heartbeat_port" : "9001",
         "audio_server" : "http://localhost:8001",
         "tag_server" : "tcp://localhost:8006",
-        "mqtt_server" : "119.29.102.249"
+        "mqtt_server" : "119.29.102.249",
+        "geo_fencing_server" : "http://localhost:8009"
     },
     "storage": {
         "host" : "localhost",
@@ -25,7 +26,7 @@
                     "结束", "显示", "查看", "新增", "新建", "添加", "增加",
                     "逻辑", "数值", "字符", "时刻", "当前", "获取", "查询",
                     "翻译", "百科", "计算", "计时", "截图", "推送",
-                    "绑定", "等待", "当", "定位", "静音"],
+                    "绑定", "等待", "当", "定位", "后台定位", "静音"],
         "target" : ["豆瓣电台", "qq电台", "QQ电台", "新闻电台", "留言",
                     "提醒", "闹铃", "铃声", "公交车", "公车", "公交站",
                     "任务", "待办事项", "脚本", "变量", "警报", "时间",
@@ -88,6 +89,7 @@
             "等待":"action.hook_callback",
             "当":"action.hook_callback",
             "定位":"action.location_callback",
+            "后台定位":"action.geo_location_callback",
             "静音":"action.mute_callback",
             "翻译":"tools.translate_callback",
             "百科":"tools.baidu_wiki_callback",

@@ -147,7 +147,7 @@ class Location:
         self.lat = lat
         self.lon = lon
         self.device = device
-        self.timestamp = time.time()
+        self.timestamp = time.time()  # TODO- should receive from device
 
     def dump(self):
         return self.lat, self.lon
@@ -178,6 +178,7 @@ g_sensitivity = 0.05
 g_trigger_cmd = "trigger"
 g_finish_cmd = "finish"
 g_home_address = ""
+g_listen_port = 8009
 # ----------------------- Logic
 
 class LocationReportHandler(tornado.web.RequestHandler):
@@ -192,6 +193,8 @@ class LocationReportHandler(tornado.web.RequestHandler):
             self.write("body param is needed")
             return
         try:
+            INFO("receive loc report:%s", body)
+
             datas = body.split("|")
             name = datas[0]
             location_name = datas[1]
@@ -226,13 +229,19 @@ class LocationRequestHandler(tornado.web.RequestHandler):
 
 
 def fetch_loc_worker(device, data_queue, process_queue, wait_lock):
-    print "%s worker thread start." % device.name
+    INFO("%s worker thread start." % device.name)
     process_lock = threading.Event()
     # request first
     send_geo_req_by_home(device)
     # begin geo fencing
     while True:  # TODO - will it block here?
-        location = data_queue.get()
+        try:
+            location = data_queue.get(timeout=1*60)
+        except Queue.Empty:
+            INFO("report timeout, send another request")
+            send_geo_req_by_home(device)
+            continue
+
         if 1 > 0:  # TODO - seq
             device.process_queue.append(location)
             process_queue.put((process_lock, device.name))
@@ -275,11 +284,13 @@ def load_data_from_conf(path):
     devices = conf["devices"]
     for name in devices:
         INFO("load device:%s" % name)
+        name = name.encode("utf-8")
         g_devices[name] = Device(name)
 
     area = conf["area"]
     for name, item in area.items():
         INFO("load area:%s" % name)
+        name = name.encode("utf-8")
         g_area[name] = Area(name, item["lat"], item["lon"])
 
     g_min_interval = conf["min_interval"]
@@ -289,6 +300,7 @@ def load_data_from_conf(path):
     g_trigger_cmd = conf['trigger'].encode("utf-8")
     g_finish_cmd = conf['finish'].encode("utf-8")
     g_home_address = conf['home_address'].encode("utf-8")
+    g_listen_port = conf['listen_port']
 
 
 def request_for_location(name):
@@ -299,7 +311,7 @@ def request_for_location(name):
 def send_geo_req_by_home(device):
     global g_trigger_cmd, g_finish_cmd, g_home_address
 
-    cmd = ""
+    cmd = "后台定位%s" % device.name
     cmd = "%s%s%s" % (g_trigger_cmd, cmd, g_finish_cmd)
     INFO("send cmd %s to home." % (cmd, ))
 
@@ -345,13 +357,14 @@ def init_threads():
 
 
 def main():
-    init()
+    global g_listen_port
 
-    application.listen(port)
+    init()
     application = tornado.web.Application([
         (r"/report", LocationReportHandler, dict(data_queues=g_data_queues)),
         (r"/request", LocationRequestHandler),
     ])
+    application.listen(g_listen_port)
 
     tornado.ioloop.PeriodicCallback(try_exit, 100).start()
     tornado.ioloop.IOLoop.instance().start()
@@ -368,3 +381,6 @@ def try_exit():
     if is_closing:
         # clean up here
         tornado.ioloop.IOLoop.instance().stop()
+
+if __name__ == "__main__":
+    main()
