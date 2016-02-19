@@ -6,6 +6,7 @@ import threading
 import Queue
 import collections
 import time
+import urllib, urllib2
 import math
 import threading
 import random
@@ -174,6 +175,9 @@ g_min_interval = 10
 g_max_interval = 15*60
 g_sensitivity = 0.05
 
+g_trigger_cmd = "trigger"
+g_finish_cmd = "finish"
+g_home_address = ""
 # ----------------------- Logic
 
 class LocationReportHandler(tornado.web.RequestHandler):
@@ -182,7 +186,32 @@ class LocationReportHandler(tornado.web.RequestHandler):
         self._data_queues = data_queues
 
     def post(self):
-        pass
+        body = self.request.body
+        if body is None or body == "":
+            INFO("body is empty")
+            self.write("body param is needed")
+            return
+        try:
+            datas = body.split("|")
+            name = datas[0]
+            location_name = datas[1]
+            lat = datas[1]
+            lon = datas[2]
+
+            if name.startswith("*"):
+                name = name[1:]
+            name = name[1:]
+            
+            data_queue = self._data_queues[name]
+            new_loc = Location(name, lat, lon)
+            data_queue.put(new_loc)
+            INFO("put location:%s for %s" % (new_loc, name))
+            self.write("ok")
+            return
+        except Exception, e:
+            INFO("Invalid body:%s" % body)
+            self.write("Invalid body.")
+            return
         # location = Location(device, test_data[0], test_data[1])
 
 
@@ -199,6 +228,9 @@ class LocationRequestHandler(tornado.web.RequestHandler):
 def fetch_loc_worker(device, data_queue, process_queue, wait_lock):
     print "%s worker thread start." % device.name
     process_lock = threading.Event()
+    # request first
+    send_geo_req_by_home(device)
+    # begin geo fencing
     while True:  # TODO - will it block here?
         location = data_queue.get()
         if 1 > 0:  # TODO - seq
@@ -234,7 +266,7 @@ def init():
 
 
 def load_data_from_conf(path):
-    global g_max_interval, g_min_interval, g_sensitivity
+    global g_max_interval, g_min_interval, g_sensitivity, g_trigger_cmd, g_finish_cmd, g_home_address
 
     INFO("load conf:%s" % path)
     with open(path) as f:
@@ -254,6 +286,10 @@ def load_data_from_conf(path):
     g_max_interval = conf["max_interval"]
     g_sensitivity = conf["sensitivity"]
 
+    g_trigger_cmd = conf['trigger'].encode("utf-8")
+    g_finish_cmd = conf['finish'].encode("utf-8")
+    g_home_address = conf['home_address'].encode("utf-8")
+
 
 def request_for_location(name):
     if name in g_wait_locks:
@@ -261,7 +297,30 @@ def request_for_location(name):
 
 
 def send_geo_req_by_home(device):
-    pass
+    global g_trigger_cmd, g_finish_cmd, g_home_address
+
+    cmd = ""
+    cmd = "%s%s%s" % (g_trigger_cmd, cmd, g_finish_cmd)
+    INFO("send cmd %s to home." % (cmd, ))
+
+    try:
+        data = {"cmd": cmd}
+        enc_data = urllib.urlencode(data)
+        response = urllib2.urlopen(g_home_address,
+                                    enc_data,
+                                    timeout=5).read()
+    except urllib2.HTTPError, e:
+        ERROR(e)
+        return False
+    except urllib2.URLError, e:
+        ERROR(e)
+        return False
+    except Exception, e:
+        ERROR(e)
+        return False
+    else:
+        INFO("home response: " + response)
+        return True
 
 
 def init_threads():
@@ -309,18 +368,3 @@ def try_exit():
     if is_closing:
         # clean up here
         tornado.ioloop.IOLoop.instance().stop()
-        logging.info('exit success')
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-                    description='geo_fencing_server.py -p port')
-    parser.add_argument('-p',
-                        action="store",
-                        dest="port",
-                        default="8004",
-                        )
-    port = parser.parse_args().port
-    INFO("bind to %s " % (port))
-
-    signal.signal(signal.SIGINT, signal_handler)
-    main()

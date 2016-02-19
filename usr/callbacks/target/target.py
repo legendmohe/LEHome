@@ -993,27 +993,27 @@ class normal_ril_callback(Callback.Callback):
                 if self._ac["status"] == "off":
                     res = self._home._ril.send_cmd(normal_ril_callback.ON)
                     if res == None:
-                        self._home.publish_msg(cmd, u"%s打开失败" % action)
+                        self._home.publish_msg(cmd, u"%s打开失败" % target)
                     else:
-                        self._home.publish_msg(cmd, u"%s打开成功" % action)
+                        self._home.publish_msg(cmd, u"%s打开成功" % target)
                         self._ac["status"] = "on"
                 else:
-                    self._home.publish_msg(cmd, u"%s已经打开" % action)
+                    self._home.publish_msg(cmd, u"%s已经打开" % target)
             elif pre_value == "off":
                 if self._ac["status"] == "on":
                     res = self._home._ril.send_cmd(normal_ril_callback.OFF)
                     if res == None:
-                        self._home.publish_msg(cmd, u"%s关闭失败" % action)
+                        self._home.publish_msg(cmd, u"%s关闭失败" % target)
                     else:
-                        self._home.publish_msg(cmd, u"%s关闭成功" % action)
+                        self._home.publish_msg(cmd, u"%s关闭成功" % target)
                         self._ac["status"] = "off"
                 else:
-                    self._home.publish_msg(cmd, u"%s已经关闭" % action)
+                    self._home.publish_msg(cmd, u"%s已经关闭" % target)
             elif pre_value == "show":
                 if self._ac["status"] == "on":
-                    self._home.publish_msg(cmd, u"%s已打开" % action)
+                    self._home.publish_msg(cmd, u"%s已打开" % target)
                 else:
-                    self._home.publish_msg(cmd, u"%s已关闭" % action)
+                    self._home.publish_msg(cmd, u"%s已关闭" % target)
             elif pre_value == "get":
                 if self._ac["status"] == "on":
                     return True, "on"

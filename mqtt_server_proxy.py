@@ -174,7 +174,8 @@ class mqtt_server_proxy:
         mtype = datas["type"]
         if mtype == "loc_report":
             try:
-                pass
+                loc_data = datas["loc_data"]
+                self._send_cmd_to_home(loc_data)
             except Exception, ex:
                 ERROR(ex)
                 ERROR("decoding geo data error")
