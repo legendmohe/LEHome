@@ -411,9 +411,16 @@ class new_callback(Callback.Callback):
             self._global_context["recorder"] = record
         return True, "new"
 
+
 class lower_callback(Callback.Callback):
     def callback(self, cmd, target, pre_value):
         return True, "lower"
+
+
+class trigger_callback(Callback.Callback):
+    def callback(self, cmd, target, pre_value):
+        return True, "trigger"
+
 
 class geo_location_callback(Callback.Callback):
     def callback(self, cmd, action, target, msg, pre_value):

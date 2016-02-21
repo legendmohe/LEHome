@@ -56,7 +56,7 @@ class GeoResolver:
             intervals = []
             for area_name, area in self._areas.items():
                 distance = GeoResolver.cal_distance(cur_loc.lat, cur_loc.lon, area.lat, area.lon)
-                print "distance from", cur_loc.dump(), "to", area.dump(), "is", distance
+                INFO("distance from " + str(cur_loc.dump()) + " to " + str(area.dump()) + " is " + str(distance))
 
                 interval = self.cal_interval(dev, distance, self._sensitivity)
                 intervals.append(interval)
@@ -69,7 +69,7 @@ class GeoResolver:
                     self._area_state[area_name][dev.name] = Event.LEAVE
 
             dev.loc_interval = min(intervals)
-            print "="*80
+            INFO("%s sleep for %f sec, state:%d" % (dev.name, dev.loc_interval, self._area_state[area_name][dev.name]))
             print "%s sleep for %f sec" % (dev.name, dev.loc_interval)
 
     @staticmethod
@@ -128,6 +128,14 @@ class GeoResolver:
 
     def notify_state(self, area, device, event_type):
         print area.name, "notify state", event_type, "for device", device.name
+        event = ""
+        if event_type == Event.ENTER:
+            event = "回到"
+        elif event_type == Event.LEAVE:
+            event = "离开"
+
+        cmd = "触发#%s%s%s#" % (device.name, event, area.name)
+        send_cmd_to_home(cmd)
 
     def dump(self):
         for name, item in self._dev.items():
@@ -141,16 +149,22 @@ class Device:
         self.name = name
         self.loc_interval = default_interval
 
+    def __str__(self):
+        return "device:%s" % (self.name, )
+
 
 class Location:
-    def __init__(self, device, lat, lon):
+    def __init__(self, device, lat, lon, ts):
         self.lat = lat
         self.lon = lon
         self.device = device
-        self.timestamp = time.time()  # TODO- should receive from device
+        self.timestamp = ts
 
     def dump(self):
         return self.lat, self.lon
+
+    def __str__(self):
+        return "%s(%s, %s)" % (self.device, self.lat, self.lon)
 
 
 class Area:
@@ -171,6 +185,7 @@ g_devices = {}
 g_area = {}
 g_wait_locks = {}
 
+g_max_waiting_report = 1*60
 g_min_interval = 10
 g_max_interval = 15*60
 g_sensitivity = 0.05
@@ -198,20 +213,22 @@ class LocationReportHandler(tornado.web.RequestHandler):
             datas = body.split("|")
             name = datas[0]
             location_name = datas[1]
-            lat = datas[1]
-            lon = datas[2]
+            lat = float(datas[2])
+            lon = float(datas[3])
+            ts = int(datas[4])
 
             if name.startswith("*"):
                 name = name[1:]
-            name = name[1:]
             
             data_queue = self._data_queues[name]
-            new_loc = Location(name, lat, lon)
+            new_loc = Location(name, lat, lon, ts)
             data_queue.put(new_loc)
             INFO("put location:%s for %s" % (new_loc, name))
             self.write("ok")
             return
         except Exception, e:
+            TRACE_EX()
+            ERROR(e)
             INFO("Invalid body:%s" % body)
             self.write("Invalid body.")
             return
@@ -229,6 +246,8 @@ class LocationRequestHandler(tornado.web.RequestHandler):
 
 
 def fetch_loc_worker(device, data_queue, process_queue, wait_lock):
+    global g_max_waiting_report
+
     INFO("%s worker thread start." % device.name)
     process_lock = threading.Event()
     # request first
@@ -236,14 +255,14 @@ def fetch_loc_worker(device, data_queue, process_queue, wait_lock):
     # begin geo fencing
     while True:  # TODO - will it block here?
         try:
-            location = data_queue.get(timeout=1*60)
+            location = data_queue.get(timeout=g_max_waiting_report)
         except Queue.Empty:
             INFO("report timeout, send another request")
             send_geo_req_by_home(device)
             continue
 
         if 1 > 0:  # TODO - seq
-            device.process_queue.append(location)
+            device.loc_queue.append(location)
             process_queue.put((process_lock, device.name))
             process_queue.task_done()
             process_lock.wait()
@@ -307,13 +326,11 @@ def request_for_location(name):
     if name in g_wait_locks:
         g_wait_locks[name].set()
 
-
-def send_geo_req_by_home(device):
+def send_cmd_to_home(cmd):
     global g_trigger_cmd, g_finish_cmd, g_home_address
 
-    cmd = "后台定位%s" % device.name
     cmd = "%s%s%s" % (g_trigger_cmd, cmd, g_finish_cmd)
-    INFO("send cmd %s to home." % (cmd, ))
+    DEBUG("send cmd %s to home." % (cmd, ))
 
     try:
         data = {"cmd": cmd}
@@ -333,6 +350,10 @@ def send_geo_req_by_home(device):
     else:
         INFO("home response: " + response)
         return True
+
+def send_geo_req_by_home(device):
+    cmd = "后台定位%s" % device.name
+    send_cmd_to_home(cmd)
 
 
 def init_threads():

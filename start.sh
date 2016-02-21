@@ -44,6 +44,20 @@ if [[ $rc != 0 ]] ; then
     exit $rc
 fi
 
+echo 'running geo_fencing_server.py'
+file='log/geo_fencing.log'
+if [[ ! -f $file ]]; then
+    touch $file
+fi
+
+sleep 3 # wait for home.py to init.
+
+python geo_fencing_server.py > log/geo_fencing.log 2>&1 &
+rc=$?
+if [[ $rc != 0 ]] ; then
+    exit $rc
+fi
+
 if [[ $1 != "silent" ]]
 then
     echo 'running remote info sender.py'

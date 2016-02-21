@@ -19,6 +19,7 @@
 import time
 import urllib, urllib2
 
+import requests
 
 from util.log import *
 
@@ -33,10 +34,15 @@ class GeoFencingHelper(object):
             DEBUG("send geo report %s to geo fencing server." % (content, ))
             try:
                 url = self.server_address + "/report"
-                enc_data = urllib.urlencode(content)
-                response = urllib2.urlopen(url,
-                                            enc_data,
-                                            timeout=5).read()
+                content = content.encode("utf-8")
+                response = requests.post(url, data=content, timeout=5)
+                if response.status_code != 200:
+                    return False
+                # enc_data = content.encode("utf-8")
+                # INFO("enc_data")
+                # response = urllib2.urlopen(url,
+                #                             enc_data,
+                #                             timeout=5).read()
             except urllib2.HTTPError, e:
                 ERROR(e)
                 return False
@@ -44,10 +50,11 @@ class GeoFencingHelper(object):
                 ERROR(e)
                 return False
             except Exception, e:
+                TRACE_EX()
                 ERROR(e)
                 return False
             else:
-                DEBUG("geo server response: " + response)
+                DEBUG("geo server response: " + response.text)
                 return True
         else:
             ERROR("conent is invaild.")

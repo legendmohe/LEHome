@@ -520,9 +520,11 @@ class Parser:
             # escape for confilct chars
             if not self._in_escape is True and a_char == Parser.ESCAPE_BEGIN:
                 self._in_escape = True
+                self._last_cmd += a_char
                 continue
             elif self._in_escape is True and a_char == Parser.ESCAPE_END:
                 self._in_escape = False
+                self._last_cmd += a_char
                 continue
             elif not self._in_escape and \
                     (a_char.isspace() or a_char in self._stopwords):

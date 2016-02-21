@@ -5,6 +5,9 @@
 echo 'kill mqtt_server_proxy.py...'
 ps -ef | awk '/python mqtt_server_proxy\.py/ {print $2}' | xargs kill -9
 
+echo 'kill geo_fencing_server.py'
+ps -ef | awk '/python geo_fencing_server\.py/ {print $2}' | xargs kill -9
+
 echo 'kill remote_info_sender.py...'
 ps -ef | awk '/python remote_info_sender\.py/ {print $2}' | xargs kill -9
 
