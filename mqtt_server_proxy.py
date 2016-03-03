@@ -101,9 +101,12 @@ class mqtt_server_proxy:
         self._mqtt_client.loop_forever() 
 
     def _on_mqtt_connect(self, client, userdata, flags, rc):
-        print("mqtt server connected with result code "+str(rc))  
-        client.subscribe(self._device_id)
-        client.subscribe(self._device_id + mqtt_server_proxy.BASE64_SUB_KEY)
+        print("mqtt server connected with result code "+str(rc))
+        subscribables = [
+            (self._device_id, 1),
+            (self._device_id + mqtt_server_proxy.BASE64_SUB_KEY, 1)
+            ]
+        client.subscribe(subscribables)
 
     def _on_mqtt_message(self, client, userdata, msg):
         payload = str(msg.payload)
