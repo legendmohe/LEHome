@@ -31,6 +31,7 @@ from util.Res import Res
 from util.log import *
 from vendor.baidu_push.Channel import *
 from vendor.xg_push import xinge
+from vendor.mipush import mipush
 
 PUSH_apiKey = "7P5ZCG6WTAGWr5TuURBgndRH"                                             
 PUSH_secretKey = "gggk30ubCSFGM5uXYfwGll4vILlnQ0em"                                  
@@ -38,6 +39,9 @@ PUSH_user_id = "4355409"
 
 XINGE_ACCESS_ID = 2100063377
 XINGE_SECRET_KEY = "50618a8882f2dd7849a2f2bc68f41587"
+
+MIPUSH_SECRET_KEY = "3b6uuQ2wE0ox80Tv4kV2fw=="
+MIPUSH_PACKETAGE = "my.home.lehome"
 
 class remote_info_sender:
     
@@ -51,7 +55,7 @@ class remote_info_sender:
             self._sock.connect(address)
             self._sock.setsockopt(zmq.SUBSCRIBE, '')
             self.channel = Channel(PUSH_apiKey, PUSH_secretKey)
-            self.xinge_app = xinge.XingeApp(XINGE_ACCESS_ID, XINGE_SECRET_KEY)
+            self._mipush = mipush.MIPush(MIPUSH_SECRET_KEY)
             self._msg_queue = Queue()
 
             settings = Res.init("init.json")
@@ -148,6 +152,21 @@ class remote_info_sender:
                 ERROR(traceback.format_exc())
                 return None
         return msg
+        
+    def _push_info_xiaomi(self, info, tag_name):
+        if not info is None and not info == "":
+            DEBUG("xiaomi push info %s to remote server." % (info, ))
+            # xiaomi push                                 
+            try:
+                ret = self._mipush.push_topic_passthrough(info, MIPUSH_PACKETAGE, tag_name)
+                DEBUG("mi push ret:%s" % ret)
+            except Exception, e:
+                ERROR(e)
+                return False
+            return True
+        else:
+            ERROR("info is invaild.")
+            return False
     
     def _sae_info(self, info):
         url = remote_info_sender.HOST + "/info/put?id=%s" \
@@ -185,8 +204,9 @@ class remote_info_sender:
             # info_object = json.loads(info)
             # msg_type = info_object['type']
             # if msg_type != "heartbeat":
-                self._push_info_xg(info, str(self._device_id))   
+                # self._push_info_xg(info, str(self._device_id))   
                 # self._push_info_baidu(info, str(self._device_id))   
+                self._push_info_xiaomi(info, str(self._device_id))
                 self._send_info_to_server(info)
 
     def _put_worker(self):
