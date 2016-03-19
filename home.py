@@ -193,7 +193,6 @@ class Home:
     def parse_cmd(self, cmd, persist=True):
         if not self._resume:
             timestamp = int(time.time())
-            INFO("command: " + cmd)
             if cmd.startswith("@"):
                 cmd = cmd[1:]
                 if persist is True:
@@ -211,6 +210,7 @@ class Home:
                             )
                 self._geo.send_geo_report(cmd)
             else:
+                INFO("command: " + cmd)
                 if persist is True:
                     self._storage.rpush(
                             "lehome:cmd_history_list",
@@ -243,7 +243,7 @@ class CmdHandler(tornado.web.RequestHandler):
         if cmd is None:
             self.write("error")
             return
-        INFO("get cmd through http post:%s", cmd)
+        # INFO("get cmd through http post:%s", cmd)
         if cmd.count('#')%2 == 0:
             self.home.parse_cmd(cmd)
             self.write("ok")

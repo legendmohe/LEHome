@@ -6,15 +6,11 @@
     "家里":{
       "lat": 23.106105,
       "lon": 113.312839
-    },
-    "公司":{
-      "lat": 23.1206570000,
-      "lon": 113.2728630000
     }
   },
   "min_interval": 10,
   "max_interval": 300,
-  "sensitivity": 0.02,
+  "sensitivity": 0.08,
   "trigger": "你好",
   "finish": "谢谢",
   "home_address": "http://localhost:8000/home/cmd",

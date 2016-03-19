@@ -45,6 +45,7 @@ class GeoResolver:
 
     def resolve(self, target_name):
         # self.dump()
+        print "resolve!"
         dev = self._dev.get(target_name, None)
         if dev is not None and len(dev.loc_queue) > 1:
             cur_loc = dev.loc_queue[-1]
@@ -96,15 +97,20 @@ class GeoResolver:
         interval = 0
 
         velocity = 0
+        clen = len(dev.loc_queue)
         for i in range(1, len(dev.loc_queue)):
             cur_loc = dev.loc_queue[i]
             last_loc = dev.loc_queue[i - 1]
-            velocity += dev.movements[i]*1000/(cur_loc.timestamp - last_loc.timestamp)  # m/s
+            if (cur_loc.timestamp - last_loc.timestamp != 0):
+                velocity += dev.movements[i]*1000/(cur_loc.timestamp - last_loc.timestamp)  # m/s
+            else:
+                clen -= 1
             print "velocity from", cur_loc.dump(), "to", last_loc.dump(), "velocity", velocity, "interval", (-295*velocity + 210)/0.7
-        velocity /= len(dev.loc_queue) - 1
+        if clen != 1:
+            velocity /= clen - 1
 
         velocity_interval = 0
-        if velocity <= 0.7:
+        if velocity <= 0.7 and not (self._sensitivity <= distance <= 2*self._sensitivity):
             velocity_interval = (-295*velocity + 210)/0.7
             velocity_interval = velocity_interval if velocity_interval > 0 else 0
             interval += velocity_interval
@@ -113,14 +119,6 @@ class GeoResolver:
         interval += distance_interval
 
         print "interval:", interval, "velocity", velocity, "velocity_interval:", velocity_interval, "distance_interval", distance_interval
-
-        # avg_movement = sum(dev.movements)/float(len(dev.movements))
-        # if avg_movement < 0.02 and len(dev.movements) == dev.movements.maxlen: # 40 meters
-        #     interval = (-290.0*avg_movement + 6)/0.02
-        #     print "avg interval:", interval, "avg_movement", avg_movement
-        # else:
-        #     interval = (290.0*distance + 20.0)/4.9
-        #     print "distance interval:", interval, "distance", distance
 
         interval = interval if interval > self._min_interval else self._min_interval
         interval = interval if interval < self._max_interval else self._max_interval
@@ -223,6 +221,7 @@ class LocationReportHandler(tornado.web.RequestHandler):
             data_queue = self._data_queues[name]
             new_loc = Location(name, lat, lon, ts)
             data_queue.put(new_loc)
+            data_queue.task_done()
             INFO("put location:%s for %s" % (new_loc, name))
             self.write("ok")
             return
@@ -232,7 +231,6 @@ class LocationReportHandler(tornado.web.RequestHandler):
             INFO("Invalid body:%s" % body)
             self.write("Invalid body.")
             return
-        # location = Location(device, test_data[0], test_data[1])
 
 
 class LocationRequestHandler(tornado.web.RequestHandler):
@@ -253,6 +251,7 @@ def fetch_loc_worker(device, data_queue, process_queue, wait_lock):
     # request first
     send_geo_req_by_home(device)
     # begin geo fencing
+    last_st = -1
     while True:  # TODO - will it block here?
         try:
             location = data_queue.get(timeout=g_max_waiting_report)
@@ -261,7 +260,9 @@ def fetch_loc_worker(device, data_queue, process_queue, wait_lock):
             send_geo_req_by_home(device)
             continue
 
-        if 1 > 0:  # TODO - seq
+        if location.timestamp > last_st:  # TODO - seq
+            last_st = location.timestamp
+
             device.loc_queue.append(location)
             process_queue.put((process_lock, device.name))
             process_queue.task_done()

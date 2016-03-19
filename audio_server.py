@@ -33,7 +33,7 @@ import alsaaudio
 
 from util.log import *
 
-SOUNDCARD_NAME = u'R19U'
+SOUNDCARD_NAME = u'ALSA'
 
 class RETURNCODE:
     SUCCESS = '1'

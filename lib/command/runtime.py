@@ -165,6 +165,8 @@ class Rumtime:
         # INFO("finish _execute: %s" % command)
 
     def _invoke_block(self, block, stack, pass_value=None, in_loop=False):
+        if block is None:
+            return None
         # import pdb
         # pdb.set_trace()
         thread = self._local.thread  # break out for thread stopped
