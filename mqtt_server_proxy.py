@@ -55,7 +55,7 @@ class mqtt_server_proxy:
 
     def _send_cmd_to_home(self, cmd):
         if not cmd is None and not cmd == "":
-            INFO("send cmd %s to home." % (cmd, ))
+            DEBUG("send cmd %s to home." % (cmd, ))
             if cmd.startswith(mqtt_server_proxy.NO_HEAD_FLAG):
                 cmd = cmd[1:]
             else:
@@ -77,7 +77,7 @@ class mqtt_server_proxy:
                 ERROR(e)
                 return False
             else:
-                INFO("home response: " + response)
+                DEBUG("home response: " + response)
                 return True
         else:
             ERROR("cmd is invaild.")
@@ -113,7 +113,7 @@ class mqtt_server_proxy:
         print(msg.topic + " " + payload) 
         if payload is not None and len(payload) != 0:
             if msg.topic == self._device_id:
-                INFO("sending payload to home:%s" % payload)
+                DEBUG("sending payload to home:%s" % payload)
                 try:
                     self._send_cmd_to_home(payload)
                 except Exception, ex:

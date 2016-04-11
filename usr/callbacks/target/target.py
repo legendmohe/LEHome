@@ -79,9 +79,17 @@ class weather_report_callback(Callback.Callback):
                     return True
 
                 content = []
+                spk_content = []
                 content.append(u"日期：" + data["date"])
+                spk_content.append(u"日期：" + data["date"])
+
                 w_results = data["results"]
                 for city in w_results:
+                    spk_content.append(u"PM25：" + city["pm25"])
+                    today_data = city["weather_data"][0]
+                    spk_content.append(u"    %s, %s" % (today_data["weather"], today_data["wind"]))
+                    spk_content.append(u"    %s" % (today_data["temperature"],))
+
                     content.append(u"城市：" + city["currentCity"])
                     content.append(u"PM25：" + city["pm25"])
                     content.append(u"小提示:")
@@ -97,7 +105,7 @@ class weather_report_callback(Callback.Callback):
                 content = u"\n".join(content)
                 if pre_value == 'show':
                     self._home.publish_msg(cmd, content)
-                    self._speaker.speak(content.split('\n'))
+                    self._speaker.speak(spk_content)
                 return True, data
             except Exception, ex:
                 ERROR(ex)

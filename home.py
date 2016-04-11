@@ -180,11 +180,11 @@ class Home:
         self._geo = GeoFencingHelper(geo_server_ip)
 
     def _cmd_begin_callback(self, command):
-        INFO("command begin: %s" % (command))
+        DEBUG("command begin: %s" % (command))
         # self.publish_msg(command, u"执行: " + command)
 
     def _cmd_end_callback(self, command):
-        INFO("command end: %s" % (command))
+        DEBUG("command end: %s" % (command))
         # self.publish_msg(command, "end: " + command)
 
     def publish_msg(self, sub_id, msg, cmd_type="normal"):
@@ -210,7 +210,7 @@ class Home:
                             )
                 self._geo.send_geo_report(cmd)
             else:
-                INFO("command: " + cmd)
+                INFO("parse_cmd: " + cmd)
                 if persist is True:
                     self._storage.rpush(
                             "lehome:cmd_history_list",

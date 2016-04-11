@@ -19,6 +19,10 @@ import tornado.web
 import redis
 
 from util.log import *
+
+# silent mode
+INFO = DEBUG
+
 # ----------------------Util
 
 def enum(**enums):

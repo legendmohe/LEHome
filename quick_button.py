@@ -101,7 +101,16 @@ class quick_button(object):
         self._trigger_cmd = self._conf['trigger'].encode("utf-8")
         self._finish_cmd = self._conf['finish'].encode("utf-8")
         self._reset_cmd = self._conf['reset']
-        self._cmds = self._conf["command"]
+        self._cmds = {}
+        self._direct_key = {}
+        for key in self._conf["command"]:
+            value = self._conf["command"][key]
+            if key.endswith("*"):
+                key = key[:-1]
+                self._direct_key[key] = value
+                # print key, value
+            else:
+                self._cmds[key] = value
 
     def reload_cmds(self):
         self._configure(conf_path="./usr/btn_conf.json")
@@ -122,7 +131,10 @@ class quick_button(object):
                 event = self._event_queue.get(timeout=self._timeout)
                 print "got event: ", event
                 self._event_queue.task_done()
-                cmd_buf.extend(event)
+                if len(cmd_buf) == 0 and event in self._direct_key:
+                    self._map_buffer_to_command(event)
+                else:
+                    cmd_buf.extend(event)
             except Empty:
                 if len(cmd_buf) > 0:
                     print "timeout:", cmd_buf
@@ -142,7 +154,9 @@ class quick_button(object):
                 time.sleep(1)
 
     def _map_buffer_to_command(self, cmd):
-        if cmd in self._cmds:
+        if cmd in self._direct_key:
+            self._send_cmd_to_home(self._direct_key[cmd].encode("utf-8"))
+        elif cmd in self._cmds:
             self._send_cmd_to_home(self._cmds[cmd].encode("utf-8"))
 
     def _send_cmd_to_home(self, cmd):

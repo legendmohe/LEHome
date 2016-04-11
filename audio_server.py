@@ -140,7 +140,7 @@ def worker(play_url, channel, loop):
     global mp_context, mixer_normal, mixer_notice
 
     cmd = [
-            # 'sudo',
+            'sudo',
             'mplayer',
             '-ao', 'alsa:device=%s' % channel,
             play_url,
@@ -213,7 +213,7 @@ def queue_worker():
         url, channel, loop = mp_queue.get()
         print "get from queue:%s \n channel:%s" % (str(url), channel)
         cmd = [
-                # 'sudo',
+                'sudo',
                 'mplayer',
                 '-ao', 'alsa:device=%s' % channel,
                 url,

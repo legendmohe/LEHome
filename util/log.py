@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import inspect
 import traceback
 import logging
@@ -22,7 +23,14 @@ from util.Util import mkdir_p
 
 mkdir_p("log")
 
-file_name = 'log/home_debug.log'
+tmpfd_path = config.TMPFS_PATH + "log"
+mkdir_p(tmpfd_path)
+
+if os.path.isdir(tmpfd_path):
+    file_name = os.path.join(tmpfd_path, 'home_debug.log')
+else:
+    file_name = 'log/debug_home.log'
+
 debug_logger = logging.getLogger('DebugLog')
 handler = logging.handlers.RotatingFileHandler(file_name, maxBytes=50*1024*1024)
 formatter = logging.Formatter("%(asctime)s - [%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s")
@@ -67,3 +75,7 @@ FCRITICAL = debug_logger.critical
 
 EXCEPTION = comm_logger.exception
 
+if os.path.isdir(tmpfd_path):
+    INFO("use tmpfs as debug file")
+else:
+    WARN("tmpfs log file is disable")

@@ -4,13 +4,13 @@
   ],
   "area": {
     "家里":{
-      "lat": 23.106105,
-      "lon": 113.312839
+      "lat": 23.0781,
+      "lon": 113.2989
     }
   },
   "min_interval": 10,
   "max_interval": 300,
-  "sensitivity": 0.08,
+  "sensitivity": 0.1,
   "trigger": "你好",
   "finish": "谢谢",
   "home_address": "http://localhost:8000/home/cmd",

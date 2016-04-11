@@ -16,4 +16,6 @@
 # limitations under the License.
 
 
-DEBUG_ENABLE = False
+DEBUG_ENABLE = True
+
+TMPFS_PATH = "/run/shm/lehome/"

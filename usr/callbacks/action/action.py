@@ -429,7 +429,7 @@ class geo_location_callback(Callback.Callback):
             return False
         
         if msg is None or len(msg) == 0:
-            INFO("send geo location request to %s" % target)
+            DEBUG("send geo location request to %s" % target)
             # self._home.publish_msg(cmd, u"发起定位:%s" % target)
             self._home.publish_msg(cmd, target, cmd_type="req_geo")
             return True, "geo_location"

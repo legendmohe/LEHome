@@ -13,7 +13,7 @@ if [[ $rc != 0 ]] ; then
 fi
 
 echo 'running audio server.py...'
-python audio_server.py > /dev/null 2>&1 &
+sudo python audio_server.py > /dev/null 2>&1 &
 rc=$?
 if [[ $rc != 0 ]] ; then
     exit $rc
@@ -85,7 +85,7 @@ file='log/qqfm.log'
 if [[ ! -f $file ]]; then
     touch $file
 fi
-python qqfm.py > log/qqfm.log 2>&1 &
+sudo python qqfm.py > log/qqfm.log 2>&1 &
 cd ../LEHome/
 rc=$?
 if [[ $rc != 0 ]] ; then
@@ -93,7 +93,7 @@ if [[ $rc != 0 ]] ; then
 fi
 
 echo 'running quick_button.py'
-python quick_button.py > /dev/null 2>&1 &
+sudo python quick_button.py > /dev/null 2>&1 &
 rc=$?
 if [[ $rc != 0 ]] ; then
     exit $rc
