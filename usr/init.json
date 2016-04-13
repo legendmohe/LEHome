@@ -6,6 +6,7 @@
         "heartbeat_port" : "9001",
         "audio_server" : "http://localhost:8001",
         "tag_server" : "tcp://localhost:8006",
+        "ping_server" : "tcp://localhost:8005",
         "mqtt_server" : "119.29.102.249",
         "geo_fencing_server" : "http://localhost:8009"
     },
@@ -195,6 +196,12 @@
         "member": {
             "芳莹":"E2C56DB5DFFB48D2B060D0F5A71096E0",
             "新宇":"FDA50693A4E24FB1AFCFC6EB07647825"
+        }
+    },
+    "ping":{
+        "device": {
+            "芳莹":"192.168.1.154",
+            "新宇":"192.168.1.100"
         }
     },
     "qqfm": {

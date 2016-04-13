@@ -20,6 +20,9 @@ ps -ef | awk '/sudo python audio_server\.py/ {print $2}' | sudo xargs kill -INT
 echo 'kill tag_endpoint.py'
 ps -ef | awk '/python tag_endpoint\.py/ {print $2}' | xargs kill -9
 
+echo 'kill ping_endpoint.py'
+ps -ef | awk '/python ping_endpoint\.py/ {print $2}' | sudo xargs kill -9
+
 echo 'kill qqfm.py...'
 ps -ef | awk '/sudo python qqfm\.py/ {print $2}' | sudo xargs kill -INT
 

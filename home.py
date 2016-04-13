@@ -35,6 +35,7 @@ from lib.helper.RilHelper import RilHelper
 from lib.helper.SensorHelper import SensorHelper
 from lib.helper.MessageHelper import MessageHelper
 from lib.helper.TagHelper import TagHelper
+from lib.helper.PingHelper import PingHelper
 from lib.helper.GeoFencingHelper import GeoFencingHelper
 from util.Res import Res
 from lib.sound import Sound
@@ -174,6 +175,10 @@ class Home:
         tag_server_ip = self._init_res["connection"]["tag_server"]
         INFO("init tag server. %s" % tag_server_ip)
         self._tag = TagHelper(tag_server_ip, self._init_res["tag"])
+
+        ping_server_ip = self._init_res["connection"]["ping_server"]
+        INFO("init ping server. %s" % ping_server_ip)
+        self._ping = PingHelper(ping_server_ip, self._init_res["ping"])
 
         geo_server_ip = self._init_res["connection"]["geo_fencing_server"]
         INFO("init geo-fencing server. %s" % geo_server_ip)

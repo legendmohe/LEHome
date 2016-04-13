@@ -12,6 +12,13 @@ if [[ $rc != 0 ]] ; then
     exit $rc
 fi
 
+echo 'running ping_endpoint.py'
+sudo python ping_endpoint.py > /dev/null 2>&1 &
+rc=$?
+if [[ $rc != 0 ]] ; then
+    exit $rc
+fi
+
 echo 'running audio server.py...'
 sudo python audio_server.py > /dev/null 2>&1 &
 rc=$?
