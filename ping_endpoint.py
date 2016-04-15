@@ -21,6 +21,7 @@ import os
 import signal
 import time
 import subprocess
+import errno
 import json
 from Queue import Queue, Empty
 import collections
@@ -35,7 +36,8 @@ from util.Res import Res
 
 class ping_endpoint(object):
 
-    PING_INTERVAL = 5
+    PING_INTERVAL = 10
+    TIMEOUT = 0.8
 
     def __init__(self):
         self.devices = {}
@@ -51,12 +53,9 @@ class ping_endpoint(object):
     def _do_ping(self, addr):
         while True:
             try:
-                percent_lost, _, _ = ping.quiet_ping(addr, timeout=0.2)
-                if (percent_lost != 100):
-                    self.devices[addr] = True
-                else:
-                    self.devices[addr] = False
+                self.devices[addr] = self._ping(addr)
                 print "device:", addr, "online", self.devices[addr]
+                DEBUG("device:%s online:%d" % (addr, self.devices[addr]))
 
                 time.sleep(ping_endpoint.PING_INTERVAL)
             except (KeyboardInterrupt, SystemExit):
@@ -66,6 +65,33 @@ class ping_endpoint(object):
                 ERROR(ex)
                 TRACE_EX()
                 time.sleep(3)
+
+    def _timeout(self, proc):
+        print "timeout!"
+        if proc.poll() is None:
+            try:
+                proc.terminate()
+                INFO('Error: process taking too long to complete--terminating')
+            except OSError as e:
+                if e.errno != errno.ESRCH:
+                    raise
+
+    def _ping(self, addr):
+        cmd = "ping -c %d -W %.1f %s > /dev/null 2>&1" % (10, ping_endpoint.TIMEOUT, addr)
+        proc_timeout = 10*ping_endpoint.TIMEOUT + 5
+        proc = subprocess.Popen(cmd, shell=True)
+
+        try:
+            t = threading.Timer(proc_timeout, self._timeout, [proc])
+            t.start()
+            proc.wait()
+            DEBUG("ping return code:%d" % proc.returncode)
+            t.cancel()
+            t.join()
+        except Exception, ex:
+            print ex
+            proc.terminate()
+        return True if proc.returncode == 0 else False
 
     def start(self):
 
